@@ -1,0 +1,3 @@
+
+class DomainDrivenError(Exception):
+    pass

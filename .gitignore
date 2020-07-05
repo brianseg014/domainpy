@@ -1,0 +1,13 @@
+# Environment
+.venv
+
+# Python
+__pycache__
+
+# Tests
+.eggs
+.pytest_cache
+domainpy.egg-info/
+
+# Distribution
+dist/
