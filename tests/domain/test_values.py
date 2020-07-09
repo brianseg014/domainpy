@@ -1,6 +1,6 @@
 import pytest
 
-from domainpy.domain.value_object import ValueObject
+from domainpy.domain.values import ValueObject
 
 
 class Quantity(ValueObject):

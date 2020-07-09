@@ -1,5 +1,6 @@
 import json
 
+
 class ValueObject:
     
     def __init__(self, **kwargs):

@@ -18,12 +18,12 @@ class Aggregate(AggregateRoot):
     
 
 def test_aggregate_create_accumulate_changes():
-    aggregate = Aggregate.__create__()
+    aggregate = Aggregate.__create__(Created())
     assert len(aggregate.__changes__) == 1
     
 
 def test_aggregate_apply_accumulate_changes():
-    aggregate = Aggregate.__create__()
+    aggregate = Aggregate.__create__(Created())
     updated = Updated()
     aggregate.__apply__(updated)
     assert len(aggregate.__changes__) == 2
