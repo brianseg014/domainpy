@@ -1,0 +1,3 @@
+
+class EventSourcedRepository:
+    pass
