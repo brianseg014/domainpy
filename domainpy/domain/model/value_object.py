@@ -32,6 +32,9 @@ class ValueObject(Constructable, Immutable):
             else:
                 raise ValueObjectIsNotSerializable(self.__class__.__name__ + " by attribute \"" + k + "\" of type " + v.__class__.__name__)
         return d
+     
+    def __repr__(self):
+        return f'{self.__class__.__name__}({json.dumps(self.__to_dict__())})'
 
 class Identity(ValueObject):
     

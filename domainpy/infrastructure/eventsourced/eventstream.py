@@ -1,0 +1,3 @@
+
+class EventStream(list):
+    pass

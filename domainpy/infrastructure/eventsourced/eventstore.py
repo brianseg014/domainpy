@@ -1,3 +1,35 @@
 
+from domainpy.infrastructure.eventsourced.eventstream import EventStream
+
+
 class EventStore:
-    pass
+    
+    def __init__(self, event_mapper, record_manager, bus):
+        self.event_mapper = event_mapper
+        self.record_manager = record_manager
+        self.bus = bus
+    
+    def store_events(self, stream):
+        with self.record_manager.session() as session:
+            for e in stream:
+                session.append(
+                    self.event_mapper.serialize(e)
+                )
+            
+                self.bus.publish(e)
+            
+            session.commit()
+        
+    def get_events(self, aggregate_id: str):
+        events = self.record_manager.find(
+            aggregate_id=aggregate_id
+        )
+        
+        stream = EventStream()
+        for e in events:
+            stream.append(
+                self.event_mapper.deserialize(e)
+            )
+            
+        return stream
+        

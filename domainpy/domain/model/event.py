@@ -5,6 +5,53 @@ from domainpy.domain.model.value_object import ValueObject
 from domainpy.domain.model.exceptions import EventParameterIsNotValueObjectError
 from domainpy.utils.constructable import Constructable
 from domainpy.utils.immutable import Immutable
+from domainpy.infrastructure.eventmapper import EventMapper, EventRecord
+
 
 class DomainEvent(Constructable, Immutable):
-    pass
+    
+    def __init__(self, *args, **kwargs):
+        self.__dict__.update({
+            '__aggregate_id__': kwargs.pop('__aggregate_id__', None),
+            '__number__': kwargs.pop('__number__', None),
+            '__version__': kwargs.pop('__version__', None),
+            '__timestamp__': kwargs.pop('__timestamp__', None)
+        })
+        
+        super(DomainEvent, self).__init__(*args, **kwargs)
+    
+    @classmethod
+    def from_event_record(cls, event_record):
+        if hasattr(cls, '__annotations__'):
+            attrs = cls.__dict__['__annotations__']
+            
+            kwargs = {}
+            for k in attrs:
+                value_object_class = attrs[k]
+                kwargs[k] = value_object_class(
+                    **event_record.payload[k]    
+                )
+                
+            return cls(**kwargs)
+        else:
+            raise NotImplementedError(
+                f'{cls.__class__.__name__} must override from_event_record method'
+            )
+        
+    def __to_event_record__(self):
+        if hasattr(self.__class__, '__annotations__'):
+            attrs = self.__class__.__dict__['__annotations__']
+            
+            payload = {}
+            for k in attrs:
+                payload[k] = self.__dict__[k].__to_dict__()
+            
+            return EventRecord(
+                aggregate_id=self.__aggregate_id__, # pylint: disable=maybe-no-member
+                number=self.__number__, # pylint: disable=maybe-no-member
+                topic=self.__class__.__name__,
+                version=self.__version__, # pylint: disable=maybe-no-member
+                timestamp=self.__timestamp__, # pylint: disable=maybe-no-member
+                payload=payload
+            )
+    

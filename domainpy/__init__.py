@@ -23,6 +23,8 @@ from domainpy.domain.model.decorators import (
 )
 
 from domainpy.infrastructure import (
+    EventMapper,
     EventStore,
-    EventSourcedRepository
+    EventStream,
+    MemoryRecordManager
 )

@@ -1,3 +1,11 @@
 
-from domainpy.infrastructure.eventsourced.eventstore import EventStore
-from domainpy.infrastructure.eventsourced.repository import EventSourcedRepository
+from domainpy.infrastructure.eventmapper import (
+    EventMapper
+)
+from domainpy.infrastructure.eventsourced.eventstore import (
+    EventStore,
+    EventStream
+)
+from domainpy.infrastructure.eventsourced.managers.memory import (
+    MemoryRecordManager    
+)
