@@ -39,6 +39,9 @@ class ValueObject(Constructable, Immutable):
 class Identity(ValueObject):
     
     def __init__(self, id: str):
+        if not isinstance(id, str):
+            raise TypeError('id should be instance of str')
+        
         self.__dict__.update(id=id)
         
     @classmethod

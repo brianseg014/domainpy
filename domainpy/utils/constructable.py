@@ -12,10 +12,16 @@ class Constructable:
             current_arg = 0
             for k in attrs:
                 if current_arg <= args_count - 1:
-                    kwargs0[k] = args[current_arg]
+                    if isinstance(args[current_arg], attrs[k]):
+                        kwargs0[k] = args[current_arg]
+                    else:
+                        raise TypeError(f'argument {k} should be instance of {attrs[k]}')
                 else:
                     try:
-                        kwargs0[k] = kwargs[k]
+                        if isinstance(kwargs[k], attrs[k]):
+                            kwargs0[k] = kwargs[k]
+                        else:
+                            raise TypeError(f'argument {k} should be instance of {attrs[k]}')
                     except KeyError:
                         raise TypeError('Missing argument for ' + k)
                 current_arg = current_arg + 1

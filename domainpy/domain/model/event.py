@@ -1,3 +1,4 @@
+import json
 import time
 from datetime import datetime, date
 
@@ -54,4 +55,3 @@ class DomainEvent(Constructable, Immutable):
                 timestamp=self.__timestamp__, # pylint: disable=maybe-no-member
                 payload=payload
             )
-    

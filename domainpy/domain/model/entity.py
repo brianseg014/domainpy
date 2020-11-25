@@ -1,33 +1,34 @@
 
-import uuid
+from domainpy.domain.model.value_object import Identity
 
 class DomainEntity:
     
-    def __init__(self, aggregate):
-        self.__aggregate__ = aggregate
+    def __init__(self, id: Identity, aggregate):
+        if not isinstance(id, Identity):
+            raise TypeError('id should be type of Identity')
         
-        self.id = uuid.uuid4()
+        self.__id__ = id
+        self.__aggregate__ = aggregate
         
     def __apply__(self, event):
         self.__aggregate__.__apply__(event)
     
     def __route__(self, event):
         self.mutate(event)
-        
-    def mutate(self, event):
-        pass
     
     def __eq__(self, other):
         if other is None:
             return False
         
         if isinstance(other, self.__class__):
-            return self.id == other.id
-        elif isinstance(other, self.id.__class__):
-            return self.id == other
+            return self.__id__ == other.__id__
+        elif isinstance(other, self.__id__.__class__):
+            return self.__id__ == other
         else:
             return False
             
     def __repr__(self):
-        return f'{self.__class__.__name__}(id={self.id})'
+        return f'{self.__class__.__name__}(id={self.__id__})'
     
+    def mutate(self, event):
+        pass
