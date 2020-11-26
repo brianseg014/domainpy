@@ -3,7 +3,11 @@ class EventParameterIsNotValueObjectError(Exception):
     pass
 
 
-class MutatorHandlerNotFoundError(Exception):
+class MutatorNotFoundError(Exception):
+    pass
+
+
+class HandlerNotFoundError(Exception):
     pass
 
 

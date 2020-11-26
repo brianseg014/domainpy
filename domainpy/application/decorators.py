@@ -3,6 +3,7 @@ from functools import update_wrapper, partial
 
 from domainpy.application.command import ApplicationCommand
 from domainpy.application.service import ApplicationService
+from domainpy.domain.model.exceptions import HandlerNotFoundError
 
 
 class handler:
@@ -12,22 +13,24 @@ class handler:
         
         self.func = func
         
-        self._handables = dict()
+        self._messages = dict()
         
     def __get__(self, obj, objtype):
         """Support instance methods."""
         return partial(self.__call__, obj)
         
-    def __call__(self, service, handable):
-        handlers = self._handables.get(handable.__class__, [])
+    def __call__(self, service, message):
+        if(message.__class__ not in self._messages):
+            raise HandlerNotFoundError((message.__class__.__name__ + " in " + service.__class__.__name__))
         
+        handlers = self._messages.get(message.__class__, [])
         for h in handlers:
-            h(service, handable)
+            h(service, message)
         
     def command(self, command_type: type):
         def inner_function(func):
             
-            self._handables.setdefault(command_type, set()).add(func)
+            self._messages.setdefault(command_type, set()).add(func)
             
             def wrapper(*args, **kwargs):
                 return func(*args, **kwargs)
@@ -37,7 +40,7 @@ class handler:
     def event(self, event_type: type):
         def inner_function(func):
             
-            self._handables.setdefault(event_type, set()).add(func)
+            self._messages.setdefault(event_type, set()).add(func)
             
             def wrapper(*args, **kwargs):
                 return func(*args, **kwargs)

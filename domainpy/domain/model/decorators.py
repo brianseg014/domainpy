@@ -2,7 +2,7 @@
 from functools import update_wrapper, partial
 
 from domainpy.domain.model.event import DomainEvent
-from domainpy.domain.model.exceptions import MutatorHandlerNotFoundError
+from domainpy.domain.model.exceptions import MutatorNotFoundError
 
 class mutator:
     
@@ -19,7 +19,7 @@ class mutator:
         
     def __call__(self, aggregate, event: DomainEvent):
         if(event.__class__ not in self._events):
-            raise MutatorHandlerNotFoundError(event.__class__.__name__ + " in " + aggregate.__class__.__name__)
+            raise MutatorNotFoundError(event.__class__.__name__ + " in " + aggregate.__class__.__name__)
         
         mutators = self._events[event.__class__]
         for m in mutators:
