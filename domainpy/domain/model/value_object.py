@@ -5,9 +5,10 @@ from uuid import UUID, uuid4
 
 from domainpy.utils.constructable import Constructable
 from domainpy.utils.immutable import Immutable
+from domainpy.utils.dictable import Dictable
 from domainpy.domain.model.exceptions import ValueObjectIsNotSerializable
 
-class ValueObject(Constructable, Immutable):
+class ValueObject(Constructable, Immutable, Dictable):
     
     def __hash__(self):
         return hash(json.dumps(self.__to_dict__(), sort_keys=True))
@@ -21,6 +22,7 @@ class ValueObject(Constructable, Immutable):
     def __ne__(self, other):
         return not (self == other)
     
+    """
     def __to_dict__(self):
         d = dict()
         for k in self.__dict__:
@@ -32,6 +34,7 @@ class ValueObject(Constructable, Immutable):
             else:
                 raise ValueObjectIsNotSerializable(self.__class__.__name__ + " by attribute \"" + k + "\" of type " + v.__class__.__name__)
         return d
+    """
      
     def __repr__(self):
         return f'{self.__class__.__name__}({json.dumps(self.__to_dict__())})'
@@ -39,6 +42,11 @@ class ValueObject(Constructable, Immutable):
 class Identity(ValueObject):
     
     def __init__(self, id: str):
+        if hasattr(self.__class__, '__annotations__'):
+            attrs = self.__class__.__dict__['__annotations__']
+            
+            assert attrs == { "id": str }
+        
         if not isinstance(id, str):
             raise TypeError('id should be instance of str')
         

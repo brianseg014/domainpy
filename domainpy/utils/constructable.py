@@ -11,17 +11,21 @@ class Constructable:
             
             current_arg = 0
             for k in attrs:
+                expected_value_type = attrs[k]
+                
                 if current_arg <= args_count - 1:
-                    if isinstance(args[current_arg], attrs[k]):
-                        kwargs0[k] = args[current_arg]
+                    value = args[current_arg]
+                    if isinstance(value, expected_value_type):
+                        kwargs0[k] = value
                     else:
-                        raise TypeError(f'argument {k} should be instance of {attrs[k]}')
+                        raise TypeError(f'{k} should be instance of {expected_value_type}, found ' + value.__class__.__name__)
                 else:
                     try:
-                        if isinstance(kwargs[k], attrs[k]):
-                            kwargs0[k] = kwargs[k]
+                        value = kwargs[k]
+                        if isinstance(value, expected_value_type):
+                            kwargs0[k] = value
                         else:
-                            raise TypeError(f'argument {k} should be instance of {attrs[k]}')
+                            raise TypeError(f'{k} should be instance of {expected_value_type}, found ' + value.__class__.__name__)
                     except KeyError:
                         raise TypeError('Missing argument for ' + k)
                 current_arg = current_arg + 1

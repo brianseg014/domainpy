@@ -1,12 +1,15 @@
 
 from domainpy.domain.model.aggregate import AggregateRoot
 from domainpy.domain.model.event import DomainEvent
-from domainpy.domain.model.value_object import ValueObject
+from domainpy.domain.model.value_object import ValueObject, Identity
 
 
 class ExampleValueObject(ValueObject):
     something: str
-
+    
+    
+class ExampleIdentity(Identity):
+    pass
 
 class ExampleEvent(DomainEvent):
     something: ExampleValueObject

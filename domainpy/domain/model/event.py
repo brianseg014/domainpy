@@ -6,10 +6,11 @@ from domainpy.domain.model.value_object import ValueObject
 from domainpy.domain.model.exceptions import EventParameterIsNotValueObjectError
 from domainpy.utils.constructable import Constructable
 from domainpy.utils.immutable import Immutable
+from domainpy.utils.dictable import Dictable
 from domainpy.infrastructure.eventmapper import EventMapper, EventRecord
 
 
-class DomainEvent(Constructable, Immutable):
+class DomainEvent(Constructable, Immutable, Dictable):
     
     def __init__(self, *args, **kwargs):
         self.__dict__.update({
@@ -21,6 +22,7 @@ class DomainEvent(Constructable, Immutable):
         
         super(DomainEvent, self).__init__(*args, **kwargs)
     
+    """
     @classmethod
     def from_event_record(cls, event_record):
         if hasattr(cls, '__annotations__'):
@@ -38,7 +40,21 @@ class DomainEvent(Constructable, Immutable):
             raise NotImplementedError(
                 f'{cls.__class__.__name__} must override from_event_record method'
             )
+    """
+    
+    @classmethod
+    def from_event_record(cls, event_record):
+        event = cls.__from_dict__(event_record.payload)
         
+        event.__dict__.update({
+            '__aggregate_id__': event_record.aggregate_id,
+            '__number__': event_record.number,
+            '__version__': event_record.version,
+            '__timestamp__': event_record.timestamp
+        })
+        
+        return event
+    
     def __to_event_record__(self):
         if hasattr(self.__class__, '__annotations__'):
             attrs = self.__class__.__dict__['__annotations__']
@@ -53,5 +69,5 @@ class DomainEvent(Constructable, Immutable):
                 topic=self.__class__.__name__,
                 version=self.__version__, # pylint: disable=maybe-no-member
                 timestamp=self.__timestamp__, # pylint: disable=maybe-no-member
-                payload=payload
+                payload=self.__to_dict__()
             )

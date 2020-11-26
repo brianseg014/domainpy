@@ -4,7 +4,8 @@ import pytest
 from .example import (
     ExampleAggregate,
     ExampleEvent,
-    ExampleValueObject
+    ExampleValueObject,
+    ExampleIdentity
 )
 
 @pytest.fixture
@@ -17,6 +18,6 @@ def event(value_object):
 
 
 def test_aggregate_apply(event):
-    a = ExampleAggregate()
+    a = ExampleAggregate(ExampleIdentity(id="A"))
     a.__apply__(event)
     assert a.mutated
