@@ -10,13 +10,15 @@ from domainpy.application.decorators import (
     handler
 )
 
-from domainpy.domain.model import (
+from domainpy.domain import (
     AggregateRoot,
     DomainEntity,
     ValueObject,
     DomainEvent,
     Repository,
-    Identity
+    Identity,
+    DomainService,
+    DomainView
 )
 
 from domainpy.domain.model.decorators import (

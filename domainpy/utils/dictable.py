@@ -10,22 +10,28 @@ class Dictable:
             
             kwargs0 = {}
             for k in attrs:
-                expected_value_type = attrs[k]
+                expected_type = attrs[k]
                 
                 value = dictionary[k]
                 
-                if expected_value_type in (str, int, float, bool):
-                    if isinstance(value, expected_value_type):
-                        kwargs0[k] = expected_value_type(value)
+                if hasattr(expected_type, '__origin__') and expected_type.__origin__ in (tuple, list):
+                    (expected_type0,) = expected_type.__args__
+                    kwargs0[k] = expected_type.__origin__(
+                        expected_type0.__from_dict__(v) 
+                        for v in value
+                    )
+                elif expected_type in (str, int, float, bool):
+                    if isinstance(value, expected_type):
+                        kwargs0[k] = expected_type(value)
                     else:
-                        raise TypeError(f'{k} should be type of {expected_value_type}')
+                        raise TypeError(f'{k} should be type of {expected_type}')
                 elif isinstance(value, dict):
-                    if Dictable in expected_value_type.mro():
-                        kwargs0[k] = expected_value_type.__from_dict__(value)
+                    if Dictable in expected_type.mro():
+                        kwargs0[k] = expected_type.__from_dict__(value)
                     else:
-                        raise TypeError(f'{k} should be Dictable, found {expected_value_type}')
+                        raise TypeError(f'{k} should be Dictable, found {expected_type}')
                 else:
-                    raise TypeError(f'{k} should be type of dict, found {expected_value_type}')
+                    raise TypeError(f'{k} should be type of dict, found {expected_type}')
                 
             return cls(**kwargs0)
         else:
@@ -40,15 +46,26 @@ class Dictable:
             dictionary = {}
             for k in attrs:
                 
-                expected_value_type = attrs[k]
+                expected_type = attrs[k]
                 
                 value = self.__dict__[k]
                 
-                if not isinstance(value, expected_value_type):
-                    raise TypeError(f'{k} should be type {expected_value_type} by declaration, found {value.__class__.__name__}')
+                if hasattr(expected_type, '__origin__') and expected_type.__origin__ in (list, tuple):
+                    (expected_type0,) = expected_type.__args__
+                    if not all(isinstance(v, expected_type0) for v in value):
+                        raise TypeError(f'{k} should be type {expected_type.__origin__.__class__.__name__}[{expected_type0}]')
+                elif not isinstance(value, expected_type):
+                    raise TypeError(f'{k} should be type {expected_type} by declaration, found {value.__class__.__name__}')
                 
-                if isinstance(value, (str, int, float, bool)):
+                if hasattr(expected_type, '__origin__') and expected_type.__origin__ == (list, tuple):
+                    (expected_type0,) = expected_type.__args__
+                    dictionary[k] = expected_type.__origin__(v for v in value)
+                elif isinstance(value, (str, int, float, bool)):
                     dictionary[k] = value
+                elif isinstance(value, tuple):
+                    dictionary[k] = tuple(v.__to_dict__() for v in value)
+                elif isinstance(value, list):
+                    dictionary[k] = list(v.__to_dict__() for v in value)
                 elif isinstance(value, Dictable):
                     dictionary[k] = value.__to_dict__()
                 else:
