@@ -2,6 +2,7 @@
 from datetime import datetime
 
 from domainpy.domain.model.value_object import Identity
+from domainpy.domain.model.event import DomainEvent
 
 
 class AggregateRoot:
@@ -15,13 +16,13 @@ class AggregateRoot:
         self.__version__ = 0
         self.__changes__ = []
     
-    def __apply__(self, event):
+    def __apply__(self, event: DomainEvent):
         self.__stamp__(event)
         self.__route__(event)
         
         self.__changes__.append(event)
     
-    def __stamp__(self, event):
+    def __stamp__(self, event: DomainEvent):
         event.__dict__.update({
             '__aggregate_id__': self.__id__.id,
             '__number__': self.__version__,
@@ -29,11 +30,11 @@ class AggregateRoot:
             '__timestamp__': str(datetime.now())
         })
         
-    def __route__(self, event):
+    def __route__(self, event: DomainEvent):
         self.mutate(event)
         
         self.__version__ = self.__version__ + 1
     
-    def mutate(self, event):
+    def mutate(self, event: DomainEvent):
         pass
     

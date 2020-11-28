@@ -22,26 +22,6 @@ class DomainEvent(Constructable, Immutable, Dictable):
         
         super(DomainEvent, self).__init__(*args, **kwargs)
     
-    """
-    @classmethod
-    def from_event_record(cls, event_record):
-        if hasattr(cls, '__annotations__'):
-            attrs = cls.__dict__['__annotations__']
-            
-            kwargs = {}
-            for k in attrs:
-                value_object_class = attrs[k]
-                kwargs[k] = value_object_class(
-                    **event_record.payload[k]    
-                )
-                
-            return cls(**kwargs)
-        else:
-            raise NotImplementedError(
-                f'{cls.__class__.__name__} must override from_event_record method'
-            )
-    """
-    
     @classmethod
     def from_event_record(cls, event_record):
         event = cls.__from_dict__(event_record.payload)

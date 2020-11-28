@@ -37,6 +37,16 @@ class handler:
             return wrapper
         return inner_function
         
+    def query(self, query_type: type):
+        def inner_function(func):
+            
+            self._messages.setdefault(query_type, set()).add(func)
+            
+            def wrapper(*args, **kwargs):
+                return func(*args, **kwargs)
+            return wrapper
+        return inner_function
+        
     def event(self, event_type: type):
         def inner_function(func):
             

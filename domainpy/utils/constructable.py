@@ -27,7 +27,7 @@ class Constructable:
                         else:
                             raise TypeError(f'{k} should be instance of {expected_value_type}, found ' + value.__class__.__name__)
                     except KeyError:
-                        raise TypeError('Missing argument for ' + k)
+                        raise TypeError(f'Missing argument {k} for {self.__class__.__name__}')
                 current_arg = current_arg + 1
                 
             self.__dict__.update(**kwargs0)

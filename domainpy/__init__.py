@@ -2,6 +2,7 @@
 from domainpy.application import (
     ApplicationService,
     ApplicationCommand,
+    ApplicationQuery,
     Bus
 )
 
