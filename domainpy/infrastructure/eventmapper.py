@@ -38,7 +38,7 @@ class EventMapper:
                 f'{event.__class__.__name__} should have annotations'
             )
     
-    def deserialize(self, event_record):
+    def deserialize(self, event_record: EventRecord):
         event_class = self.map[event_record.topic]
         event = event_class.__from_dict__(event_record.payload)
         

@@ -26,9 +26,13 @@ class handler:
         if(message.__class__ not in self._messages):
             raise HandlerNotFoundError((message.__class__.__name__ + " in " + service.__class__.__name__))
         
+        results = []
+        
         handlers = self._messages.get(message.__class__, [])
         for h in handlers:
-            h(service, message)
+            results.append(h(service, message))
+            
+        return results
             
     def command(self, command_type: type):
         def inner_function(func):
