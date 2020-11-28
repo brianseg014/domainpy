@@ -18,9 +18,36 @@ class EventMapper:
         return cls
     
     def serialize(self, event):
-        return event.__to_event_record__()
+        if hasattr(event.__class__, '__annotations__'):
+            attrs = event.__class__.__dict__['__annotations__']
+            
+            payload = {}
+            for k in attrs:
+                payload[k] = event.__dict__[k].__to_dict__()
+            
+            return EventRecord(
+                aggregate_id=event.__aggregate_id__, # pylint: disable=maybe-no-member
+                number=event.__number__, # pylint: disable=maybe-no-member
+                topic=event.__class__.__name__,
+                version=event.__version__, # pylint: disable=maybe-no-member
+                timestamp=event.__timestamp__, # pylint: disable=maybe-no-member
+                payload=event.__to_dict__()
+            )
+        else:
+            raise NotImplementedError(
+                f'{event.__class__.__name__} should have annotations'
+            )
     
     def deserialize(self, event_record):
         event_class = self.map[event_record.topic]
+        event = event_class.__from_dict__(event_record.payload)
         
-        return event_class.from_event_record(event_record)
+        event.__dict__.update({
+            '__aggregate_id__': event_record.aggregate_id,
+            '__number__': event_record.number,
+            '__version__': event_record.version,
+            '__timestamp__': event_record.timestamp
+        })
+        
+        return event
+    
