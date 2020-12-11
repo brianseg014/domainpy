@@ -16,9 +16,7 @@ from domainpy.domain import (
     ValueObject,
     DomainEvent,
     Repository,
-    Identity,
-    DomainService,
-    DomainView
+    Identity
 )
 
 from domainpy.domain.model.decorators import (

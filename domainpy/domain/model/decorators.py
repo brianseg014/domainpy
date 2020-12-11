@@ -2,7 +2,10 @@
 from functools import update_wrapper, partial
 
 from domainpy.domain.model.event import DomainEvent
-from domainpy.domain.model.exceptions import MutatorNotFoundError
+from domainpy.domain.exceptions import (
+    MutatorNotFoundError,
+    SingleMutatorBrokenError
+)
 
 class mutator:
     
@@ -21,14 +24,16 @@ class mutator:
         if(event.__class__ not in self._events):
             raise MutatorNotFoundError(event.__class__.__name__ + " in " + aggregate.__class__.__name__)
         
-        mutators = self._events[event.__class__]
-        for m in mutators:
-            m(aggregate, event)
+        m = self._events[event.__class__]
+        m(aggregate, event)
         
     def event(self, event_type: type):
         def inner_function(func):
             
-            self._events.setdefault(event_type, set()).add(func)
+            if event_type in self._events:
+                raise SingleMutatorBrokenError(f'{event_type} mutator already registerd')
+            
+            self._events[event_type] = func
             
             def wrapper(*args, **kwargs):
                 return func(*args, **kwargs)

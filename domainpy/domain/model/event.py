@@ -3,11 +3,11 @@ import time
 from datetime import datetime, date
 
 from domainpy.domain.model.value_object import ValueObject
-from domainpy.domain.model.exceptions import EventParameterIsNotValueObjectError
 from domainpy.utils.constructable import Constructable
 from domainpy.utils.immutable import Immutable
 from domainpy.utils.dictable import Dictable
 from domainpy.infrastructure.eventmapper import EventMapper, EventRecord
+from domainpy.domain.exceptions import EventParameterIsNotValueObjectError
 
 
 class DomainEvent(Constructable, Immutable, Dictable):

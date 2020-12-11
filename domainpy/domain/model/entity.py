@@ -3,10 +3,7 @@ from domainpy.domain.model.value_object import Identity
 
 class DomainEntity:
     
-    def __init__(self, id: Identity, aggregate):
-        if not isinstance(id, Identity):
-            raise TypeError('id should be type of Identity')
-        
+    def __init__(self, id, aggregate):
         self.__id__ = id
         self.__aggregate__ = aggregate
         

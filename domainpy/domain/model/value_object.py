@@ -7,7 +7,7 @@ from uuid import UUID, uuid4
 from domainpy.utils.constructable import Constructable
 from domainpy.utils.immutable import Immutable
 from domainpy.utils.dictable import Dictable
-from domainpy.domain.model.exceptions import ValueObjectIsNotSerializable
+from domainpy.domain.exceptions import ValueObjectIsNotSerializable
 
 
 class ValueObject(Constructable, Immutable, Dictable):
@@ -41,9 +41,12 @@ class Identity(ValueObject):
         self.__dict__.update(id=id)
         
     @classmethod
-    def from_text(cls, id: str):
+    def of(cls, id: str):
         return cls(id=id)
-        
+    
     @classmethod
     def create(cls):
-        return cls(id=uuid4())
+        return Identity.of(
+            uuid4()    
+        )
+    

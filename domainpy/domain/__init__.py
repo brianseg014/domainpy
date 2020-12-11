@@ -15,9 +15,3 @@ from domainpy.domain.model.value_object import (
     ValueObject,
     Identity
 )
-from domainpy.domain.service import (
-    DomainService    
-)
-from domainpy.domain.view import (
-    DomainView    
-)
