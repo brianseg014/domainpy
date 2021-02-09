@@ -1,6 +1,6 @@
 
 
-class RecordManager:
+class EventRecordManager:
     
     def session(self):
         raise NotImplementedError(f'{self.__class__.__name__} must override session method')

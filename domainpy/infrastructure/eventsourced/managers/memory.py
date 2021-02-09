@@ -1,11 +1,11 @@
 
 from domainpy.infrastructure.eventmapper import EventRecord
 from domainpy.infrastructure.eventsourced.recordmanager import (
-    RecordManager,
+    EventRecordManager,
     Session
 )
 
-class MemoryRecordManager(RecordManager):
+class MemoryEventRecordManager(EventRecordManager):
     
     def __init__(self):
         self._heap = []

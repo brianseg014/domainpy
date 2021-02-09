@@ -41,7 +41,7 @@ class Identity(ValueObject):
         self.__dict__.update(id=id)
         
     @classmethod
-    def of(cls, id: str):
+    def from_text(cls, id: str):
         return cls(id=id)
     
     @classmethod

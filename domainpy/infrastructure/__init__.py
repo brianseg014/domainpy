@@ -7,5 +7,8 @@ from domainpy.infrastructure.eventsourced.eventstore import (
     EventStream
 )
 from domainpy.infrastructure.eventsourced.managers.memory import (
-    MemoryRecordManager    
+    MemoryEventRecordManager    
+)
+from domainpy.infrastructure.projectionsourced.managers.memory import (
+    MemoryProjectionRecordManager
 )
