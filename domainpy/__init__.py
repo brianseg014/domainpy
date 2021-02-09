@@ -18,9 +18,10 @@ from domainpy.domain import (
     AggregateRoot,
     DomainEntity,
     ValueObject,
+    Identity,
     DomainEvent,
     Repository,
-    Identity
+    DomainService
 )
 
 from domainpy.domain.model.decorators import (
@@ -32,5 +33,6 @@ from domainpy.infrastructure import (
     EventStore,
     EventStream,
     MemoryEventRecordManager,
-    MemoryProjectionRecordManager
+    MemoryProjectionRecordManager,
+    MemoryBus
 )

@@ -12,3 +12,6 @@ from domainpy.infrastructure.eventsourced.managers.memory import (
 from domainpy.infrastructure.projectionsourced.managers.memory import (
     MemoryProjectionRecordManager
 )
+from domainpy.infrastructure.buses.memory import (
+    MemoryBus
+)

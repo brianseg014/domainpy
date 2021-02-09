@@ -14,8 +14,14 @@ class MemoryProjectionRecordManager(ProjectionRecordManager):
     def session(self):
          return MemorySession(self)
      
-    def get_item(self, key):
-        pass
+    def get_item(self, key, attributes):
+        items = []
+
+        for item in self._heap:
+            if key.items() <= item.items():
+                items.append({ key: item[key] for key in attributes })
+
+        return tuple(items)
         
 
 class MemorySession(Session):
@@ -89,5 +95,5 @@ class MemorySession(Session):
         for i in items:
             self.record_manager._heap.remove(i)
 
-    def _match(key, item):
+    def _match(self, key, item):
         return key.items() <= item.items()

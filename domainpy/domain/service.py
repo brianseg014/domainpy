@@ -1,0 +1,3 @@
+
+class DomainService:
+    pass

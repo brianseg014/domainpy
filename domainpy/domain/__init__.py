@@ -1,7 +1,4 @@
 
-from domainpy.domain.model.repository import (
-    Repository
-)
 from domainpy.domain.model.aggregate import (
     AggregateRoot
 )
@@ -14,4 +11,10 @@ from domainpy.domain.model.event import (
 from domainpy.domain.model.value_object import (
     ValueObject,
     Identity
+)
+from domainpy.domain.repository import (
+    Repository
+)
+from domainpy.domain.service import (
+    DomainService
 )

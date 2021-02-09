@@ -2,7 +2,6 @@ from functools import update_wrapper, partial
 
 from domainpy.domain.model.event import DomainEvent
 from domainpy.domain.exceptions import (
-    MutatorNotFoundError,
     SingleMutatorBrokenError
 )
 
@@ -21,16 +20,16 @@ class projector:
         
     def __call__(self, projection, event: DomainEvent):
         if(event.__class__ not in self._events):
-            raise MutatorNotFoundError(event.__class__.__name__ + " in " + projection.__class__.__name__)
+            return
         
-        m = self._events[event.__class__]
-        m(projection, event)
+        p = self._events[event.__class__]
+        p(projection, event)
         
     def event(self, event_type: type):
         def inner_function(func):
             
             if event_type in self._events:
-                raise SingleMutatorBrokenError(f'{event_type} mutator already registerd')
+                raise SingleMutatorBrokenError(f'{event_type} projector already registered')
             
             self._events[event_type] = func
             
