@@ -21,10 +21,6 @@ class EventMapper:
         if hasattr(event.__class__, '__annotations__'):
             attrs = event.__class__.__dict__['__annotations__']
             
-            payload = {}
-            for k in attrs:
-                payload[k] = event.__dict__[k].__to_dict__()
-            
             return EventRecord(
                 aggregate_id=event.__aggregate_id__, # pylint: disable=maybe-no-member
                 number=event.__number__, # pylint: disable=maybe-no-member

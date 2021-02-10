@@ -57,9 +57,12 @@ class Dictable:
                 elif not isinstance(value, expected_type):
                     raise TypeError(f'{k} should be type {expected_type} by declaration, found {value.__class__.__name__}')
                 
-                if hasattr(expected_type, '__origin__') and expected_type.__origin__ == (list, tuple):
+                if hasattr(expected_type, '__origin__') and expected_type.__origin__ in (list, tuple):
                     (expected_type0,) = expected_type.__args__
-                    dictionary[k] = expected_type.__origin__(v for v in value)
+
+                    if issubclass(expected_type0, Dictable):
+                        dictionary[k] = expected_type.__origin__(v.__to_dict__() for v in value)
+                        
                 elif isinstance(value, (str, int, float, bool)):
                     dictionary[k] = value
                 elif isinstance(value, tuple):
@@ -69,8 +72,8 @@ class Dictable:
                 elif isinstance(value, Dictable):
                     dictionary[k] = value.__to_dict__()
                 else:
-                    raise TypeError(f'{k} in {self.__class__.__name__} should be dictable')
-                    
+                    raise TypeError(f'{k} in {self.__class__.__name__} should be dictable or list/tuple (is {expected_type})')
+
             return dictionary
         else:
             raise KeyError(

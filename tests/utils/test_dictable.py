@@ -1,5 +1,6 @@
 
 import pytest
+from typing import Tuple
 
 from domainpy.utils.dictable import Dictable
 
@@ -11,19 +12,22 @@ class InnerDictableExample(Dictable):
 
 
 class DictableExample(Dictable):
-    inner_example: InnerDictableExample
+    inner_examples: Tuple[InnerDictableExample]
     
-    def __init__(self, inner_example):
-        self.inner_example = inner_example
-    
+    def __init__(self, inner_examples):
+        self.inner_examples = inner_examples
+
     
 @pytest.fixture
 def dictionay():
-    return { "inner_example": { "inner_id": "A" } }
+    return {'inner_examples': ({'inner_id': 'A'}, {'inner_id': 'B'})}
     
 def test_to_dict(dictionay):
     example = DictableExample(
-        inner_example=InnerDictableExample(inner_id="A")     
+        inner_examples=tuple([
+            InnerDictableExample(inner_id="A"),
+            InnerDictableExample(inner_id="B")
+        ])
     )
     d = example.__to_dict__()
     assert d == dictionay
