@@ -1,17 +1,6 @@
 
-from domainpy.infrastructure.eventmapper import (
-    EventMapper
-)
-from domainpy.infrastructure.eventsourced.eventstore import (
-    EventStore,
-    EventStream
-)
-from domainpy.infrastructure.eventsourced.managers.memory import (
-    MemoryEventRecordManager    
-)
-from domainpy.infrastructure.projectionsourced.managers.memory import (
-    MemoryProjectionRecordManager
-)
-from domainpy.infrastructure.buses.memory import (
-    MemoryBus
-)
+from domainpy.infrastructure.eventsourced.eventstore import EventStore, EventStream
+from domainpy.infrastructure.eventsourced.managers.memory import MemoryEventRecordManager
+from domainpy.infrastructure.eventsourced.managers.dynamodb import DynamoEventRecordManager
+from domainpy.infrastructure.projectionsourced.managers.memory import MemoryProjectionRecordManager
+from domainpy.infrastructure.buses.memory import MemoryBus

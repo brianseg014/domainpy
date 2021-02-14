@@ -24,7 +24,8 @@ class handler:
         
     def __call__(self, service, message):
         if(message.__class__ not in self._messages):
-            raise HandlerNotFoundError((message.__class__.__name__ + " in " + service.__class__.__name__))
+            #raise HandlerNotFoundError((message.__class__.__name__ + " in " + service.__class__.__name__))
+            return
         
         results = []
         
