@@ -24,7 +24,9 @@ class Constructable:
                 
                 if hasattr(expected_type, '__origin__') and expected_type.__origin__ in (list, tuple):
                     (expected_type0,) = expected_type.__args__
-                    assert all(isinstance(v, expected_type0) for v in value)
+                    for v in value:
+                        if not isinstance(v, expected_type0):
+                            raise TypeError(f'Bad type in {k}: Value {v} expected to be {expected_type0}')
                     
                     kwargs0[k] = value
                 elif isinstance(value, expected_type):
