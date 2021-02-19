@@ -32,7 +32,7 @@ class Constructable:
                 elif isinstance(value, expected_type):
                     kwargs0[k] = value
                 else:
-                    raise TypeError(f'{k} should be instance of {expected_type},'
+                    raise TypeError(f'Class {self.__class__.__name__}: {k} should be instance of {expected_type},'
                                     f' found {value.__class__.__name__}')
                 
                 current_arg = current_arg + 1
