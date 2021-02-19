@@ -1,6 +1,7 @@
 
 from domainpy.application import (
     Bus,
+    Commutator,
     ApplicationService,
     ApplicationCommand,
     ApplicationQuery,
