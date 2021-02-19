@@ -17,3 +17,14 @@ class DomainEvent(Constructable, Immutable, Dictable):
         
         super(DomainEvent, self).__init__(*args, **kwargs)
     
+    def __eq__(self, other):
+        if other is None:
+            return False
+
+        if self.__class__ != other.__class__:
+            return False
+
+        return (
+            self.__aggregate_id__ == other.__aggregate_id__
+            and self.__number__ == other.__number__
+        )

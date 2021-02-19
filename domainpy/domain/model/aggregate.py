@@ -14,7 +14,8 @@ class AggregateRoot:
         self.__id__ = id
         
         self.__version__ = 0
-        self.__changes__ = []
+        self.__changes__ = [] # New events
+        self.__seen__ = [] # Idempotent
     
     def __apply__(self, event: DomainEvent):
         self.__stamp__(event)
@@ -31,10 +32,11 @@ class AggregateRoot:
         })
         
     def __route__(self, event: DomainEvent):
-        self.mutate(event)
-        
-        self.__version__ = self.__version__ + 1
+        if event not in self.__seen__:
+            self.mutate(event)
+
+            self.__version__ = self.__version__ + 1
+            self.__seen__.append(event)
     
     def mutate(self, event: DomainEvent):
         pass
-    

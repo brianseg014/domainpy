@@ -21,3 +21,10 @@ def test_aggregate_apply(event):
     a = ExampleAggregate(ExampleIdentity(id="A"))
     a.__apply__(event)
     assert a.mutated
+
+def test_aggregate_idempotent(event):
+    a = ExampleAggregate(ExampleIdentity(id="A"))
+    a.__route__(event)
+    a.__route__(event)
+
+    assert a.counter == 1

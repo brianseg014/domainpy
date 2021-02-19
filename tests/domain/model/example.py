@@ -19,9 +19,11 @@ class ExampleAggregate(AggregateRoot):
     
     def __init__(self, *args, **kwargs):
         super(ExampleAggregate, self).__init__(*args, **kwargs)
+
+        self.counter = 0
     
     def mutate(self, event):
         if(event.__class__ is ExampleEvent):
             self.mutated = True
-    
+            self.counter = self.counter + 1
     
