@@ -20,9 +20,9 @@ class EventStore:
             
             session.commit()
         
-    def get_events(self, aggregate_id: str):
+    def get_events(self, stream_id: str):
         events = self.record_manager.find(
-            aggregate_id=aggregate_id
+            stream_id=stream_id
         )
         
         stream = EventStream()

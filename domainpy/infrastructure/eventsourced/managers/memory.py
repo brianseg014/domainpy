@@ -13,11 +13,11 @@ class MemoryEventRecordManager(EventRecordManager):
     def session(self):
          return MemorySession(self)
      
-    def find(self, aggregate_id: str):
+    def find(self, stream_id: str):
         return (
             er
             for er in self._heap
-            if er.aggregate_id == aggregate_id
+            if er.aggregate_id == stream_id
         )
         
 
