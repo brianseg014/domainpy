@@ -1,4 +1,6 @@
+
 from setuptools import setup, find_packages
+
 
 setup(
     name='domainpy',
@@ -10,5 +12,6 @@ setup(
     license='MIT',
     url='https://github.com/brianseg014/domainpy',
     download_url='https://github.com/brianseg014/domainpy/archive/v0.0.1.tar.gz',
-    keywords=['ddd', 'event sourcing', 'CQRS']
+    keywords=['ddd', 'event sourcing', 'CQRS'],
+    install_requires=['boto3']
 )
