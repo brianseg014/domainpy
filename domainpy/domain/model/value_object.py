@@ -36,7 +36,7 @@ class Identity(ValueObject):
             assert attrs == { "id": str }
         
         if not isinstance(id, str):
-            raise TypeError(f'{self.__class__.__name__}: id should be instance of str')
+            raise TypeError(f'id should be instance of str, found {id.__class__.__name__}')
         
         self.__dict__.update(id=id)
         
@@ -46,7 +46,7 @@ class Identity(ValueObject):
     
     @classmethod
     def create(cls):
-        return Identity.of(
-            uuid4()    
+        return cls.from_text(
+            str(uuid4())
         )
     

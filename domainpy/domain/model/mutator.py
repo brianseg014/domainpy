@@ -22,7 +22,8 @@ class mutator:
         
     def __call__(self, aggregate, event: DomainEvent):
         if(event.__class__ not in self._events):
-            raise MutatorNotFoundError(event.__class__.__name__ + " in " + aggregate.__class__.__name__)
+            # raise MutatorNotFoundError(event.__class__.__name__ + " in " + aggregate.__class__.__name__)
+            return
         
         m = self._events[event.__class__]
         m(aggregate, event)
@@ -31,7 +32,7 @@ class mutator:
         def inner_function(func):
             
             if event_type in self._events:
-                raise SingleMutatorBrokenError(f'{event_type} mutator already registerd')
+                raise SingleMutatorBrokenError(f'{event_type.__name__} mutator already registerd')
             
             self._events[event_type] = func
             

@@ -5,13 +5,13 @@ class Specification:
     def is_satisfied_by(self, candidate):
         pass
 
-    def and_(self, other: specification):
+    def and_(self, other):
         return ConjunctionSpecification(
             self,
             other
         )
 
-    def or_(self, other: Specification):
+    def or_(self, other):
         return DisjunctionSpecification(
             self,
             other

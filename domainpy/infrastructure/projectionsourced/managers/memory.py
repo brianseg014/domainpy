@@ -23,6 +23,13 @@ class MemoryProjectionRecordManager(ProjectionRecordManager):
 
         return tuple(items)
         
+    def get_all_items(self, attributes):
+        items = []
+
+        for item in self._heap:
+            items.append({ key: item[key] for key in attributes })
+
+        return tuple(items)
 
 class MemorySession(Session):
     
