@@ -17,7 +17,7 @@ class MemoryEventRecordManager(EventRecordManager):
         return (
             er
             for er in self._heap
-            if er.aggregate_id == stream_id
+            if er.stream_id == stream_id
         )
         
 
