@@ -1,6 +1,6 @@
 
-from .mappers.commandmapper import CommandMapper
-from .mappers.eventmapper import EventMapper
+from .mappers.commandmapper import CommandMapper, CommandRecord
+from .mappers.eventmapper import EventMapper, EventRecord
 
 from .bus import Bus, Commutator
 from .command import ApplicationCommand

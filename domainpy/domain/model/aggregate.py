@@ -25,18 +25,18 @@ class AggregateRoot:
     
     def __stamp__(self, event: DomainEvent):
         event.__dict__.update({
-            '__aggregate_id__': self.__id__.id,
-            '__number__': self.__version__,
+            '__aggregate_id__': f'{self.__id__.id}:{self.__class__.__name__}',
+            '__number__': self.__version__ + 1,
             '__version__': 1,
             '__timestamp__': str(datetime.now())
         })
         
     def __route__(self, event: DomainEvent):
         if event not in self.__seen__:
-            self.mutate(event)
-
-            self.__version__ = self.__version__ + 1
+            self.__version__ = event.__number__
             self.__seen__.append(event)
+
+            self.mutate(event)
     
     def mutate(self, event: DomainEvent):
         pass

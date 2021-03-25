@@ -24,7 +24,7 @@ class Dictable:
                     if isinstance(value, expected_type):
                         kwargs0[k] = expected_type(value)
                     else:
-                        raise TypeError(f'{k} should be type of {expected_type}')
+                        raise TypeError(f'{k} should be type of {expected_type}, found {value.__class__.__name__}')
                 elif isinstance(value, dict):
                     if Dictable in expected_type.mro():
                         kwargs0[k] = expected_type.__from_dict__(value)

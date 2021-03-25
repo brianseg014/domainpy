@@ -1,4 +1,6 @@
+import decimal
 import boto3
+from boto3.dynamodb.conditions import Key, Attr
 
 from domainpy.application.mappers.eventmapper import EventRecord
 from domainpy.infrastructure.eventsourced.recordmanager import (
@@ -16,25 +18,57 @@ class DynamoEventRecordManager(EventRecordManager):
     def session(self):
         return DynamoSession(self)
 
+    def find(self, stream_id: str):
+        query = self.table.query(
+            KeyConditionExpression=Key('stream_id').eq(stream_id)
+        )
+        return tuple([
+            EventRecord(
+                stream_id=deserialize(i['stream_id']),
+                number=deserialize(i['number']),
+                topic=deserialize(i['topic']),
+                version=deserialize(i['version']),
+                timestamp=deserialize(i['timestamp']),
+                message=deserialize(i['message']),
+                payload=deserialize(i['payload'])
+            )
+            for i in query['Items']
+        ])
+
 
 class DynamoSession(Session):
 
     def __init__(self, record_manager):
-        self.writer = record_manager.table.batch_writer()
+        self.writer = record_manager.table
 
     def __enter__(self):
-        self.writer.__enter__()
+        return self
 
     def __exit__(self, *args, **kwargs):
-        self.writer.__exit__(*args, **kwargs)
+        #self.writer.__exit__(*args, **kwargs)
+        pass
 
     def append(self, event_record: EventRecord):
         if event_record is None:
             raise TypeError('event_record cannot be None')
-
+        
+        print('WRITING', event_record)
         self.writer.put_item(
-            Item=event_record
+            Item={
+                'stream_id': event_record.stream_id,
+                'number': event_record.number,
+                'topic': event_record.topic,
+                'version': event_record.version,
+                'timestamp': event_record.timestamp,
+                'message': event_record.message,
+                'payload': event_record.payload
+            },
+            ConditionExpression=(
+                Attr('stream_id').not_exists()
+                & Attr('number').not_exists()
+            )
         )
+        print('WRITTEN')
 
     def commit(self):
         pass
@@ -42,3 +76,20 @@ class DynamoSession(Session):
     def rollback(self):
         pass
     
+
+def deserialize(obj):
+    if isinstance(obj, list):
+        for i in xrange(len(obj)):
+            obj[i] = deserialize(obj[i])
+        return obj
+    elif isinstance(obj, dict):
+        for k in obj.keys():
+            obj[k] = deserialize(obj[k])
+        return obj
+    elif isinstance(obj, decimal.Decimal):
+        if obj % 1 == 0:
+            return int(obj)
+        else:
+            return float(obj)
+    else:
+        return obj

@@ -20,5 +20,5 @@ class Commutator:
         self.buses.append(bus)
 
     def publish(self, publishable):
-        for bus in buses:
+        for bus in self.buses:
             bus.publish(publishable)
