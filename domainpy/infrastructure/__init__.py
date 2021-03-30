@@ -4,3 +4,4 @@ from domainpy.infrastructure.eventsourced.managers.memory import MemoryEventReco
 from domainpy.infrastructure.eventsourced.managers.dynamodb import DynamoEventRecordManager
 from domainpy.infrastructure.projectionsourced.managers.memory import MemoryProjectionRecordManager
 from domainpy.infrastructure.buses.memory import MemoryBus
+from domainpy.infrastructure.buses.eventbridge import EventBridgeBus

@@ -29,5 +29,6 @@ from domainpy.infrastructure import (
     MemoryEventRecordManager,
     DynamoEventRecordManager,
     MemoryProjectionRecordManager,
-    MemoryBus
+    MemoryBus,
+    EventBridgeBus
 )
