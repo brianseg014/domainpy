@@ -53,15 +53,16 @@ class DynamoSession(Session):
             raise TypeError('event_record cannot be None')
         
         print('WRITING', event_record)
+        
         self.writer.put_item(
             Item={
-                'stream_id': event_record.stream_id,
-                'number': event_record.number,
-                'topic': event_record.topic,
-                'version': event_record.version,
-                'timestamp': event_record.timestamp,
-                'message': event_record.message,
-                'payload': event_record.payload
+                'stream_id': serialize(event_record.stream_id),
+                'number': serialize(event_record.number),
+                'topic': serialize(event_record.topic),
+                'version': serialize(event_record.version),
+                'timestamp': serialize(event_record.timestamp),
+                'message': serialize(event_record.message),
+                'payload': serialize(event_record.payload)
             },
             ConditionExpression=(
                 Attr('stream_id').not_exists()
@@ -76,6 +77,21 @@ class DynamoSession(Session):
     def rollback(self):
         pass
     
+
+def serialize(obj):
+    if isinstance(obj, list):
+        for i in xrange(len(obj)):
+            obj[i] = serialize(obj[i])
+        return obj
+    elif isinstance(obj, dict):
+        for k in obj.keys():
+            obj[k] = serialize(obj[k])
+        return obj
+    elif isinstance(obj, float):
+        return decimal.Decimal(str(obj))
+    else:
+        return obj
+
 
 def deserialize(obj):
     if isinstance(obj, list):
