@@ -21,7 +21,11 @@ class Dictable:
                         for v in value
                     )
                 elif expected_type in (str, int, float, bool):
-                    if isinstance(value, expected_type):
+                    if expected_type == int and isinstance(value, str):
+                        kwargs0[k] = int(value)
+                    elif expected_type == float and isinstance(value, (str, int)):
+                        kwargs0[k] = float(value)
+                    elif isinstance(value, expected_type):
                         kwargs0[k] = expected_type(value)
                     else:
                         raise TypeError(f'{k} should be type of {expected_type}, found {value.__class__.__name__}')
