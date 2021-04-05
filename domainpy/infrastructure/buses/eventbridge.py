@@ -1,7 +1,7 @@
 import boto3
 import json
 
-from domainpy.application.bus import Bus
+from domainpy.utils.bus import Bus
 
 
 class EventBridgeBus(Bus):

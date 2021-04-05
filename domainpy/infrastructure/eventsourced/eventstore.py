@@ -16,9 +16,10 @@ class EventStore:
                     self.event_mapper.serialize(e)
                 )
             
-                self.bus.publish(e)
-            
             session.commit()
+
+            for e in stream:
+                self.bus.publish(e)
         
     def get_events(self, stream_id: str):
         events = self.record_manager.find(

@@ -1,9 +1,9 @@
 
-from domainpy.application.mappers.eventmapper import EventRecord
 from domainpy.infrastructure.eventsourced.recordmanager import (
     EventRecordManager,
     Session
 )
+from domainpy.utils.mappers.eventmapper import EventRecord
 
 class MemoryEventRecordManager(EventRecordManager):
     

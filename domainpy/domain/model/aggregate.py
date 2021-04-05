@@ -9,7 +9,7 @@ class AggregateRoot:
     
     def __init__(self, id: Identity):
         if not isinstance(id, Identity):
-            raise TypeError('id should be type of Identity')
+            raise TypeError(f'id should be type of Identity, found {id.__class__.__name__}')
         
         self.__id__ = id
         

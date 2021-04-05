@@ -2,11 +2,11 @@ import decimal
 import boto3
 from boto3.dynamodb.conditions import Key, Attr
 
-from domainpy.application.mappers.eventmapper import EventRecord
 from domainpy.infrastructure.eventsourced.recordmanager import (
     EventRecordManager,
     Session
 )
+from domainpy.utils.mappers.eventmapper import EventRecord
 
 class DynamoEventRecordManager(EventRecordManager):
 

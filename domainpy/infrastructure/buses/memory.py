@@ -1,5 +1,5 @@
 
-from domainpy.application.bus import Bus
+from domainpy.utils.bus import Bus
 
 
 class MemoryBus(Bus):
