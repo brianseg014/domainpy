@@ -4,7 +4,7 @@ from collections import namedtuple
 
 EventRecord = namedtuple(
     'EventRecord', 
-    ('stream_id', 'number', 'topic', 'version', 'timestamp', 'message', 'payload')
+    ('stream_id', 'number', 'topic', 'version', 'timestamp', 'trace_id', 'message', 'payload')
 )
 
 
@@ -16,6 +16,9 @@ class EventMapper:
     def register(self, cls):
         self.map[cls.__name__] = cls
         return cls
+
+    def is_event(self, topic):
+        return topic in self.map
     
     def serialize(self, event):
         if hasattr(event.__class__, '__annotations__'):
@@ -27,6 +30,7 @@ class EventMapper:
                 topic=event.__class__.__name__,
                 version=event.__version__, # pylint: disable=maybe-no-member
                 timestamp=event.__timestamp__, # pylint: disable=maybe-no-member
+                trace_id=event.__trace_id__,
                 message=event.__message__,
                 payload=event.__to_dict__()
             )
@@ -44,6 +48,7 @@ class EventMapper:
             '__number__': event_record.number,
             '__version__': event_record.version,
             '__timestamp__': event_record.timestamp,
+            '__trace_id__':  event_record.trace_id,
             '__message__': event_record.message
         })
         

@@ -6,8 +6,9 @@ from domainpy.utils.bus import Bus
 
 class EventBridgeBus(Bus):
 
-    def __init__(self, source):
+    def __init__(self, source, mapper):
         self.source = source
+        self.mapper = mapper
 
         self.cloudwatch_events = boto3.client('events')
         self.names = []
@@ -24,7 +25,7 @@ class EventBridgeBus(Bus):
                 Entries=[
                     {
                         'Source': self.source,
-                        'Detail': json.dumps(publishable.__to_dict__()),
+                        'Detail': json.dumps(self.mapper.serialize(publishable)._asdict()),
                         'DetailType': publishable.__class__.__name__,
                         'EventBusName': name
                     }

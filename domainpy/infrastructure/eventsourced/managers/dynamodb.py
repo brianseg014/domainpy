@@ -1,4 +1,3 @@
-import decimal
 import boto3
 from boto3.dynamodb.conditions import Key, Attr
 
@@ -7,6 +6,7 @@ from domainpy.infrastructure.eventsourced.recordmanager import (
     Session
 )
 from domainpy.utils.mappers.eventmapper import EventRecord
+from domainpy.utils.dynamodb import serialize, deserialize
 
 class DynamoEventRecordManager(EventRecordManager):
 
@@ -29,6 +29,7 @@ class DynamoEventRecordManager(EventRecordManager):
                 topic=deserialize(i['topic']),
                 version=deserialize(i['version']),
                 timestamp=deserialize(i['timestamp']),
+                trace_id=deserialize(i['trace_id']),
                 message=deserialize(i['message']),
                 payload=deserialize(i['payload'])
             )
@@ -61,6 +62,7 @@ class DynamoSession(Session):
                 'topic': serialize(event_record.topic),
                 'version': serialize(event_record.version),
                 'timestamp': serialize(event_record.timestamp),
+                'trace_id': serialize(event_record.trace_id),
                 'message': serialize(event_record.message),
                 'payload': serialize(event_record.payload)
             },
@@ -77,35 +79,3 @@ class DynamoSession(Session):
     def rollback(self):
         pass
     
-
-def serialize(obj):
-    if isinstance(obj, list):
-        for i in xrange(len(obj)):
-            obj[i] = serialize(obj[i])
-        return obj
-    elif isinstance(obj, dict):
-        for k in obj.keys():
-            obj[k] = serialize(obj[k])
-        return obj
-    elif isinstance(obj, float):
-        return decimal.Decimal(str(obj))
-    else:
-        return obj
-
-
-def deserialize(obj):
-    if isinstance(obj, list):
-        for i in xrange(len(obj)):
-            obj[i] = deserialize(obj[i])
-        return obj
-    elif isinstance(obj, dict):
-        for k in obj.keys():
-            obj[k] = deserialize(obj[k])
-        return obj
-    elif isinstance(obj, decimal.Decimal):
-        if obj % 1 == 0:
-            return int(obj)
-        else:
-            return float(obj)
-    else:
-        return obj
