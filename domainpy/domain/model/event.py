@@ -2,9 +2,10 @@
 from domainpy.utils.constructable import Constructable
 from domainpy.utils.immutable import Immutable
 from domainpy.utils.dictable import Dictable
+from domainpy.utils.traceable import Traceable
 
 
-class DomainEvent(Constructable, Immutable, Dictable):
+class DomainEvent(Constructable, Immutable, Dictable, Traceable):
     
     def __init__(self, *args, **kwargs):
         self.__dict__.update({
@@ -12,7 +13,6 @@ class DomainEvent(Constructable, Immutable, Dictable):
             '__number__': kwargs.pop('__number__', None),
             '__version__': kwargs.pop('__version__', None),
             '__timestamp__': kwargs.pop('__timestamp__', None),
-            '__trace_id__': kwargs.pop('__trace_id__', None),
             '__message__': 'event'
         })
         

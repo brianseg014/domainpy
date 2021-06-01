@@ -1,13 +1,12 @@
 
-from datetime import datetime
+import time
 
 from domainpy.domain.model.value_object import Identity
 from domainpy.domain.model.event import DomainEvent
+from domainpy.utils.traceable import Traceable
 
 
-class AggregateRoot:
-
-    __trace_id__ = None
+class AggregateRoot(Traceable):
     
     def __init__(self, id: Identity):
         if not isinstance(id, Identity):
@@ -30,8 +29,7 @@ class AggregateRoot:
             '__aggregate_id__': f'{self.__id__.id}:{self.__class__.__name__}',
             '__number__': self.__version__ + 1,
             '__version__': 1,
-            '__timestamp__': str(datetime.now()),
-            '__trace_id__': self.__trace_id__
+            '__timestamp__': time.time()
         })
         
     def __route__(self, event: DomainEvent):

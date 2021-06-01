@@ -7,7 +7,7 @@ from domainpy.application.exceptions import (
     HandlerNotFoundError,
     MessageSingleHandlerBroken
 )
-from domainpy.domain.model.aggregate import AggregateRoot
+from domainpy.utils.traceable import Traceable
 
 
 class handler:
@@ -30,9 +30,9 @@ class handler:
             return
 
         if hasattr(message, '__trace_id__'):
-            AggregateRoot.__trace_id__ = message.__trace_id__
+            Traceable.__trace_id__ = message.__trace_id__
         else:
-            AggregateRoot.__trace_id__ = None
+            Traceable.__trace_id__ = None
 
         results = [self.func(service, message)]
         

@@ -4,7 +4,7 @@ from collections import namedtuple
 
 IntegrationRecord = namedtuple(
     'IntegrationRecord', 
-    ('trace_id', 'context', 'topic', 'version', 'timestamp', 'message', 'payload')
+    ('trace_id', 'context', 'topic', 'resolve', 'version', 'timestamp', 'message', 'payload')
 )
 
 
@@ -30,6 +30,7 @@ class IntegrationMapper:
                 trace_id=event.__trace_id__, # pylint: disable=maybe-no-member
                 context=self.context, # pylint: disable=maybe-no-member
                 topic=event.__class__.__name__,
+                resolve=event.__resolve__,
                 version=event.__version__, # pylint: disable=maybe-no-member
                 timestamp=event.__timestamp__, # pylint: disable=maybe-no-member
                 message=event.__message__,

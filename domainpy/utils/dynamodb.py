@@ -2,7 +2,7 @@ import decimal
 
 def serialize(obj):
     if isinstance(obj, list):
-        for i in xrange(len(obj)):
+        for i in range(len(obj)):
             obj[i] = serialize(obj[i])
         return obj
     elif isinstance(obj, dict):
@@ -17,7 +17,7 @@ def serialize(obj):
 
 def deserialize(obj):
     if isinstance(obj, list):
-        for i in xrange(len(obj)):
+        for i in range(len(obj)):
             obj[i] = deserialize(obj[i])
         return obj
     elif isinstance(obj, dict):
