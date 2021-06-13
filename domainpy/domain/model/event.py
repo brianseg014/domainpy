@@ -13,6 +13,7 @@ class DomainEvent(Constructable, Immutable, Dictable, Traceable):
             '__number__': kwargs.pop('__number__', None),
             '__version__': kwargs.pop('__version__', None),
             '__timestamp__': kwargs.pop('__timestamp__', None),
+            '__trace_id__': kwargs.pop('__trace_id__', Traceable.__trace_id__),
             '__message__': 'event'
         })
         

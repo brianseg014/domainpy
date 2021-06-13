@@ -51,6 +51,9 @@ class AggregateRoot(Traceable):
             e for e in events if isinstance(e, event_type)
         ])
 
+        for e in events:
+            print([e, e.__trace_id__])
+
         if compensate_type is None:
             return filtered_events
         else:

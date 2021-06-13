@@ -5,14 +5,17 @@ from domainpy.infrastructure.eventsourced.recordmanager import (
     EventRecordManager,
     Session
 )
+from domainpy.infrastructure.exception import (
+    ConcurrencyException
+)
 from domainpy.utils.mappers.eventmapper import EventRecord
 from domainpy.utils.dynamodb import serialize, deserialize
+
+dynamodb = boto3.resource('dynamodb')
 
 class DynamoEventRecordManager(EventRecordManager):
 
     def __init__(self, table_name):
-        dynamodb = boto3.resource('dynamodb')
-
         self.table = dynamodb.Table(table_name)
 
     def session(self):
@@ -53,25 +56,27 @@ class DynamoSession(Session):
         if event_record is None:
             raise TypeError('event_record cannot be None')
         
-        print('WRITING', event_record)
-        
-        self.writer.put_item(
-            Item={
-                'stream_id': serialize(event_record.stream_id),
-                'number': serialize(event_record.number),
-                'topic': serialize(event_record.topic),
-                'version': serialize(event_record.version),
-                'timestamp': serialize(event_record.timestamp),
-                'trace_id': serialize(event_record.trace_id),
-                'message': serialize(event_record.message),
-                'payload': serialize(event_record.payload)
-            },
-            ConditionExpression=(
-                Attr('stream_id').not_exists()
-                & Attr('number').not_exists()
+        try:
+            self.writer.put_item(
+                Item={
+                    'stream_id': serialize(event_record.stream_id),
+                    'number': serialize(event_record.number),
+                    'topic': serialize(event_record.topic),
+                    'version': serialize(event_record.version),
+                    'timestamp': serialize(event_record.timestamp),
+                    'trace_id': serialize(event_record.trace_id),
+                    'message': serialize(event_record.message),
+                    'payload': serialize(event_record.payload)
+                },
+                ConditionExpression=(
+                    Attr('stream_id').not_exists()
+                    & Attr('number').not_exists()
+                )
             )
-        )
-        print('WRITTEN')
+        except dynamodb.meta.client.exceptions.ConditionalCheckFailedException:
+            stream_id = event_record.stream_id
+            number = event_record.number
+            raise ConcurrencyException(f'Other thread already write stream {stream_id} with number {number}')
 
     def commit(self):
         pass

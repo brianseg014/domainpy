@@ -18,15 +18,13 @@ class handler:
         self.func = func
         
         self._handlers = dict()
-        self._partials = dict()
         
     def __get__(self, obj, objtype):
         """Support instance methods."""
         return partial(self.__call__, obj)
         
     def __call__(self, service, message):
-        if (message.__class__ not in self._handlers 
-                and message.__class__ not in self._partials):
+        if not self._has_any_handler(service, message):
             return
 
         if hasattr(message, '__trace_id__'):
@@ -40,12 +38,23 @@ class handler:
         for h in handlers:
             results.append(h(service, message))
 
-        partials = self._partials.get(message.__class__, set())
-        for h in set(partials):
-            results.append(h(service, message))
-            partials.remove(h)
+        if(hasattr(service, '__partials__')):
+            partials = service.__partials__.get(message.__class__, set())
+            for h in set(partials):
+                results.append(h(service, message))
+                partials.remove(h)
 
         return results
+
+    def _has_any_handler(self, service, message):
+        if (message.__class__ in self._handlers):
+            return True
+
+        if (hasattr(service, '__partials__') and message.__class__ in service.__partials__):
+            return True
+
+        return False
+        
             
     def command(self, command_type: type):
         def inner_function(func):
@@ -93,22 +102,29 @@ class handler:
             return wrapper
         return inner_function
 
-    def event_trace(self, *events):
+    def trace(self, *messages):
         def inner_function(func):
-
             def wrapper(*args, **kwargs):
-                trace = kwargs.pop('trace')
-                leadings = kwargs.pop('leadings')
+                service = args[0]
+                trace = kwargs.pop('__trace__')
+                leadings = kwargs.pop('__leadings__')
+
+                if(not hasattr(service, '__partials__')):
+                    service.__partials__ = dict()
 
                 if len(leadings) > 0:
-                    trace.append(args[1])
+                    new_trace = []
+                    new_trace.extend(trace)
+                    new_trace.append(args[1])
 
-                    self._partials.setdefault(leadings[0], set()).add(partial(wrapper, trace=trace, leadings=leadings[1:]))
+                    service.__partials__.setdefault(leadings[0], set()).add(partial(wrapper, __trace__=new_trace, __leadings__=leadings[1:]))
                 else:
-                    return func(args[0], *trace, *args[1:], **kwargs)
+                    return func(service, *trace, *args[1:], **kwargs)
 
-            self._handlers.setdefault(events[0], set()).add(partial(wrapper, trace=[], leadings=events[1:]))
+            self._handlers.setdefault(messages[0], set()).add(partial(wrapper, __trace__=[], __leadings__=messages[1:]))
 
             return wrapper
 
         return inner_function
+
+    

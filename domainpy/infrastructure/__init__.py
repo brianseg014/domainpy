@@ -5,3 +5,4 @@ from domainpy.infrastructure.eventsourced.managers.dynamodb import DynamoEventRe
 from domainpy.infrastructure.projectionsourced.managers.memory import MemoryProjectionRecordManager
 from domainpy.infrastructure.buses.memory import MemoryBus
 from domainpy.infrastructure.buses.eventbridge import EventBridgeBus
+from domainpy.infrastructure import exception as exceptions
