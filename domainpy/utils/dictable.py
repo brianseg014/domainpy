@@ -20,7 +20,7 @@ class Dictable:
                         expected_type0.__from_dict__(v) 
                         for v in value
                     )
-                elif expected_type in (str, int, float, bool):
+                elif expected_type in (str, int, float, bool, dict):
                     if expected_type == int and isinstance(value, str):
                         kwargs0[k] = int(value)
                     elif expected_type == float and isinstance(value, (str, int)):
