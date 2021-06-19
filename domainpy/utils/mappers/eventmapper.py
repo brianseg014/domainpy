@@ -1,5 +1,7 @@
-
+from typing import Type
 from collections import namedtuple
+
+from domainpy.domain.model.event import DomainEvent
 
 
 EventRecord = namedtuple(
@@ -13,14 +15,14 @@ class EventMapper:
     def __init__(self):
         self.map = dict()
         
-    def register(self, cls):
+    def register(self, cls: Type[DomainEvent]):
         self.map[cls.__name__] = cls
         return cls
 
-    def is_event(self, topic):
+    def is_event(self, topic: str):
         return topic in self.map
     
-    def serialize(self, event):
+    def serialize(self, event: DomainEvent):
         if hasattr(event.__class__, '__annotations__'):
             attrs = event.__class__.__dict__['__annotations__']
             
