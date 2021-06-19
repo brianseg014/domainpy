@@ -6,7 +6,7 @@ class MemoryBus(Bus):
 
     def __init__(self, publish_exceptions=[]):
         self._handlers = []
-        self.publish_exceptions = publish_exceptions
+        self.publish_exceptions = tuple(publish_exceptions)
 
     def attach(self, handler):
         self._handlers.append(handler)
