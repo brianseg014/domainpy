@@ -6,13 +6,15 @@ from domainpy.domain.model.event import DomainEvent
 
 EventRecord = namedtuple(
     'EventRecord', 
-    ('stream_id', 'number', 'topic', 'version', 'timestamp', 'trace_id', 'message', 'payload')
+    ('stream_id', 'number', 'topic', 'version', 'timestamp', 'trace_id', 'message', 'context', 'payload')
 )
 
 
 class EventMapper:
     
-    def __init__(self):
+    def __init__(self, context):
+        self.context = context
+
         self.map = dict()
         
     def register(self, cls: Type[DomainEvent]):
@@ -34,6 +36,7 @@ class EventMapper:
                 timestamp=event.__timestamp__, # pylint: disable=maybe-no-member
                 trace_id=event.__trace_id__,
                 message=event.__message__,
+                context=self.context,
                 payload=event.__to_dict__()
             )
         else:

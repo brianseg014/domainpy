@@ -11,11 +11,12 @@ from domainpy.infrastructure.exception import (
 from domainpy.utils.mappers.eventmapper import EventRecord
 from domainpy.utils.dynamodb import serialize, deserialize
 
-dynamodb = boto3.resource('dynamodb')
 
 class DynamoEventRecordManager(EventRecordManager):
 
-    def __init__(self, table_name):
+    def __init__(self, table_name, region_name=None):
+        dynamodb = boto3.resource('dynamodb', region_name=region_name)
+        
         self.table = dynamodb.Table(table_name)
 
     def session(self):

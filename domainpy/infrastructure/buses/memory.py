@@ -21,7 +21,7 @@ class MemoryBus(Bus):
             try:
                 handler.__handle__(publishable)
             except Exception as e:
-                if isinstance(e, self.publish_exceptions):
+                if len(self.publish_exceptions) > 0 and isinstance(e, self.publish_exceptions):
                     exceptions.append(e)
                 else:
                     raise e

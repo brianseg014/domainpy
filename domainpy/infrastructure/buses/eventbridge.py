@@ -6,11 +6,11 @@ from domainpy.utils.bus import Bus
 
 class EventBridgeBus(Bus):
 
-    def __init__(self, source, mapper):
+    def __init__(self, source, mapper, region_name=None):
         self.source = source
         self.mapper = mapper
 
-        self.cloudwatch_events = boto3.client('events')
+        self.cloudwatch_events = boto3.client('events', region_name=region_name)
         self.names = []
 
     def attach(self, handler):

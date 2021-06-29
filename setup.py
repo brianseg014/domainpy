@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='domainpy',
-    version='0.1.16',
+    version='0.1.18',
     description='A library for DDD, ES, CQRS, TDD + BDD and microservices',
     author='Brian Estrada',
     author_email='brianseg014@gmail.com',
