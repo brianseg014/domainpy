@@ -11,7 +11,7 @@ setup(
     packages=find_packages(),
     license='MIT',
     url='https://github.com/mymamachef/domainpy',
-    download_url='https://github.com/mymamachef/domainpy/archive/v0.1.12.tar.gz',
+    download_url='https://github.com/mymamachef/domainpy/archive/v0.1.18.tar.gz',
     keywords=['ddd', 'event sourcing', 'CQRS'],
     install_requires=['boto3==1.17.40']
 )
