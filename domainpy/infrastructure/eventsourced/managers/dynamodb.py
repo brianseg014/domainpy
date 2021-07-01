@@ -15,9 +15,8 @@ from domainpy.utils.dynamodb import serialize, deserialize
 class DynamoEventRecordManager(EventRecordManager):
 
     def __init__(self, table_name, region_name=None):
-        dynamodb = boto3.resource('dynamodb', region_name=region_name)
-        
-        self.table = dynamodb.Table(table_name)
+        self.dynamodb = boto3.resource('dynamodb', region_name=region_name)
+        self.table = self.dynamodb.Table(table_name)
 
     def session(self):
         return DynamoSession(self)
@@ -44,7 +43,7 @@ class DynamoEventRecordManager(EventRecordManager):
 class DynamoSession(Session):
 
     def __init__(self, record_manager):
-        self.writer = record_manager.table
+        self.record_manager = record_manager
 
     def __enter__(self):
         return self
@@ -58,7 +57,7 @@ class DynamoSession(Session):
             raise TypeError('event_record cannot be None')
         
         try:
-            self.writer.put_item(
+            self.record_manager.table.put_item(
                 Item={
                     'stream_id': serialize(event_record.stream_id),
                     'number': serialize(event_record.number),
@@ -74,7 +73,7 @@ class DynamoSession(Session):
                     & Attr('number').not_exists()
                 )
             )
-        except dynamodb.meta.client.exceptions.ConditionalCheckFailedException:
+        except self.record_manager.dynamodb.meta.client.exceptions.ConditionalCheckFailedException:
             stream_id = event_record.stream_id
             number = event_record.number
             raise ConcurrencyException(f'Other thread already write stream {stream_id} with number {number}')
