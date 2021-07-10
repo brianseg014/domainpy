@@ -1,2 +1,4 @@
-boto3==1.17.40
+boto3==1.17.109
+moto[dynamodb,sqs,sns,events]==2.0.10
 pytest==6.2.4
+coverage==5.5

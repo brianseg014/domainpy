@@ -1,36 +1,60 @@
-
 import pytest
-from typing import Tuple
-
 from domainpy.utils.dictable import Dictable
 
-class InnerDictableExample(Dictable):
-    inner_id: str
-    
-    def __init__(self, inner_id):
-        self.inner_id = inner_id
+
+def test_dictable_from_dict():
+    class BasicDictable(Dictable):
+        some_property: str
+
+        def __init__(self, some_property: str):
+            self.some_property = some_property
+
+    x = BasicDictable.__from_dict__({
+        'some_property': 'x'
+    })
+    assert x.some_property == 'x'
+    assert isinstance(x.some_property, str)
 
 
-class DictableExample(Dictable):
-    inner_examples: Tuple[InnerDictableExample]
-    
-    def __init__(self, inner_examples):
-        self.inner_examples = inner_examples
+def test_dictable_deep():
+    class Level1Dictable(Dictable):
+        some_property: str
 
-    
-@pytest.fixture
-def dictionay():
-    return {'inner_examples': ({'inner_id': 'A'}, {'inner_id': 'B'})}
-    
-def test_to_dict(dictionay):
-    example = DictableExample(
-        inner_examples=tuple([
-            InnerDictableExample(inner_id="A"),
-            InnerDictableExample(inner_id="B")
-        ])
-    )
-    d = example.__to_dict__()
-    assert d == dictionay
+        def __init__(self, some_property: str):
+            self.some_property = some_property
 
-def test_from_dict(dictionay):
-    assert DictableExample.__from_dict__(dictionay) is not None
+    class Level0Dictable(Dictable):
+        some_property: tuple[Level1Dictable]
+
+        def __init__(self, some_property: tuple[Level1Dictable]):
+            self.some_property = some_property
+
+    x = Level0Dictable.__from_dict__({
+        'some_property': [
+            { 'some_property': 'x' }
+        ]
+    })
+    assert isinstance(x.some_property, tuple)
+    assert len(x.some_property) == 1
+    assert isinstance(x.some_property[0], Level1Dictable)
+    assert isinstance(x.some_property[0].some_property, str)
+    assert x.some_property[0].some_property == 'x'
+
+def test_dictable_fails():
+    class Level1Dictable(Dictable):
+        some_property: str
+
+        def __init__(self, some_property: str):
+            self.some_property = some_property
+
+    class Level0Dictable(Dictable):
+        some_property: Level1Dictable
+
+        def __init__(self, some_property: Level1Dictable):
+            self.some_property = some_property
+
+    with pytest.raises(KeyError):
+        x = Level0Dictable.__from_dict__({
+            'some_property': { 'some_other_property': 'x' }
+        })
+    

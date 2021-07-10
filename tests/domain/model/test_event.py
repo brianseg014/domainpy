@@ -1,18 +1,18 @@
-import pytest 
 
-from .example import (
-    ExampleValueObject,
-    ExampleEvent
-)
+from domainpy.domain.model.event import DomainEvent
 
-@pytest.fixture
-def value_object():
-    return ExampleValueObject('a')
-    
-@pytest.fixture
-def event(value_object):
-    return ExampleEvent(something=value_object)
-    
-def test_event_property_acccess(event, value_object):
-    assert event.something.__class__ is ExampleValueObject
-    assert event.something == value_object
+def test_event_equality():
+    class BasicEvent(DomainEvent):
+        some_property: str
+
+    a = BasicEvent(
+        __stream_id__ = 'id',
+        __number__ = 0,
+        some_property='x'
+    )
+    b = BasicEvent(
+        __stream_id__ = 'id',
+        __number__ = 0,
+        some_property='x'
+    )
+    assert a == b

@@ -1,36 +1,44 @@
 
+from typing import Any
+
 
 class Specification:
     
-    def is_satisfied_by(self, candidate):
+    def is_satisfied_by(self, candidate: Any):
         pass
 
-    def and_(self, other):
-        return ConjunctionSpecification(
-            self,
-            other
-        )
+    def and_(self, other: 'Specification') -> 'ConjunctionSpecification':
+        return ConjunctionSpecification(self, other)
 
-    def or_(self, other):
-        return DisjunctionSpecification(
-            self,
-            other
-        )
+    def or_(self, other: 'Specification') -> 'DisjunctionSpecification':
+        return DisjunctionSpecification(self, other)
 
     def not_(self):
         return NegationSpecification(self)
 
-    def is_special_case_of(self, other):
+    def is_special_case_of(self, other: 'Specification'):
         raise NotImplementedError(f'{self.__class__} should override is_special_case_of')
 
-    def is_generalization_of(self, other):
+    def is_generalization_of(self, other: 'Specification'):
         raise NotImplementedError(f'{self.__class__} should override is_generalization_of')
 
-    def remainder_unsatisfied_by(self, candidate):
+    def remainder_unsatisfied_by(self, candidate: Any):
         if not self.is_satisfied_by(candidate):
-            return self.__class__
+            return [self]
         else:
-            return None
+            return []
+
+    def __call__(self, candiate: Any):
+        return self.is_satisfied_by(candiate)
+
+    def __and__(self, other: 'Specification') -> 'ConjunctionSpecification':
+        return self.and_(other)
+
+    def __or__(self, other: 'Specification') -> 'DisjunctionSpecification':
+        return self.or_(other)
+
+    def __neg__(self, other: 'Specification') -> 'NegationSpecification':
+        return self.not_(other)
 
 
 class CompositeSpecification(Specification):
@@ -39,6 +47,17 @@ class CompositeSpecification(Specification):
         self.a = a
         self.b = b
 
+    def remainder_unsatisfied_by(self, candidate: Any):
+        remainder = []
+
+        a_remainder = self.a.remainder_unsatisfied_by(candidate)
+        remainder.extend(a_remainder)
+
+        b_remainder = self.b.remainder_unsatisfied_by(candidate)
+        remainder.extend(b_remainder)
+
+        return remainder
+        
 
 class ConjunctionSpecification(CompositeSpecification):
     
@@ -77,3 +96,6 @@ class NegationSpecification(Specification):
     
     def is_satisfied_by(self, candidate):
         return not self.spec.is_satisfied_by(candidate)
+
+    def __repr__(self):
+        return object.__repr__(self) + ' of ' + repr(self.spec)

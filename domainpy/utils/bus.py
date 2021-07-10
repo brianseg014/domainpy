@@ -1,24 +1,32 @@
 
-class Bus:
-
-    def attach(self, handler):
-        pass
-
-    def detach(self, handler):
-        pass
-    
-    def publish(self, publishable):
-        pass
+import typing
 
 
-class Commutator:
+T = typing.TypeVar('T')
+
+class Subscriber(typing.Generic[T]):
+
+    def __route__(self, message: T):
+        raise NotImplementedError(f'__route__ must be override in {self.__class__.__name__}')
+
+
+class BasicSubscriber(Subscriber[T], list):
+
+    def __route__(self, message: T):
+        self.append(message)
+
+
+class Bus(typing.Generic[T]):
 
     def __init__(self):
-        self.buses = []
+        self.subscribers = []
 
-    def attach(self, bus):
-        self.buses.append(bus)
+    def __route__(self, message: T):
+        self.publish(message)
 
-    def publish(self, publishable):
-        for bus in self.buses:
-            bus.publish(publishable)
+    def attach(self, subscriber: Subscriber[T]):
+        self.subscribers.append(subscriber)
+    
+    def publish(self, message: T):
+        for s in self.subscribers:
+            s.__route__(message)

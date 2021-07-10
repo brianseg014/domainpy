@@ -1,40 +1,49 @@
+from itertools import chain
 
-class Constructable:
+
+def create_init_fn(cls):
+    fn = '__init__'
+
+    exec_globals = {}
+
+    cls_annotations = cls.__dict__.get('__annotations__', None)
+    if cls_annotations:
+        cls_annotations = cls.__dict__.get('__annotations__')
+
+        exec_globals = { a_type.__name__: a_type for a_type in cls_annotations.values() }
+        
+        args = [f'{a_name}: {a_type.__name__}' for a_name,a_type in cls_annotations.items()]
+        args = ','.join(chain(['self'], args, ['**kwargs']))
+
+        typechecks = [
+            f'  if not isinstance({a_name},{a_type.__name__}):\n   raise TypeError("{a_name} must be type of {a_type.__name__}")' 
+            for a_name,a_type in cls_annotations.items()
+        ]
+        assignments = [
+            f'  self.__dict__.update({{"{a_name}": {a_name}}})\n' 
+            for a_name in cls_annotations
+        ]
+        body = '\n'.join(chain(typechecks, assignments, ['  self.__dict__.update(kwargs)']))
+
+        txt = f' def {fn}({args}):\n{body}'
+    else:
+        txt = f' def {fn}(self, **kwargs):\n  self.__dict__.update(kwargs)'
+
+    txt = f'def __create_fn__():\n{txt}\n return {fn}'
+
+    ns = {}
+    exec(txt, exec_globals, ns)
+    return ns['__create_fn__']()
+
+
+
+class constructable(type):
     
-    def __init__(self, *args, **kwargs):
-        if hasattr(self.__class__, '__annotations__'):
-            annotations = self.__class__.__dict__['__annotations__']
-            
-            args_count = len(args)
-            
-            kwargs0 = {}
-            
-            current_arg = 0
-            for k in annotations:
-                expected_type = annotations[k]
-                
-                if current_arg <= args_count - 1:
-                    value = args[current_arg]
-                else:
-                    try:
-                        value = kwargs[k]
-                    except KeyError:
-                        raise TypeError(f'Missing argument {k} for '
-                                    f'{self.__class__.__name__}')
-                
-                if hasattr(expected_type, '__origin__') and expected_type.__origin__ in (list, tuple):
-                    (expected_type0,) = expected_type.__args__
-                    for v in value:
-                        if not isinstance(v, expected_type0):
-                            raise TypeError(f'Bad type in {k}: Value {v} expected to be {expected_type0}')
-                    
-                    kwargs0[k] = value
-                elif isinstance(value, expected_type):
-                    kwargs0[k] = value
-                else:
-                    raise TypeError(f'Class {self.__class__.__name__}: {k} should be instance of {expected_type},'
-                                    f' found {value.__class__.__name__} ({value})')
-                
-                current_arg = current_arg + 1
-                
-            self.__dict__.update(**kwargs0)
+    def __new__(cls, name, bases, dct):
+        new_cls = super().__new__(cls, name, bases, dct)
+        new_cls.__init__ = create_init_fn(new_cls)
+
+        return new_cls
+
+class Constructable(metaclass=constructable):
+    pass

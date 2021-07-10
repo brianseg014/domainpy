@@ -1,18 +1,36 @@
+from typing import Type
 import pytest
 
-from .example import ExampleValueObject
+from domainpy import exceptions as excs
+from domainpy.domain.model.value_object import ValueObject, Identity
 
-@pytest.fixture
-def value_object_1():
-    return ExampleValueObject('a')
 
-@pytest.fixture
-def value_object_2():
-    return ExampleValueObject('a')
+def test_value_object_equality():
+    class BasicValueObject(ValueObject):
+        some_property: str
 
-def test_value_object_equality(value_object_1, value_object_2):
-    assert value_object_1 == value_object_2
+    a = BasicValueObject(some_property='x')
+    b = BasicValueObject(some_property='x')
+    assert a == b
 
-def test_value_object_immutable(value_object_1):
-    with pytest.raises(Exception):
-        value_object_1.something = 'b'
+def test_value_object_immutability():
+    class BasicValueObject(ValueObject):
+        some_property: str
+
+    x = BasicValueObject(some_property='x')
+
+    with pytest.raises(AttributeError):
+        x.some_property = 'y'
+
+def test_identity_definition():
+    class BasicIdentity(Identity):
+        id: str
+
+    x = BasicIdentity(id='id')
+    assert x.id == 'id'
+
+def test_identity_bad_definition():
+    with pytest.raises(excs.DefinitionError):
+        class BasicIdentity(Identity):
+            id: int
+    

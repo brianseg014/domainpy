@@ -1,25 +1,25 @@
-
+from typing import Type
+import uuid
 import json
-from typing import TypeVar, Generic
-from datetime import datetime, date
-from uuid import UUID, uuid4
 
-from domainpy.utils.constructable import Constructable
-from domainpy.utils.immutable import Immutable
+from domainpy import exceptions as excs
+from domainpy.utils.constructable import Constructable, constructable
 from domainpy.utils.dictable import Dictable
-from domainpy.domain.exceptions import ValueObjectIsNotSerializable
+from domainpy.utils.immutable import Immutable
 
+class ValueObject(Constructable, Dictable, Immutable):
 
-class ValueObject(Constructable, Immutable, Dictable):
-    
     def __hash__(self):
         return hash(json.dumps(self.__to_dict__(), sort_keys=True))
     
     def __eq__(self, other):
         if other is None:
             return False
-        
-        return isinstance(other, ValueObject) and self.__hash__() == other.__hash__()
+
+        return (
+            self.__class__ == other.__class__
+            and self.__hash__() == other.__hash__()
+        )
 
     def __ne__(self, other):
         return not (self == other)
@@ -27,19 +27,30 @@ class ValueObject(Constructable, Immutable, Dictable):
     def __repr__(self):
         return f'{self.__class__.__name__}({json.dumps(self.__to_dict__())})'
 
-class Identity(ValueObject):
+
+class identity(constructable):
+
+    def __new__(cls, name, bases, dct):
+        new_cls = super().__new__(cls, name, bases, dct)
+        
+        if not hasattr(new_cls, '__annotations__'):
+            raise excs.DefinitionError(f'{cls.__name__} must include id: str annotation')
+        else:
+            new_cls_annotations = new_cls.__annotations__
+            if 'id' in new_cls_annotations:
+                if new_cls_annotations['id'] != str:
+                    raise excs.DefinitionError(f'{new_cls.__name__}.id must be type of str')
+            else:
+                raise excs.DefinitionError(f'{new_cls.__name__} must include id: str annotation')
+                
+            if len(new_cls_annotations) > 1:
+                raise excs.DefinitionError(f'{new_cls.__name__} must include only id: str annotation, some other annotations found')
+
+        return new_cls
     
-    def __init__(self, id: str):
-        if hasattr(self.__class__, '__annotations__'):
-            attrs = self.__class__.__dict__['__annotations__']
-            
-            assert attrs == { "id": str }
-        
-        if not isinstance(id, str):
-            raise TypeError(f'id should be instance of str, found {id.__class__.__name__}')
-        
-        self.__dict__.update(id=id)
-        
+class Identity(ValueObject, metaclass=identity):
+    id: str
+    
     @classmethod
     def from_text(cls, id: str):
         return cls(id=id)
@@ -47,6 +58,5 @@ class Identity(ValueObject):
     @classmethod
     def create(cls):
         return cls.from_text(
-            str(uuid4())
+            str(uuid.uuid4())
         )
-    

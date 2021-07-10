@@ -1,32 +1,67 @@
+from datetime import datetime
 
-from domainpy.infrastructure.eventsourced.recordmanager import (
-    EventRecordManager,
-    Session
-)
-from domainpy.utils.mappers.eventmapper import EventRecord
+from domainpy import exceptions as excs
+from domainpy.infrastructure.eventsourced.recordmanager import EventRecordManager, Session
+from domainpy.infrastructure.mappers import EventRecord
 
 class MemoryEventRecordManager(EventRecordManager):
     
     def __init__(self):
-        self._heap = []
+        self.heap: list[EventRecord] = []
         
     def session(self):
          return MemorySession(self)
      
-    def find(self, stream_id: str):
-        return (
-            er
-            for er in self._heap
-            if er.stream_id == stream_id
-        )
+    def get_records(self, 
+            stream_id: str, 
+            topic: str=None,
+            from_timestamp: datetime=None, to_timestamp: datetime=None, 
+            from_number: int=None, to_number: int=None) -> tuple[EventRecord]:
+
+        filters = [
+            lambda er: er.stream_id == stream_id
+        ]
+
+        if topic is not None:
+            filters.append(
+                lambda er: er.topic == topic
+            )
+
+        if from_timestamp is not None:
+            filters.append(
+                lambda er: er.timestamp >= from_timestamp
+            )
+
+        if to_timestamp is not None:
+            filters.append(
+                lambda er: er.timestamp <= to_timestamp
+            )
+
+        if from_number is not None:
+            filters.append(
+                lambda er: er.number >= from_number
+            )
+
+        if to_number is not None:
+            filters.append(
+                lambda er: er.number <= to_number
+            )
         
+        return ([
+            er for er in self.heap
+            if all(f(er) for f in filters)
+        ])
+
+    def clear(self):
+        self.heap = []
+
 
 class MemorySession(Session):
     
     def __init__(self, record_manager):
         self.record_manager = record_manager
         
-        self._heap = []
+        self.heap = []
     
     def __enter__(self):
         return self
@@ -38,10 +73,35 @@ class MemorySession(Session):
         if event_record is None:
             raise TypeError('event_record cannot be none')
         
-        self._heap.append(event_record)
+        self.heap.append(event_record)
     
     def commit(self):
-        self.record_manager._heap.extend(self._heap)
+        try:
+            self._check_heap_merge()
+
+            self.record_manager.heap.extend(self.heap)
+            
+        except UniqueEventRecordBroken as e:
+            raise excs.ConcurrencyError() from e
+        finally:
+            self.heap = []
     
     def rollback(self):
-        pass
+        self.heap = []
+
+    def _check_heap_merge(self):
+        for e in self.heap:
+            if self._check_if_event_exists_in_rm(e):
+                raise UniqueEventRecordBroken()
+
+    def _check_if_event_exists_in_rm(self, event: EventRecord) -> bool:
+        exists = any(
+            True for e in self.record_manager.heap
+            if e.stream_id == event.stream_id
+            and e.number == event.number
+        )
+        return exists
+
+
+class UniqueEventRecordBroken(Exception):
+    pass
