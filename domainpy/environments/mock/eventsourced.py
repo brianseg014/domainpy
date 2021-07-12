@@ -1,75 +1,47 @@
 import sys
 import types
 import json
-import itertools
 import datetime
-import collections
-import typing
-import functools
+import itertools
+import dataclasses
 
 from domainpy.typing import SystemMessage
+from domainpy.environments.eventsourced import EventSourcedEnvironment
 from domainpy.application.integration import IntegrationEvent
 from domainpy.domain.model.event import DomainEvent
-from domainpy.infrastructure.mappers import EventMapper
+from domainpy.infrastructure.mappers import CommandMapper, IntegrationMapper, EventMapper
 from domainpy.infrastructure.eventsourced.eventstore import EventStore
 from domainpy.infrastructure.eventsourced.managers.memory import MemoryEventRecordManager
 from domainpy.utils.bus import Bus, BasicSubscriber
 from domainpy.utils.registry import Registry
 
-
-class Setup(typing.Protocol):
-    def __call__(self, 
-            registry: Registry, 
-            handler_bus: Bus[SystemMessage], 
-            resolver_bus: Bus[SystemMessage], 
-            integration_bus: Bus[SystemMessage]):
-        pass
+@dataclasses.dataclass(frozen=True)
+class Then:
+    event_store: 'EventStoreTestExpression'
+    integration_events: 'IntegrationEventsTestExpression'
 
 
-Then = collections.namedtuple('Then', ('event_store', 'integration_events'))
+class MockEventSourcedEnvironment(EventSourcedEnvironment):
 
-class Environment:
+    def __init__(self, 
+        command_mapper: CommandMapper, 
+        integration_mapper: IntegrationMapper, 
+        event_mapper: EventMapper
+    ) -> None:
+        super().__init__(
+            command_mapper=command_mapper, 
+            integration_mapper=integration_mapper, 
+            event_mapper=event_mapper, 
+            event_store_record_manager=MemoryEventRecordManager()
+        )
 
-    def __init__(self, event_mapper: EventMapper):
-        self.event_mapper = event_mapper
-
-    def setup(self, func: Setup):
-
-        @functools.wraps(func)
-        def wapper(*args, **kwargs):
-            self.sequences = {}
-
-            self.event_store_bus = Bus[DomainEvent]()
-            self.event_record_manager = MemoryEventRecordManager()
-            self.event_store = EventStore(
-                event_mapper=self.event_mapper, 
-                record_manager=self.event_record_manager,
-                bus=self.event_store_bus
-            )
-
-            self.registry = Registry()
-
-            self.resolver_bus = Bus[SystemMessage]()
-            self.event_store_bus.attach(self.resolver_bus)
-
-            self.handler_bus = Bus[SystemMessage]()
-            self.event_subscriber = BasicSubscriber[DomainEvent]()
-            self.event_store_bus.attach(self.event_subscriber)
-            self.event_store_bus.attach(self.handler_bus)
-
-            self.integration_bus = Bus[SystemMessage]()
-            self.integration_subscriber = BasicSubscriber[SystemMessage]()
-            self.integration_bus.attach(self.integration_subscriber)
-
-            func(self.registry, self.handler_bus, self.resolver_bus, self.integration_bus)
-        
-        return wapper
-
-    def tear_down(self):
         self.sequences = {}
 
-        self.event_record_manager.clear()
-        self.integration_subscriber.clear()
+        self.domain_events = BasicSubscriber[DomainEvent]()
+        self.event_store_bus.attach(self.domain_events)
+
+        self.integration_events = BasicSubscriber[IntegrationEvent]()
+        self.integration_bus.attach(self.integration_events)
 
     def given(self, stream_id: str, event: DomainEvent):
         sequence = self.sequences.setdefault(stream_id, itertools.count(start=0, step=1))
@@ -88,10 +60,11 @@ class Environment:
     @property
     def then(self):
         return Then(
-            event_store=EventStoreTestExpression(self.event_subscriber, self.event_store),
-            integration_events=IntegrationEventsTestExpression(self.integration_subscriber)
+            event_store=EventStoreTestExpression(self.domain_events, self.event_store),
+            integration_events=IntegrationEventsTestExpression(self.integration_events)
         )
 
+    
 class EventStoreTestExpression:
 
     def __init__(self, all_events, event_store: EventStore):
@@ -103,51 +76,62 @@ class EventStoreTestExpression:
             stream_id=stream_id,
             event_type=event_type
         )
-        try:
-            assert len(events) == 0
-        except AssertionError:
-            self.raise_error(f'event found: stream_id {stream_id} and topic {event_type.__name__}')
+        return len(events) == 0
     
     def has_event(self, stream_id: str, event_type: type[DomainEvent]):
         events = self.event_store.get_events(
             stream_id=stream_id,
             event_type=event_type
         )
-        try:
-            assert len(events) > 0
-        except AssertionError:
-            self.raise_error(f'event not found: stream_id {stream_id} and topic {event_type.__name__}')
-
-    def has_event_once(self, stream_id: str, event_type: type[DomainEvent]):
-        events = self.event_store.get_events(
-            stream_id=stream_id,
-            event_type=event_type
-        )
-        try:
-            assert len(events) == 1
-        except AssertionError:
-            self.raise_error(f'event not found once: stream_id {stream_id} and topic {event_type.__name__}')
+        return len(events) > 0
 
     def has_event_n(self, stream_id: str, event_type: type[DomainEvent], n: int):
         events = self.event_store.get_events(
             stream_id=stream_id,
             event_type=event_type
         )
-        try:
-            assert len(events) == n
-        except AssertionError:
-            self.raise_error(f'event not found {n} times: stream_id {stream_id} and topic {event_type.__name__}')
+        return len(events) == n
+
+    def has_event_once(self, stream_id: str, event_type: type[DomainEvent]):
+        return self.has_event_n(stream_id, event_type, 1)
 
     def has_event_with(self, stream_id: str, event_type: type[DomainEvent], **kwargs):
         events = self.event_store.get_events(
             stream_id=stream_id,
             event_type=event_type
         )
+        return any(
+            True for e in events
+            if all(e.__dict__.get(k) == v for k,v in kwargs.items())
+        )
+
+    def assert_has_not_event(self, stream_id: str, event_type: type[DomainEvent]):
         try:
-            assert any(
-                True for e in events
-                if all(e.__dict__.get(k) == v for k,v in kwargs.items())
-            )
+            assert self.has_not_event(stream_id, event_type)
+        except AssertionError:
+            self.raise_error(f'event found: stream_id {stream_id} and topic {event_type.__name__}')
+
+    def assert_has_event(self, stream_id: str, event_type: type[DomainEvent]):
+        try:
+            assert self.has_event(stream_id, event_type)
+        except AssertionError:
+            self.raise_error(f'event not found: stream_id {stream_id} and topic {event_type.__name__}')
+
+    def assert_has_event_n(self, stream_id: str, event_type: type[DomainEvent], n: int):
+        try:
+            assert self.has_event_n(stream_id, event_type, n)
+        except AssertionError:
+            self.raise_error(f'event not found {n} times: stream_id {stream_id} and topic {event_type.__name__}')
+
+    def assert_has_event_once(self, stream_id: str, event_type: type[DomainEvent]):
+        try:
+            assert self.has_event_once(stream_id, event_type)
+        except AssertionError:
+            self.raise_error(f'event not found once: stream_id {stream_id} and topic {event_type.__name__}')
+
+    def assert_has_event_with(self, stream_id: str, event_type: type[DomainEvent], **kwargs):
+        try:
+            assert self.has_event_with(stream_id, event_type, **kwargs)
         except AssertionError:
             self.raise_error(f'event not found: stream_id {stream_id} and topic {event_type.__name__} and {json.dumps(kwargs)}')
 
@@ -179,22 +163,14 @@ class IntegrationEventsTestExpression:
             i for i in self.integration_events
             if isinstance(i, integration_type)
         ])
-        try:
-            assert len(integrations) == 0
-        except AssertionError:
-            topic = integration_type.__name__
-            self.raise_error(f'integration event found: topic {topic}')
+        return len(integrations) == 0
 
     def has_integration(self, integration_type: type[IntegrationEvent]):
         integrations = tuple([
             i for i in self.integration_events
             if isinstance(i, integration_type)
         ])
-        try:
-            assert len(integrations) == 1
-        except AssertionError:
-            topic = integration_type.__name__
-            self.raise_error(f'integration not found: topic {topic}')
+        return len(integrations) == 1
 
     def has_integration_with(self, integration_type: type[IntegrationEvent], **kwargs):
         integrations = tuple([
@@ -202,8 +178,25 @@ class IntegrationEventsTestExpression:
             if isinstance(i, integration_type)
             and all(i.__dict__.get(k) == v for k,v in kwargs.items())
         ])
+        return len(integrations) == 1
+
+    def assert_has_not_integration(self, integration_type: type[IntegrationEvent]):
         try:
-            assert len(integrations) == 1
+            assert self.has_not_integration(integration_type)
+        except AssertionError:
+            topic = integration_type.__name__
+            self.raise_error(f'integration event found: topic {topic}')
+
+    def assert_has_integration(self, integration_type: type[IntegrationEvent]):
+        try:
+            assert self.has_integration(integration_type)
+        except AssertionError:
+            topic = integration_type.__name__
+            self.raise_error(f'integration not found: topic {topic}')
+
+    def assert_has_integration_with(self, integration_type: type[IntegrationEvent], **kwargs):
+        try:
+            assert self.has_integration_with(integration_type, **kwargs)
         except AssertionError:
             topic = integration_type.__name__
             self.raise_error(f'integration not found: {topic} and {json.dumps(kwargs)}')

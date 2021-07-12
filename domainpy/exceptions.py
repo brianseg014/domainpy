@@ -39,3 +39,6 @@ class PartialBatchError(Exception):
         self.message = message
         self.errors = errors
     
+    
+class ConfigurationError(Exception):
+    pass

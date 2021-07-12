@@ -5,7 +5,7 @@ from domainpy.infrastructure.idempotent.recordmanager import IdempotencyRecordMa
 from domainpy.utils.dynamodb import client_serialize as serialize
 
 
-class DynamodbIdempotencyRecordManager(IdempotencyRecordManager):
+class DynamoDBIdempotencyRecordManager(IdempotencyRecordManager):
 
     def __init__(self, table_name, **kwargs):
         self.table_name = table_name

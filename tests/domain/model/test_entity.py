@@ -1,3 +1,4 @@
+from domainpy.exceptions import DefinitionError
 import pytest
 from unittest import mock
 
@@ -27,3 +28,22 @@ def test_entity_equality(aggregate):
     b = DomainEntity(id=id, aggregate=aggregate)
 
     assert a == b
+    assert a == id
+
+def test_entity_inequality(aggregate):
+    id_a = Identity.create()
+    a = DomainEntity(id=id_a, aggregate=aggregate)
+
+    id_b = Identity.create()
+    b = DomainEntity(id=id_b, aggregate=aggregate)
+
+    assert a != b
+    assert a != id_b
+    assert a != None
+
+def test_entity_equality_failes(aggregate):
+    id = Identity.create()
+    a = DomainEntity(id=id, aggregate=aggregate)
+
+    with pytest.raises(DefinitionError):
+        a == {}

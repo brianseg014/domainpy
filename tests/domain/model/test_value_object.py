@@ -1,4 +1,5 @@
 from typing import Type
+from _pytest.config import exceptions
 import pytest
 
 from domainpy import exceptions as excs
@@ -12,6 +13,15 @@ def test_value_object_equality():
     a = BasicValueObject(some_property='x')
     b = BasicValueObject(some_property='x')
     assert a == b
+
+def test_value_object_inequality():
+    class BasicValueObject(ValueObject):
+        some_property: str
+
+    a = BasicValueObject(some_property='x')
+    b = BasicValueObject(some_property='y')
+    assert a != b
+    assert a != None
 
 def test_value_object_immutability():
     class BasicValueObject(ValueObject):
@@ -31,6 +41,13 @@ def test_identity_definition():
 
 def test_identity_bad_definition():
     with pytest.raises(excs.DefinitionError):
-        class BasicIdentity(Identity):
-            id: int
+        type('BasicIdentity', (Identity,), { '__annotations__': { 'id2': str } })
+
+    with pytest.raises(excs.DefinitionError):
+        type('BasicIdentity', (Identity,), { '__annotations__': { 'id': int } })
+
+    with pytest.raises(excs.DefinitionError):
+        type('BasicIdentity', (Identity,), { '__annotations__': { 'id': str, 'id2': str } })
+
+    
     

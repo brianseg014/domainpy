@@ -20,12 +20,9 @@ class ValueObject(Constructable, Dictable, Immutable):
             self.__class__ == other.__class__
             and self.__hash__() == other.__hash__()
         )
-
-    def __ne__(self, other):
-        return not (self == other)
     
     def __repr__(self):
-        return f'{self.__class__.__name__}({json.dumps(self.__to_dict__())})'
+        return f'{self.__class__.__name__}({json.dumps(self.__to_dict__())})' # pragma: no cover
 
 
 class identity(constructable):

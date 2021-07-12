@@ -1,15 +1,13 @@
 import boto3
-from boto3.dynamodb.types import TypeSerializer, TypeDeserializer
-from datetime import datetime
-from functools import reduce
+import datetime
 
 from domainpy.exceptions import ConcurrencyError
-from domainpy.infrastructure.eventsourced import recordmanager as rmanager
+from domainpy.infrastructure.eventsourced.recordmanager import EventRecordManager, Session
 from domainpy.infrastructure.mappers import EventRecord
 from domainpy.utils.dynamodb import client_serialize as serialize, client_deserialize as deserialize
 
 
-class DynamoEventRecordManager(rmanager.EventRecordManager):
+class DynamoDBEventRecordManager(EventRecordManager):
 
     def __init__(self, table_name, region_name=None):
         self.table_name = table_name
@@ -22,7 +20,7 @@ class DynamoEventRecordManager(rmanager.EventRecordManager):
     def get_records(self, 
             stream_id: str, 
             topic: str=None,
-            from_timestamp: datetime=None, to_timestamp: datetime=None, 
+            from_timestamp: datetime.datetime=None, to_timestamp: datetime.datetime=None, 
             from_number: int=None, to_number: int=None) -> tuple[EventRecord]:
 
         key_conditions_expressions = []
@@ -101,7 +99,7 @@ class DynamoEventRecordManager(rmanager.EventRecordManager):
         return event_record
         
 
-class DynamoSession(rmanager.Session):
+class DynamoSession(Session):
 
     def __init__(self, record_manager):
         self.record_manager = record_manager

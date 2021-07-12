@@ -76,8 +76,8 @@ def test_sqs_processor_all_success(queue_message, messages):
     def record_handler(record):
         pass
 
-    processor = SimpleQueueServiceBatchProcessor(queue_message, record_handler)
-    with processor as (success_messages, fail_messages):
+    processor = SimpleQueueServiceBatchProcessor()
+    with processor(queue_message, record_handler) as (success_messages, fail_messages):
         assert len(success_messages) == len(messages)
         assert len(fail_messages) == 0
 
@@ -87,10 +87,10 @@ def test_sqs_processor_all_fail(queue_message, messages):
     def record_handler(record):
         raise Exception()
 
-    processor = SimpleQueueServiceBatchProcessor(queue_message, record_handler)
+    processor = SimpleQueueServiceBatchProcessor()
 
     with pytest.raises(PartialBatchError):
-        with processor as (success_messages, fail_messages):
+        with processor(queue_message, record_handler) as (success_messages, fail_messages):
             assert len(fail_messages) == len(messages)
 
 def tests_sqs_process_partial_fail(sqs, queue_url, queue_message, messages):
@@ -102,9 +102,9 @@ def tests_sqs_process_partial_fail(sqs, queue_url, queue_message, messages):
         if body in messages_to_fail:
             raise Exception()
 
-    processor = SimpleQueueServiceBatchProcessor(queue_message, record_handler)
+    processor = SimpleQueueServiceBatchProcessor()
     with pytest.raises(PartialBatchError):
-        with processor as (success_messages, fail_messages):
+        with processor(queue_message, record_handler) as (success_messages, fail_messages):
             assert len(success_messages) == len(messages_to_success)
             assert len(fail_messages) == len(messages_to_fail)
 

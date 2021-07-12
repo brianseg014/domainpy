@@ -1,46 +1,20 @@
 import boto3
 
 from domainpy.exceptions import PartialBatchError
+from domainpy.infrastructure.processors.base import Processor
 
 
-class SimpleQueueServiceBatchProcessor:
+class SimpleQueueServiceBatchProcessor(Processor):
 
-    def __init__(self, queue_message, record_handler, **kwargs):
-        self.queue_message = queue_message
-        self.record_handler = record_handler
-
-        self.success_messages: list = []
-        self.fail_messages: list = []
-
+    def __init__(self, **kwargs):
+        super().__init__()
         self.client = boto3.client('sqs', **kwargs)
-
-    def __enter__(self):
-        self.process()
-        return self.success_messages, self.fail_messages
-
-    def __exit__(self, exc_type, exc_value, exc_tb):
-        self.clean_queue()
-
+    
     def get_records(self):
-        return self.queue_message['Records']
+        return self.raw_message['Records']
 
-    def process(self):
-        records = self.get_records()
-        for record in records:
-            self.process_record(record)
-
-    def process_record(self, record):
-        try:
-            self.record_handler(record)
-            self.success_handler(record)
-        except Exception as e:
-            self.fail_handler(record, e)
-        
-    def success_handler(self, record):
-        self.success_messages.append(record)
-
-    def fail_handler(self, record, error):
-        self.fail_messages.append((record, error))
+    def cleanup(self):
+        self.clean_queue()
 
     def get_queue_url(self):
         *_, account_id, queue_name = self.get_records()[0]['eventSourceARN'].split(":")
@@ -72,8 +46,8 @@ class SimpleQueueServiceBatchProcessor:
 def sqs_batch_processor(record_handler):
     def inner_function(func):
         def wrapper(queue_message, *args, **kwargs):
-            processor = SimpleQueueServiceBatchProcessor(queue_message, record_handler)
-            with processor as (success_messages, fail_messages):
+            processor = SimpleQueueServiceBatchProcessor()
+            with processor(queue_message, record_handler) as (success_messages, fail_messages):
                 return func(
                     queue_message, *args, **kwargs, 
                     success_messages=success_messages, 
