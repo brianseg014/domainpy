@@ -15,7 +15,7 @@ class ApplicationServiceSubscriber(Subscriber):
         self.application_service.handle(message)
     
 
-class AwsEventBridgeSubscriber(Subscriber):
+class AwsEventBridgePublisherSubscriber(Subscriber):
 
     def __init__(self, aws_event_bridge_publisher: AwsEventBridgePublisher):
         self.aws_event_bridge_publisher = aws_event_bridge_publisher
@@ -24,7 +24,7 @@ class AwsEventBridgeSubscriber(Subscriber):
         self.aws_event_bridge_publisher.publish(message)
 
 
-class AwsSimpleQueueServiceSubscriber(Subscriber):
+class AwsSimpleQueueServicePublisherSubscriber(Subscriber):
 
     def __init__(self, aws_sqs_publisher: AwsSimpleQueueServicePublisher):
         self.aws_sqs_publisher = aws_sqs_publisher

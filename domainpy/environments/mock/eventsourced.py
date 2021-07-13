@@ -38,10 +38,10 @@ class MockEventSourcedEnvironment(EventSourcedEnvironment):
         self.sequences = {}
 
         self.domain_events = BasicSubscriber[DomainEvent]()
-        self.event_store_bus.attach(self.domain_events)
+        self.publisher_domain_bus.attach(self.domain_events)
 
         self.integration_events = BasicSubscriber[IntegrationEvent]()
-        self.integration_bus.attach(self.integration_events)
+        self.publisher_integration_bus.attach(self.integration_events)
 
     def given(self, stream_id: str, event: DomainEvent):
         sequence = self.sequences.setdefault(stream_id, itertools.count(start=0, step=1))

@@ -5,7 +5,7 @@ import json
 import uuid
 
 from domainpy.exceptions import PartialBatchError
-from domainpy.infrastructure.processors.aws_sqs import SimpleQueueServiceBatchProcessor, sqs_batch_processor
+from domainpy.infrastructure.processors.aws_sqs import AwsSimpleQueueServiceBatchProcessor, sqs_batch_processor
 
 
 @pytest.fixture
@@ -76,7 +76,7 @@ def test_sqs_processor_all_success(queue_message, messages):
     def record_handler(record):
         pass
 
-    processor = SimpleQueueServiceBatchProcessor()
+    processor = AwsSimpleQueueServiceBatchProcessor()
     with processor(queue_message, record_handler) as (success_messages, fail_messages):
         assert len(success_messages) == len(messages)
         assert len(fail_messages) == 0
@@ -87,7 +87,7 @@ def test_sqs_processor_all_fail(queue_message, messages):
     def record_handler(record):
         raise Exception()
 
-    processor = SimpleQueueServiceBatchProcessor()
+    processor = AwsSimpleQueueServiceBatchProcessor()
 
     with pytest.raises(PartialBatchError):
         with processor(queue_message, record_handler) as (success_messages, fail_messages):
@@ -102,7 +102,7 @@ def tests_sqs_process_partial_fail(sqs, queue_url, queue_message, messages):
         if body in messages_to_fail:
             raise Exception()
 
-    processor = SimpleQueueServiceBatchProcessor()
+    processor = AwsSimpleQueueServiceBatchProcessor()
     with pytest.raises(PartialBatchError):
         with processor(queue_message, record_handler) as (success_messages, fail_messages):
             assert len(success_messages) == len(messages_to_success)

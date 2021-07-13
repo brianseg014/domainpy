@@ -79,7 +79,7 @@ def test_integrations_has_integration():
         event_mapper=event_mapper
     )
 
-    env.integration_bus.publish(IntegrationEvent(some_property='x'))
+    env.publisher_integration_bus.publish(IntegrationEvent(some_property='x'))
     env.then.integration_events.has_integration(IntegrationEvent)
     env.then.integration_events.has_integration_with(IntegrationEvent, some_property='x')
 

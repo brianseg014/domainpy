@@ -1,7 +1,6 @@
 
 from typing import Sequence
 
-from domainpy.typing import SystemMessage
 
 
 class DefinitionError(Exception):
@@ -20,7 +19,7 @@ class PublisherError(Exception):
 
     class EntryError:
 
-        def __init__(self, message: SystemMessage, reason: str):
+        def __init__(self, message, reason: str):
             self.message = message
             self.reason = reason
     

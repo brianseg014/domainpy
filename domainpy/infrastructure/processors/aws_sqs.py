@@ -4,7 +4,7 @@ from domainpy.exceptions import PartialBatchError
 from domainpy.infrastructure.processors.base import Processor
 
 
-class SimpleQueueServiceBatchProcessor(Processor):
+class AwsSimpleQueueServiceBatchProcessor(Processor):
 
     def __init__(self, **kwargs):
         super().__init__()
@@ -46,7 +46,7 @@ class SimpleQueueServiceBatchProcessor(Processor):
 def sqs_batch_processor(record_handler):
     def inner_function(func):
         def wrapper(queue_message, *args, **kwargs):
-            processor = SimpleQueueServiceBatchProcessor()
+            processor = AwsSimpleQueueServiceBatchProcessor()
             with processor(queue_message, record_handler) as (success_messages, fail_messages):
                 return func(
                     queue_message, *args, **kwargs, 

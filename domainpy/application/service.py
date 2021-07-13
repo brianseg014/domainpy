@@ -1,8 +1,8 @@
 
-from typing import Union, Type, Sequence
-from functools import update_wrapper, partial
+import typing
+import functools
 
-from domainpy import exceptions as excs
+from domainpy.exceptions import DefinitionError
 from domainpy.typing import SystemMessage
 from domainpy.application.command import ApplicationCommand
 from domainpy.application.integration import IntegrationEvent
@@ -20,18 +20,18 @@ class ApplicationService:
 class handler:
 
     def __init__(self, func):
-        update_wrapper(self, func)
+        functools.update_wrapper(self, func)
         
         self.func = func
         
         self.handlers = dict()
 
     def __get__(self, obj, objtype):
-        return partial(self.__call__, obj)
+        return functools.partial(self.__call__, obj)
 
     def __call__(self, service: ApplicationService, message: SystemMessage):
         if not hasattr(message, '__trace_id__'):
-            raise excs.DefinitionError('__trace_id__ not found in message')
+            raise DefinitionError('__trace_id__ not found in message')
 
         if message.__trace_id__ == None:
             raise TypeError('__trace_id__ cannot be None')
@@ -50,28 +50,28 @@ class handler:
                     p(service, message)
                     partials.remove(p)
             
-    def command(self, command_type: Type[ApplicationCommand]):
+    def command(self, command_type: typing.Type[ApplicationCommand]):
         def inner_function(func):
             command_handlers = self.handlers.setdefault(command_type, set())
             command_handlers.add(func)
             return func
         return inner_function
 
-    def integration(self, integration_type: Type[IntegrationEvent]):
+    def integration(self, integration_type: typing.Type[IntegrationEvent]):
         def inner_function(func):
             integration_handlers = self.handlers.setdefault(integration_type, set())
             integration_handlers.add(func)
             return func
         return inner_function
 
-    def event(self, event_type: Type[DomainEvent]):
+    def event(self, event_type: typing.Type[DomainEvent]):
         def inner_function(func):
             event_handlers = self.handlers.setdefault(event_type, set())
             event_handlers.add(func)
             return func
         return inner_function
 
-    def trace(self, *messages: Sequence[Type[SystemMessage]]):
+    def trace(self, *messages: typing.Sequence[typing.Type[SystemMessage]]):
         def inner_function(func):
             def wrapper(*args, **kwargs):
                 service = args[0]
@@ -87,12 +87,12 @@ class handler:
                     new_trace.append(args[1])
 
                     partials = service.__partials__.setdefault(leadings[0], set())
-                    partials.add(partial(wrapper, __trace__=new_trace, __leadings__=leadings[1:]))
+                    partials.add(functools.partial(wrapper, __trace__=new_trace, __leadings__=leadings[1:]))
                 else:
                     return func(service, *trace, *args[1:], **kwargs)
 
             trace_handlers = self.handlers.setdefault(messages[0], set())
-            trace_handlers.add(partial(wrapper, __trace__=[], __leadings__=messages[1:]))
+            trace_handlers.add(functools.partial(wrapper, __trace__=[], __leadings__=messages[1:]))
 
             return wrapper
         return inner_function

@@ -1,7 +1,7 @@
 from time import time
 from functools import update_wrapper, partial
 
-from domainpy import exceptions as excs
+from domainpy.exceptions import DefinitionError
 from domainpy.domain.model.value_object import Identity
 from domainpy.domain.model.event import DomainEvent
 
@@ -95,7 +95,7 @@ class mutator:
     def event(self, event_type: type):
         def inner_function(func):
             if event_type in self.mutators:
-                raise excs.DefinitionError(f'{event_type.__name__} mutator already defined near to {self.func.__qualname__}')
+                raise DefinitionError(f'{event_type.__name__} mutator already defined near to {self.func.__qualname__}')
 
             self.mutators[event_type] = func
             return func

@@ -1,4 +1,5 @@
 
+from domainpy.domain.model.event import DomainEvent
 from domainpy.infrastructure.processors.base import BasicProcessor, Processor
 from domainpy.typing import DomainMessage, SystemMessage
 from domainpy.environments.base import IEnvironment
@@ -38,10 +39,12 @@ class EventSourcedEnvironment(IEnvironment):
 
         self.registry = Registry()
 
+        self.publisher_domain_bus = Bus[DomainEvent]()
+        self.publisher_integration_bus = Bus[IntegrationEvent]()
+
         self.projection_bus = Bus[SystemMessage]()
         self.resolver_bus = Bus[SystemMessage]()
         self.handler_bus = Bus[SystemMessage]()
-        self.integration_bus = Bus[IntegrationEvent]()
 
         self.event_store_bus = Bus[DomainMessage]()
         self.event_store = EventStore(
@@ -49,18 +52,21 @@ class EventSourcedEnvironment(IEnvironment):
             record_manager=event_store_record_manager,
             bus=self.event_store_bus
         )
+        self.event_store_bus.attach(self.publisher_domain_bus)
+        self.event_store_bus.attach(self.publisher_integration_bus)
+
         self.event_store_bus.attach(self.projection_bus)
         self.event_store_bus.attach(self.resolver_bus)
         self.event_store_bus.attach(self.handler_bus)
-        self.event_store_bus.attach(self.integration_bus)
 
-        self.setup(
-            self.registry, 
-            self.projection_bus, 
-            self.resolver_bus, 
-            self.handler_bus,
-            self.integration_bus
-        )
+        self.setup_registry(self.registry)
+
+        self.setup_publisher_domain_bus(self.publisher_domain_bus)
+        self.setup_publisher_integration_bus(self.publisher_integration_bus)
+
+        self.setup_projection_bus(self.projection_bus)
+        self.setup_resolver_bus(self.resolver_bus, self.publisher_integration_bus)
+        self.setup_handler_bus(self.handler_bus, self.registry)
 
     def process(self, raw: dict):
         with self.processor(raw, self.handle) as (success_messages, fail_messages):

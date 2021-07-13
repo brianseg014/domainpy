@@ -21,7 +21,7 @@ def test_aws_event_bridge_subscriber():
     SomeMessageType = type('SomeMessageType', (), {})
     some_message = SomeMessageType()
 
-    x = subs.AwsEventBridgeSubscriber(event_bridge_subscriber)
+    x = subs.AwsEventBridgePublisherSubscriber(event_bridge_subscriber)
     x.__route__(some_message)
 
     event_bridge_subscriber.publish.assert_called_once_with(some_message)
@@ -32,7 +32,7 @@ def test_aws_sqs_subscriber():
     SomeMessageType = type('SomeMessageType', (), {})
     some_message = SomeMessageType()
 
-    x = subs.AwsSimpleQueueServiceSubscriber(sqs_subscriber)
+    x = subs.AwsSimpleQueueServicePublisherSubscriber(sqs_subscriber)
     x.__route__(some_message)
 
     sqs_subscriber.publish.assert_called_once_with(some_message)

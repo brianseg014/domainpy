@@ -2,7 +2,7 @@ from typing import Type
 import uuid
 import json
 
-from domainpy import exceptions as excs
+from domainpy.exceptions import DefinitionError
 from domainpy.utils.constructable import Constructable, constructable
 from domainpy.utils.dictable import Dictable
 from domainpy.utils.immutable import Immutable
@@ -31,17 +31,17 @@ class identity(constructable):
         new_cls = super().__new__(cls, name, bases, dct)
         
         if not hasattr(new_cls, '__annotations__'):
-            raise excs.DefinitionError(f'{cls.__name__} must include id: str annotation')
+            raise DefinitionError(f'{cls.__name__} must include id: str annotation')
         else:
             new_cls_annotations = new_cls.__annotations__
             if 'id' in new_cls_annotations:
                 if new_cls_annotations['id'] != str:
-                    raise excs.DefinitionError(f'{new_cls.__name__}.id must be type of str')
+                    raise DefinitionError(f'{new_cls.__name__}.id must be type of str')
             else:
-                raise excs.DefinitionError(f'{new_cls.__name__} must include id: str annotation')
+                raise DefinitionError(f'{new_cls.__name__} must include id: str annotation')
                 
             if len(new_cls_annotations) > 1:
-                raise excs.DefinitionError(f'{new_cls.__name__} must include only id: str annotation, some other annotations found')
+                raise DefinitionError(f'{new_cls.__name__} must include only id: str annotation, some other annotations found')
 
         return new_cls
     

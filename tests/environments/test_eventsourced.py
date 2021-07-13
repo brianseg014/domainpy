@@ -30,14 +30,16 @@ def test_bus_sequence():
     )
 
     story = []
+    env.publisher_domain_bus.attach(StorySubscriber('domain', story))
+    env.publisher_integration_bus.attach(StorySubscriber('integration', story))
+
     env.projection_bus.attach(StorySubscriber('projection', story))
     env.resolver_bus.attach(StorySubscriber('resolver', story))
     env.handler_bus.attach(StorySubscriber('handler', story))
-    env.integration_bus.attach(StorySubscriber('integration', story))
     
     env.event_store.store_events([DomainEvent()])
 
-    assert story == ['projection', 'resolver', 'handler', 'integration']
+    assert story == ['domain', 'integration', 'projection', 'resolver', 'handler']
 
 def test_process():
     command_mapper = mock.MagicMock()
