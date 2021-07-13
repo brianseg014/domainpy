@@ -1,7 +1,12 @@
-from functools import update_wrapper, partial
+from __future__ import annotations
 
-from domainpy import exceptions as excs
-from domainpy.domain.model.event import DomainEvent
+import typing
+import functools
+
+if typing.TYPE_CHECKING:
+    from domainpy.domain.model.event import DomainEvent
+
+from domainpy.exceptions import DefinitionError
 
 
 class Projection:
@@ -16,14 +21,14 @@ class Projection:
 class projector:
 
     def __init__(self, func):
-        update_wrapper(self, func)
+        functools.update_wrapper(self, func)
 
         self.func = func
 
         self.projectors = {}
 
     def __get__(self, obj, objtype):
-        return partial(self.__call__, obj)
+        return functools.partial(self.__call__, obj)
 
     def __call__(self, projection: Projection, event: DomainEvent):
         if event.__class__ not in self.projectors:
@@ -32,10 +37,10 @@ class projector:
         projector = self.projectors[event.__class__]
         projector(projection, event)
 
-    def event(self, event_type: type):
+    def event(self, event_type: type[DomainEvent]):
         def inner_function(func):
             if event_type in self.projectors:
-                raise excs.DefinitionError(f'{event_type.__name__} projector already defined near to {self.func.__qualname__}')
+                raise DefinitionError(f'{event_type.__name__} projector already defined near to {self.func.__qualname__}')
 
             self.projectors[event_type] = func
             return func

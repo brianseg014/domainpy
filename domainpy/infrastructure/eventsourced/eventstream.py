@@ -1,13 +1,16 @@
-from typing import Type
-from datetime import datetime
+from __future__ import annotations
+
+import typing
+import datetime
 
 from domainpy.domain.model.event import DomainEvent
+
 
 class EventStream(list[DomainEvent]):
 
     def substream(self, 
-            topic_type: Type[DomainEvent]=None, 
-            from_timestamp: datetime=None, to_timestamp: datetime=None, 
+            topic_type: typing.Type[DomainEvent]=None, 
+            from_timestamp: datetime.datetime=None, to_timestamp: datetime.datetime=None, 
             from_number: int=None, to_number: int=None) -> 'EventStream':
 
         filters = []

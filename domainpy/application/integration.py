@@ -1,5 +1,10 @@
+from __future__ import annotations
 
-from domainpy.application.command import ApplicationCommand
+import typing
+
+if typing.TYPE_CHECKING:
+    from domainpy.application.command import ApplicationCommand
+    
 from domainpy.utils.constructable import Constructable
 from domainpy.utils.immutable import Immutable
 from domainpy.utils.dictable import Dictable

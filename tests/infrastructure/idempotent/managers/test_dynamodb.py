@@ -4,7 +4,7 @@ import pytest
 import boto3
 import moto
 
-from domainpy import exceptions as excs
+from domainpy.exceptions import IdempotencyItemError
 from domainpy.infrastructure.idempotent.managers.dynamodb import DynamoDBIdempotencyRecordManager
 
 
@@ -70,7 +70,7 @@ def test_store_in_progress_already_exists_in_progress(table_name, region_name):
     record_manager = DynamoDBIdempotencyRecordManager(table_name, region_name=region_name)
     record_manager.store_in_progress(record)
 
-    with pytest.raises(excs.IdempotencyItemError):
+    with pytest.raises(IdempotencyItemError):
         record_manager.store_in_progress(record)
 
 def test_store_in_progress_already_exists_in_success(table_name, region_name):
@@ -83,7 +83,7 @@ def test_store_in_progress_already_exists_in_success(table_name, region_name):
     record_manager.store_in_progress(record)
     record_manager.store_success(record)
 
-    with pytest.raises(excs.IdempotencyItemError):
+    with pytest.raises(IdempotencyItemError):
         record_manager.store_in_progress(record)
 
 def test_store_in_progress_already_exists_in_failure(table_name, region_name):

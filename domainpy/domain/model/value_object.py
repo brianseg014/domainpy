@@ -1,4 +1,4 @@
-from typing import Type
+
 import uuid
 import json
 
@@ -12,7 +12,7 @@ class ValueObject(Constructable, Dictable, Immutable):
     def __hash__(self):
         return hash(json.dumps(self.__to_dict__(), sort_keys=True))
     
-    def __eq__(self, other):
+    def __eq__(self, other: 'ValueObject'):
         if other is None:
             return False
 

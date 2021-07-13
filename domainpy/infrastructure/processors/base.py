@@ -1,5 +1,8 @@
 
 
+from domainpy.exceptions import DefinitionError
+
+
 class Processor:
 
     def __init__(self, **kwargs):

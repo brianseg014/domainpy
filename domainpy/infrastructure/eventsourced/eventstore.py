@@ -1,10 +1,15 @@
-from datetime import datetime
+from __future__ import annotations
+
+import typing
+import datetime
+
+if typing.TYPE_CHECKING:
+    from domainpy.infrastructure.eventsourced.recordmanager import EventRecordManager
+    from domainpy.utils.bus import Bus
 
 from domainpy.domain.model.event import DomainEvent
 from domainpy.infrastructure.mappers import EventMapper
 from domainpy.infrastructure.eventsourced.eventstream import EventStream
-from domainpy.infrastructure.eventsourced.recordmanager import EventRecordManager
-from domainpy.utils.bus import Bus
 
 
 class EventStore:
@@ -29,7 +34,7 @@ class EventStore:
     def get_events(self, 
             stream_id: str, 
             event_type: type[DomainEvent]=None,
-            from_timestamp: datetime=None, to_timestamp: datetime=None, 
+            from_timestamp: datetime.datetime=None, to_timestamp: datetime.datetime=None, 
             from_number: int=None, to_number: int=None) -> EventStream:
             
         if event_type is not None:

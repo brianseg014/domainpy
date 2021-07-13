@@ -3,7 +3,7 @@ import boto3
 import datetime
 import dataclasses
 
-from domainpy.infrastructure.records import CommandRecord, TraceRecord
+from domainpy.infrastructure.records import TraceRecord
 from domainpy.utils.dynamodb import client_deserialize as deserialize, client_serialize as serialize
 
 class DynamodbTraceRecordManager:

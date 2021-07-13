@@ -4,27 +4,35 @@ import typing
 
 T = typing.TypeVar('T')
 
-class Subscriber(typing.Generic[T]):
+class ISubscriber(typing.Generic[T]):
 
     def __route__(self, message: T):
         raise NotImplementedError(f'__route__ must be override in {self.__class__.__name__}')
 
 
-class BasicSubscriber(Subscriber[T], list):
+class BasicSubscriber(ISubscriber[T], list):
 
     def __route__(self, message: T):
         self.append(message)
 
 
-class Bus(typing.Generic[T]):
+class IBus(typing.Generic[T]):
+
+    def attach(self, subsciber: ISubscriber[T]):
+        pass
+
+    def publish(self, message: T):
+        pass
+
+class Bus(IBus[T], ISubscriber[T]):
 
     def __init__(self):
-        self.subscribers = []
+        self.subscribers = list[ISubscriber[T]]()
 
     def __route__(self, message: T):
         self.publish(message)
 
-    def attach(self, subscriber: Subscriber[T]):
+    def attach(self, subscriber: ISubscriber[T]):
         self.subscribers.append(subscriber)
     
     def publish(self, message: T):

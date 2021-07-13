@@ -16,10 +16,10 @@ class Specification:
     def not_(self):
         return NegationSpecification(self)
 
-    def is_special_case_of(self, other: 'Specification'):
+    def is_special_case_of(self, other: 'Specification') -> 'bool':
         raise NotImplementedError(f'{self.__class__} should override is_special_case_of')
 
-    def is_generalization_of(self, other: 'Specification'):
+    def is_generalization_of(self, other: 'Specification') -> 'bool':
         raise NotImplementedError(f'{self.__class__} should override is_generalization_of')
 
     def remainder_unsatisfied_by(self, candidate: Any):

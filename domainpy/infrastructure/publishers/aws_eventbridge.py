@@ -1,14 +1,19 @@
+from __future__ import annotations
+
 import boto3
 import json
 import collections.abc
-from typing import Union, Sequence
+import typing
+
+if typing.TYPE_CHECKING:
+    from domainpy.typing import SystemMessage
+    from domainpy.infrastructure.mappers import Mapper
 
 from domainpy.exceptions import PublisherError
-from domainpy.typing import SystemMessage
-from domainpy.infrastructure.mappers import Mapper
+from domainpy.infrastructure.publishers.base import IPublisher
 
 
-class AwsEventBridgePublisher:
+class AwsEventBridgePublisher(IPublisher):
 
     def  __init__(self, bus_name: str, mapper: Mapper, **kwargs):
         self.bus_name = bus_name
@@ -16,7 +21,7 @@ class AwsEventBridgePublisher:
         
         self.client = boto3.client('events', **kwargs)
 
-    def publish(self, messages: Union[SystemMessage, Sequence[SystemMessage]]):
+    def publish(self, messages: typing.Union[SystemMessage, typing.Sequence[SystemMessage]]):
         if not isinstance(messages, collections.abc.Sequence):
             messages = tuple([messages])
 

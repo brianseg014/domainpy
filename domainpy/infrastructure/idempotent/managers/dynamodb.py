@@ -1,6 +1,7 @@
+import typing
 import boto3
 
-from domainpy import exceptions as excs
+from domainpy.exceptions import IdempotencyItemError
 from domainpy.infrastructure.idempotent.recordmanager import IdempotencyRecordManager
 from domainpy.utils.dynamodb import client_serialize as serialize
 
@@ -12,7 +13,7 @@ class DynamoDBIdempotencyRecordManager(IdempotencyRecordManager):
 
         self.client = boto3.client('dynamodb', **kwargs)
 
-    def store_in_progress(self, record):
+    def store_in_progress(self, record: dict):
         item = {
             'TableName': self.table_name,
             'Item': {
@@ -34,9 +35,9 @@ class DynamoDBIdempotencyRecordManager(IdempotencyRecordManager):
         try:
             self.client.put_item(**item)
         except self.client.exceptions.ConditionalCheckFailedException as e:
-            raise excs.IdempotencyItemError() from e
+            raise IdempotencyItemError() from e
 
-    def store_success(self, record):
+    def store_success(self, record: dict):
         item = {
             'TableName': self.table_name,
             'Key': {
@@ -54,7 +55,7 @@ class DynamoDBIdempotencyRecordManager(IdempotencyRecordManager):
         self.client.update_item(**item)
         
 
-    def store_failure(self, record, exc):
+    def store_failure(self, record: dict, exc: typing.Type[Exception]):
         item = {
             'TableName': self.table_name,
             'Key': {

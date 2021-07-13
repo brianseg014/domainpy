@@ -7,7 +7,7 @@ from domainpy.infrastructure.idempotent.idempotency import Idempotency
 
 def test_idempotency_sucess():
     record_manager = mock.MagicMock()
-    record = {}
+    record = { 'trace_id': '', 'topic': '' }
 
     with Idempotency(record, record_manager) as record:
         pass
@@ -17,7 +17,7 @@ def test_idempotency_sucess():
 
 def test_idempotency_failure():
     record_manager = mock.MagicMock()
-    record = {}
+    record = { 'trace_id': '', 'topic': '' }
 
     with pytest.raises(Exception):
         with Idempotency(record, record_manager) as record:
@@ -29,7 +29,7 @@ def test_idempotency_failure():
 def test_idempotency_already_exists():
     record_manager = mock.MagicMock()
     record_manager.store_in_progress = mock.Mock(side_effect=IdempotencyItemError())
-    record = {}
+    record = { 'trace_id': '', 'topic': '' }
     
     with Idempotency(record, record_manager) as record:
         assert record is None

@@ -1,19 +1,21 @@
+from __future__ import annotations
 
 import typing
 import functools
 
+if typing.TYPE_CHECKING:
+    from domainpy.typing import SystemMessage
+    from domainpy.application.command import ApplicationCommand
+    from domainpy.application.integration import IntegrationEvent
+    from domainpy.domain.model.event import DomainEvent
+
 from domainpy.exceptions import DefinitionError
-from domainpy.typing import SystemMessage
-from domainpy.application.command import ApplicationCommand
-from domainpy.application.integration import IntegrationEvent
-from domainpy.domain.model.event import DomainEvent
-from domainpy.domain.exceptions import DomainError
 from domainpy.utils.traceable import Traceable
 
 
 class ApplicationService:
     
-    def handle(self, message: SystemMessage):
+    def handle(self, message: 'SystemMessage'):
         pass
 
 

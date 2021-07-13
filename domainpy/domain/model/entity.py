@@ -1,10 +1,14 @@
+from __future__ import annotations
+
+import typing
+
+if typing.TYPE_CHECKING:
+    from domainpy.domain.model.aggregate import AggregateRoot
+    from domainpy.domain.model.event import DomainEvent
 
 from domainpy.exceptions import DefinitionError
-from typing import Type
-import typing
-from domainpy.domain.model.aggregate import AggregateRoot
-from domainpy.domain.model.event import DomainEvent
 from domainpy.domain.model.value_object import Identity
+
 
 class DomainEntity:
 
@@ -32,5 +36,5 @@ class DomainEntity:
     def __repr__(self):
         return f'{self.__class__.__name__}(id={self.__id__})' # pragma: no cover
 
-    def mutate(self, event: DomainEvent):
+    def mutate(self, event: 'DomainEvent'):
         pass # pragma: no cover

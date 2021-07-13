@@ -6,7 +6,7 @@ from domainpy.infrastructure.mappers import EventRecord
 
 class MemoryEventRecordManager(EventRecordManager):
     
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         self.heap: list[EventRecord] = []
         
     def session(self):
