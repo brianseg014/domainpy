@@ -2,7 +2,7 @@ from datetime import datetime
 
 from domainpy import exceptions as excs
 from domainpy.infrastructure.eventsourced.recordmanager import EventRecordManager, Session
-from domainpy.infrastructure.mappers import EventRecord
+from domainpy.infrastructure.records import EventRecord
 
 class MemoryEventRecordManager(EventRecordManager):
     

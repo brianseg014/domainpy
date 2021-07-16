@@ -13,7 +13,9 @@ def test_store_in_progress():
     manager = mock.MagicMock()
     bus = mock.MagicMock()
 
-    command = ApplicationCommand()
+    command = mock.MagicMock(spec=ApplicationCommand(
+        __timestamp__=0.0
+    ))
 
     store = TraceStore(mapper, manager, bus)
     store.store_in_progress(command, ['some_context'])

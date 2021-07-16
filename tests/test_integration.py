@@ -1,0 +1,204 @@
+import typing
+
+from domainpy.application import (
+    ApplicationService, 
+    handler, 
+    ApplicationCommand, 
+    IntegrationEvent
+)
+from domainpy.domain import (
+    AggregateRoot, 
+    mutator, 
+    DomainEntity, 
+    DomainEvent, 
+    ValueObject, 
+    Identity, 
+    DomainError,
+    IRepository,
+    IDomainService
+)
+from domainpy.infrastructure import (
+    Mapper,
+    BuiltinCommandTranscoder, 
+    BuiltinIntegrationTranscoder,
+    BuiltinEventTranscoder,
+    EventStore,
+    make_eventsourced_repository_adapter as make_repo_adapter
+)
+from domainpy.utils import (
+    Registry,
+    Bus,
+    ApplicationBusAdapter
+)
+from domainpy.typing import SystemMessage
+from domainpy.environments import EventSourcedEnvironment
+from domainpy.mock import EventSourcedEnvironmentTestAdapter
+
+
+def test_all_system():
+    ################################## Infrastructure Utils ##################################
+
+    command_mapper = Mapper(
+        transcoder=BuiltinCommandTranscoder()
+    )
+    integration_mapper = Mapper(
+        transcoder=BuiltinIntegrationTranscoder('context')
+    )
+    event_mapper = Mapper(
+        transcoder=BuiltinEventTranscoder('context')
+    )
+
+
+    ################################## Domain Layer ##################################
+
+    ## Domain Model
+
+    ### Value Objects
+    class PetStoreId(Identity):
+        id: str
+
+    class PetStoreName(ValueObject):
+        name: str
+
+        @classmethod
+        def from_text(cls, name: str):
+            return PetStoreName(name)
+
+    ### Aggregates
+
+    #### Events
+    @event_mapper.register
+    class PetStoreCreated(DomainEvent):
+        pet_store_id: PetStoreId
+        pet_store_name: PetStoreName
+
+    #### Aggregate root
+    class PetStore(AggregateRoot):
+
+        @classmethod
+        def create(cls, pet_store_id: PetStoreId, pet_store_name: PetStoreName):
+            pet_store = PetStore(pet_store_id)
+            pet_store.__apply__(
+                pet_store.__stamp__(PetStoreCreated)(
+                    pet_store_id=pet_store_id,
+                    pet_store_name=pet_store_name
+                )
+            )
+            return pet_store
+
+    class PetStoreRepository(IRepository[PetStore, PetStoreId]):
+        pass
+
+    ################################## Application Layer ##################################
+
+    ## Commands
+    @command_mapper.register
+    class CreatePetStore(ApplicationCommand):
+        pet_store_id: str
+        pet_store_name: str
+
+    ## Hanlder
+    class PetStoreSerivce(ApplicationService):
+
+        def __init__(self, registry: Registry):
+            self.pet_store_repository = registry.get(PetStoreRepository)
+
+        @handler
+        def handle(self, message: SystemMessage) -> None:
+            pass
+
+        @handle.command(CreatePetStore)
+        def _(self, c: CreatePetStore) -> None:
+            pet_store = PetStore.create(
+                pet_store_id=PetStoreId.from_text(c.pet_store_id),
+                pet_store_name=PetStoreName.from_text(c.pet_store_name)
+            )
+            self.pet_store_repository.save(pet_store)
+
+    ## Integrations
+    @integration_mapper.register
+    class CreatePetStoreSucceeded(IntegrationEvent):
+        __resolve__: str = 'success'
+        __error__: typing.Optional[str] = None
+        __version__: int = 1
+
+    ## Resolver
+    class PetStoreResolver(ApplicationService):
+
+        def __init__(self, integration_bus: Bus[IntegrationEvent]):
+            self.integration_bus = integration_bus
+
+        @handler
+        def handle(self, message: SystemMessage):
+            pass
+
+        @handle.trace(CreatePetStore, PetStoreCreated)
+        def _(self, c: CreatePetStore, e: PetStoreCreated):
+            self.integration_bus.publish(
+                CreatePetStoreSucceeded(
+                    __timestamp__=0.0
+                )
+            )
+
+    ############################## Infrastructure Layer ##################################
+
+    ## Repositories
+    Adapter = make_repo_adapter(PetStore, PetStoreId)
+    class EventSourcedPetStoreRepository(PetStoreRepository, Adapter):
+        pass
+
+
+    ################################## Environment ######################################
+
+    class Environment(
+        EventSourcedEnvironmentTestAdapter
+    ):
+
+        def setup_registry(
+            self, registry: Registry, 
+            event_store: EventStore, 
+            setupargs: dict
+        ) -> None:
+            registry.put(PetStoreRepository, EventSourcedPetStoreRepository(event_store))
+        
+        def setup_resolver_bus(
+            self, 
+            resolver_bus: ApplicationBusAdapter, 
+            publisher_integration_bus: Bus[DomainEvent], 
+            setupargs: dict
+        ) -> None:
+            resolver_bus.attach(
+                PetStoreResolver(publisher_integration_bus)
+            )
+
+        def setup_handler_bus(
+            self, 
+            handler_bus: ApplicationBusAdapter, 
+            registry: Registry, 
+            setupargs: dict
+        ) -> None:
+            handler_bus.attach(
+                PetStoreSerivce(registry)
+            )
+
+    ################################## Some tests ######################################
+
+    env = Environment(
+        command_mapper=command_mapper,
+        integration_mapper=integration_mapper,
+        event_mapper=event_mapper
+    )
+    env.given(
+        env.stamp_event(PetStoreCreated, PetStore)(
+            pet_store_id=PetStoreId.create(),
+            pet_store_name=PetStoreName.from_text('noe')
+        )
+    )
+    env.when(
+        env.stamp_command(CreatePetStore)(
+            pet_store_id='ark',
+            pet_store_name='ark'
+        )
+    )
+    env.then.domain_events.assert_has_event_n(PetStoreCreated, n=2)
+    env.then.integration_events.assert_has_integration(CreatePetStoreSucceeded)

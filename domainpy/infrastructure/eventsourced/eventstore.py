@@ -8,13 +8,13 @@ if typing.TYPE_CHECKING:
     from domainpy.utils.bus import Bus
 
 from domainpy.domain.model.event import DomainEvent
-from domainpy.infrastructure.mappers import EventMapper
+from domainpy.infrastructure.mappers import Mapper
 from domainpy.infrastructure.eventsourced.eventstream import EventStream
 
 
 class EventStore:
 
-    def __init__(self, event_mapper: EventMapper, record_manager: EventRecordManager, bus: Bus):
+    def __init__(self, event_mapper: Mapper, record_manager: EventRecordManager, bus: Bus):
         self.event_mapper = event_mapper
         self.record_manager = record_manager
         self.bus = bus

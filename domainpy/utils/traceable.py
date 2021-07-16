@@ -1,4 +1,5 @@
 
-class Traceable:
+import typing
 
-    __trace_id__ = None
+class Traceable:
+    __trace_id__: typing.ClassVar[str] = None

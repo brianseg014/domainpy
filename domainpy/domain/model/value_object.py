@@ -3,11 +3,9 @@ import uuid
 import json
 
 from domainpy.exceptions import DefinitionError
-from domainpy.utils.constructable import Constructable, constructable
-from domainpy.utils.dictable import Dictable
-from domainpy.utils.immutable import Immutable
+from domainpy.utils.data import SystemData, system_data
 
-class ValueObject(Constructable, Dictable, Immutable):
+class ValueObject(SystemData):
 
     def __hash__(self):
         return hash(json.dumps(self.__to_dict__(), sort_keys=True))
@@ -25,10 +23,13 @@ class ValueObject(Constructable, Dictable, Immutable):
         return f'{self.__class__.__name__}({json.dumps(self.__to_dict__())})' # pragma: no cover
 
 
-class identity(constructable):
+class identity(system_data):
 
     def __new__(cls, name, bases, dct):
         new_cls = super().__new__(cls, name, bases, dct)
+
+        if name == 'Identity':
+            return new_cls
         
         if not hasattr(new_cls, '__annotations__'):
             raise DefinitionError(f'{cls.__name__} must include id: str annotation')
@@ -46,7 +47,6 @@ class identity(constructable):
         return new_cls
     
 class Identity(ValueObject, metaclass=identity):
-    id: str
     
     @classmethod
     def from_text(cls, id: str):

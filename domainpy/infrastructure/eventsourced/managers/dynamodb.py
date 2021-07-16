@@ -3,7 +3,7 @@ import datetime
 
 from domainpy.exceptions import ConcurrencyError
 from domainpy.infrastructure.eventsourced.recordmanager import EventRecordManager, Session
-from domainpy.infrastructure.mappers import EventRecord
+from domainpy.infrastructure.records import EventRecord
 from domainpy.utils.dynamodb import client_serialize as serialize, client_deserialize as deserialize
 
 

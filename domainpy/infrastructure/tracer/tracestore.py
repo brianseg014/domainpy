@@ -2,7 +2,7 @@ import typing
 import dataclasses
 
 from domainpy.application.command import ApplicationCommand
-from domainpy.infrastructure.mappers import CommandMapper
+from domainpy.infrastructure.mappers import Mapper
 from domainpy.infrastructure.tracer.recordmanager import TraceRecordManager
 from domainpy.infrastructure.records import TraceRecord
 from domainpy.utils.bus import Bus
@@ -17,7 +17,7 @@ class TraceResolution:
 
 class TraceStore:
 
-    def __init__(self, command_mapper: CommandMapper, record_manager: TraceRecordManager, resolver_bus: Bus[TraceResolution]):
+    def __init__(self, command_mapper: Mapper, record_manager: TraceRecordManager, resolver_bus: Bus[TraceResolution]):
         self.command_mapper = command_mapper
         self.record_manager = record_manager
         self.resolver_bus = resolver_bus

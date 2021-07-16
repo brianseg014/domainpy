@@ -1,13 +1,14 @@
 from __future__ import annotations
 
-import time
-import functools
 import typing
+import datetime
+import functools
 
 if typing.TYPE_CHECKING:
-    from domainpy.domain.model.value_object import Identity
     from domainpy.domain.model.event import DomainEvent
 
+from domainpy.exceptions import VersionError
+from domainpy.domain.model.value_object import Identity
 from domainpy.exceptions import DefinitionError
 
 
@@ -24,25 +25,29 @@ class AggregateRoot:
     def __selector__(self):
         return Selector(self)
 
+    def __stamp__(self, event_type: typing.Type[DomainEvent]):
+        return functools.partial(
+            event_type,
+            __stream_id__ = f'{self.__id__.id}:{self.__class__.__name__}',
+            __number__ = self.__version__ + 1,
+            __timestamp__ = datetime.datetime.timestamp(datetime.datetime.now())
+        )
+
     def __apply__(self, event: DomainEvent):
-        self.__stamp__(event)
         self.__route__(event)
 
         self.__changes__.append(event)
 
-    def __stamp__(self, event: DomainEvent):
-        event.__dict__.update({
-            '__stream_id__': f'{self.__id__.id}:{self.__class__.__name__}',
-            '__number__': self.__version__ + 1,
-            '__timestamp__': time.time()
-        })
-
     def __route__(self, event: DomainEvent):
-        if event not in self.__seen__:
-            self.__version__ = event.__number__
-            self.__seen__.append(event)
+        next_version = self.__version__ + 1
 
-            self.mutate(event)
+        if event.__number__ != next_version:
+            raise VersionError(next_version, event.__number__)
+
+        self.__version__ = next_version
+        self.__seen__.append(event)
+
+        self.mutate(event)
 
     def mutate(self, event: DomainEvent):
         pass # pragma: no cover

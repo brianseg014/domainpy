@@ -10,12 +10,9 @@ from domainpy.exceptions import DefinitionError
 
 
 class Projection:
-
-    def __route__(self, e: DomainEvent):
-        self.project(e)
-
+    
     def project(self, e: DomainEvent):
-        pass
+        pass # pragma: no cover
 
 
 class projector:

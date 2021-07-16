@@ -2,10 +2,31 @@ import pytest
 from unittest import mock
 
 from domainpy.exceptions import MapperNotFoundError
-from domainpy.infrastructure.mappers import MapperSet
+from domainpy.infrastructure.mappers import Mapper, MapperSet
 
+def test_mapper_serialize():
+    transcoder = mock.MagicMock()
+    transcoder.serialize = mock.Mock()
+    message = mock.MagicMock()
+    
+    mapper = Mapper(transcoder=transcoder)
+    mapper.serialize(message)
 
-def test_is_deserialize():
+    transcoder.serialize.assert_called_with(message)
+
+def  test_mapper_deserialize():
+    transcoder = mock.MagicMock()
+    transcoder.deserialize = mock.Mock()
+    message = mock.MagicMock()
+    MessagetType = type('MessagetType', (), {})
+
+    mapper = Mapper(transcoder=transcoder)
+    mapper.register(MessagetType)
+    mapper.deserialize(message)
+
+    transcoder.deserialize.assert_called_with(message, { 'MessagetType': MessagetType })
+
+def test_mapperset_is_deserialize():
     mapper1 = mock.MagicMock()
     mapper2 = mock.MagicMock()
     mapper2.is_deserializable = mock.Mock(return_value=True)
@@ -14,9 +35,7 @@ def test_is_deserialize():
     mapper_set = MapperSet([mapper1, mapper2])
     assert mapper_set.is_deserializable(deserializable)
 
-def test_deserialize():
-    deserialized = {}
-
+def test_mapperset_deserialize():
     mapper1 = mock.MagicMock()
     mapper1.is_deserializable = mock.Mock(return_value=False)
     mapper2 = mock.MagicMock()
@@ -29,7 +48,7 @@ def test_deserialize():
     mapper1.deserialize.assert_not_called()
     mapper2.deserialize.assert_called()
 
-def test_deserialize_no_mapper_found():
+def test_mapperset_deserialize_no_mapper_found():
     mapper_set = MapperSet([])
 
     deserializable = {}

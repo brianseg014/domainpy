@@ -3,7 +3,6 @@ import uuid
 import pytest
 from unittest import mock
 
-from domainpy.domain.model.event import DomainEvent
 from domainpy.infrastructure.records import EventRecord
 from domainpy.infrastructure.eventsourced.eventstore import EventStore
 
@@ -21,18 +20,18 @@ def bus():
     return mock.MagicMock()
 
 def test_store_events(event_mapper, record_manager, bus):
-    e = DomainEvent()
+    event = mock.MagicMock()
 
     es = EventStore(
         event_mapper=event_mapper,
         record_manager=record_manager,
         bus=bus
     )
-    es.store_events([e])
+    es.store_events([event])
 
     record_manager.session.assert_called()
-    event_mapper.serialize.assert_called_once_with(e)
-    bus.publish.assert_called_once_with(e)
+    event_mapper.serialize.assert_called_once_with(event)
+    bus.publish.assert_called_once_with(event)
 
 def test_get_events(event_mapper, record_manager, bus):
     stream_id = str(uuid.uuid4())
@@ -49,8 +48,10 @@ def test_get_events(event_mapper, record_manager, bus):
     )
     record_manager.get_records = mock.Mock(return_value=[er])
 
-    e = DomainEvent(__stream_id__=stream_id, __number__=0)
-    event_mapper.deserialize = mock.Mock(return_value=e)
+    event = mock.MagicMock()
+    event.__stream_id__ = stream_id
+    event.__number__ = 0
+    event_mapper.deserialize = mock.Mock(return_value=event)
 
     es = EventStore(
         event_mapper=event_mapper,
@@ -60,4 +61,4 @@ def test_get_events(event_mapper, record_manager, bus):
     events = es.get_events(stream_id=stream_id)
 
     assert len(events) == 1
-    assert events[0] == e
+    assert events[0] == event

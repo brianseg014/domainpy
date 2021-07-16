@@ -7,6 +7,14 @@ class DefinitionError(Exception):
     pass
 
 
+class RegistryComponentNotFound(Exception):
+    pass
+
+
+class VersionError(Exception):
+    pass
+
+
 class MapperNotFoundError(Exception):
     pass
 
@@ -38,6 +46,3 @@ class PartialBatchError(Exception):
         self.message = message
         self.errors = errors
     
-    
-class ConfigurationError(Exception):
-    pass

@@ -1,15 +1,15 @@
 
-from domainpy.utils.constructable import Constructable
-from domainpy.utils.dictable import Dictable
-from domainpy.utils.immutable import Immutable
+from domainpy.utils.data import SystemData
 from domainpy.utils.traceable import Traceable
 
 
-class DomainEvent(Constructable, Dictable, Immutable, Traceable):
-    __version__ = 1
-    __message__ = 'domain_event'
+class DomainEvent(SystemData, Traceable):
+    __stream_id__: str
+    __number__: int
+    __timestamp__: float
+    __version__: int = 1
 
-    def __eq__(self, other):
+    def __eq__(self, other: 'DomainEvent'):
         if other is None:
             return False
 

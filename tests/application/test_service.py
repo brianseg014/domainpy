@@ -1,111 +1,113 @@
 import pytest
 import uuid
+from unittest import mock
 
-from domainpy import exceptions as excs
-from domainpy.application.service import ApplicationService, handler
-from domainpy.application.command import ApplicationCommand
-from domainpy.application.integration import IntegrationEvent
-from domainpy.domain.model.event import DomainEvent
+from domainpy.exceptions import DefinitionError
+from domainpy.application.service import handler
 
 
 def test_handler_fail_if_not_trace_id():
-    class BasicService(ApplicationService):
+    story = []
 
-        @handler
-        def handle(self, c: ApplicationCommand):
-            pass
+    something = mock.MagicMock()
+    service = mock.MagicMock()
 
-        @handle.command(ApplicationCommand)
-        def _(self, c: ApplicationCommand):
-            pass
+    @handler
+    def handle():
+        pass
 
-    c = ApplicationCommand()
-    
-    s = BasicService()
-    with pytest.raises(TypeError):
-        s.handle(c)
+    def handle_something(*args):
+        story.append(args)
+
+    handle.command(something.__class__)(handle_something)
+
+    with pytest.raises(DefinitionError):
+        handle(service, something)
 
 def test_handler_command():
-    class BasicService(ApplicationService):
+    story = []
 
-        @handler
-        def handle(self, c: ApplicationCommand):
-            pass
+    something = mock.MagicMock()
+    something.__trace_id__ = 'some-trace-id'
+    service = mock.MagicMock()
 
-        @handle.command(ApplicationCommand)
-        def _(self, c: ApplicationCommand):
-            self.c = c
+    @handler
+    def handle():
+        pass
 
-    c = ApplicationCommand(__trace_id__=uuid.uuid4())
+    def handle_something(*args):
+        story.append(args)
 
-    s = BasicService()
-    s.handle(c)
+    handle.command(something.__class__)(handle_something)
 
-    assert s.c == c
+    handle(service, something)
+
+    assert story[0][0] == service
+    assert story[0][1] == something
 
 def test_handler_integration():
-    class BasicService(ApplicationService):
+    story = []
 
-        @handler
-        def handle(self, c: ApplicationCommand):
-            pass
+    something = mock.MagicMock()
+    something.__trace_id__ = 'some-trace-id'
+    service = mock.MagicMock()
 
-        @handle.integration(IntegrationEvent)
-        def _(self, i: IntegrationEvent):
-            self.i = i
+    @handler
+    def handle():
+        pass
 
-    i = IntegrationEvent(__trace_id__=uuid.uuid4())
+    def handle_something(*args):
+        story.append(args)
 
-    s = BasicService()
-    s.handle(i)
+    handle.integration(something.__class__)(handle_something)
 
-    assert s.i == i
+    handle(service, something)
+
+    assert story[0][0] == service
+    assert story[0][1] == something
 
 def test_handler_event():
-    class BasicService(ApplicationService):
+    story = []
 
-        @handler
-        def handle(self, c: ApplicationCommand):
-            pass
+    something = mock.MagicMock()
+    something.__trace_id__ = 'some-trace-id'
+    service = mock.MagicMock()
 
-        @handle.event(DomainEvent)
-        def _(self, e: DomainEvent):
-            self.e = e
+    @handler
+    def handle():
+        pass
 
-    e = DomainEvent(
-        __trace_id__=uuid.uuid4(),
-        __stream_id__=uuid.uuid4(),
-        __number__=0
-    )
+    def handle_something(*args):
+        story.append(args)
 
-    s = BasicService()
-    s.handle(e)
+    handle.event(something.__class__)(handle_something)
 
-    assert s.e == e
+    handle(service, something)
+
+    assert story[0][0] == service
+    assert story[0][1] == something
 
 def test_handler_trace():
-    class BasicService(ApplicationService):
+    story = []
 
-        @handler
-        def handle(self, c: ApplicationCommand):
-            pass
+    something = mock.MagicMock()
+    something.__trace_id__ = 'some-trace-id'
+    someotherthing = mock.MagicMock()
+    someotherthing.__trace_id__ = 'some-trace-id'
+    service = mock.MagicMock()
 
-        @handle.trace(ApplicationCommand, DomainEvent)
-        def _(self, c: ApplicationCommand, e: DomainEvent):
-            self.c = c
-            self.e = e
+    @handler
+    def handle():
+        pass
 
-    trace_id=uuid.uuid4()
-    c = ApplicationCommand(__trace_id__=trace_id)
-    e = DomainEvent(
-        __trace_id__=uuid.uuid4(),
-        __stream_id__=uuid.uuid4(),
-        __number__=0
-    )
+    def handle_trace(*args):
+        story.append(args)
 
-    s = BasicService()
-    s.handle(c)
-    s.handle(e)
+    handle.trace(something.__class__, someotherthing.__class__)(handle_trace)
 
-    assert s.c == c
-    assert s.e == e
+    handle(service, something)
+    handle(service, someotherthing)
+
+    assert story[0][0] == service
+    assert story[0][1] == something
+    assert story[0][2] == someotherthing

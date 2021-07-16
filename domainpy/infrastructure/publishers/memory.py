@@ -9,14 +9,11 @@ if typing.TYPE_CHECKING:
 from domainpy.infrastructure.publishers.base import IPublisher
 
 
-class MemoryPublisher(IPublisher):
-
-    def __init__(self, *args, **kwargs):
-        self.heap = []
-
+class MemoryPublisher(IPublisher, list):
+    
     def publish(self, messages: typing.Union[SystemMessage, typing.Sequence[SystemMessage]]):
         if not isinstance(messages, collections.abc.Sequence):
             messages = tuple([messages])
 
-        self.heap.extend(messages)
+        self.extend(messages)
     

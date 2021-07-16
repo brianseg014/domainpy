@@ -1,49 +1,50 @@
-from domainpy.exceptions import DefinitionError
+
 import pytest
 from unittest import mock
 
-from domainpy.domain.model.value_object import Identity
-from domainpy.domain.model.aggregate import AggregateRoot
+from domainpy.exceptions import DefinitionError
 from domainpy.domain.model.entity import DomainEntity
-from domainpy.domain.model.event import DomainEvent
+from domainpy.domain.model.value_object import Identity
 
 
-@pytest.fixture
-def aggregate():
-    return AggregateRoot(id=Identity.create())
-
-def test_entity_apply_calls_aggregate_apply(aggregate):
+def test_entity_apply_calls_aggregate_apply():
+    aggregate = mock.MagicMock()
     aggregate.__apply__ = mock.Mock()
+    entity_id = mock.MagicMock()
+    event = mock.MagicMock()
 
-    event = DomainEvent()
-
-    entity = DomainEntity(id=Identity.create(), aggregate=aggregate)
+    entity = DomainEntity(entity_id, aggregate)
     entity.__apply__(event)
 
     aggregate.__apply__.assert_called_with(event)
 
-def test_entity_equality(aggregate):
-    id = Identity.create()
-    a = DomainEntity(id=id, aggregate=aggregate)
-    b = DomainEntity(id=id, aggregate=aggregate)
+def test_entity_equality():
+    aggregate = mock.MagicMock()
+    entity_id = mock.MagicMock(spec=Identity.create())
+
+    a = DomainEntity(id=entity_id, aggregate=aggregate)
+    b = DomainEntity(id=entity_id, aggregate=aggregate)
 
     assert a == b
-    assert a == id
+    assert a == entity_id
 
-def test_entity_inequality(aggregate):
-    id_a = Identity.create()
-    a = DomainEntity(id=id_a, aggregate=aggregate)
+def test_entity_inequality():
+    aggregate = mock.MagicMock()
+    entity_a_id = mock.MagicMock(spec=Identity.create())
+    entity_b_id = mock.MagicMock(spec=Identity.create())
 
-    id_b = Identity.create()
-    b = DomainEntity(id=id_b, aggregate=aggregate)
+    a = DomainEntity(id=entity_a_id, aggregate=aggregate)
+    b = DomainEntity(id=entity_b_id, aggregate=aggregate)
 
     assert a != b
-    assert a != id_b
+    assert a != entity_b_id
     assert a != None
 
-def test_entity_equality_failes(aggregate):
-    id = Identity.create()
-    a = DomainEntity(id=id, aggregate=aggregate)
+def test_entity_equality_failes():
+    aggregate = mock.MagicMock()
+    entity_id = mock.MagicMock(spec=Identity.create())
 
+    x = DomainEntity(id=entity_id, aggregate=aggregate)
+    
     with pytest.raises(DefinitionError):
-        a == {}
+        x == {}

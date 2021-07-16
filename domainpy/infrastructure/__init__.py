@@ -4,7 +4,8 @@ from .eventsourced import (
     EventStream,
     EventRecordManager,
     MemoryEventRecordManager,
-    DynamoDBEventRecordManager
+    DynamoDBEventRecordManager,
+    make_repository_adapter as make_eventsourced_repository_adapter
 )
 
 from .idempotent import (
@@ -28,5 +29,28 @@ from .publishers import (
     AwsSimpleQueueServicePublisher
 )
 
-from .mappers import CommandMapper, IntegrationMapper, EventMapper, MapperSet
-from .records import CommandRecord, IntegrationRecord, EventRecord, TraceRecord
+from .mappers import (
+    Mapper, 
+    MapperSet
+)
+from .transcoder import (
+    ITranscoder, 
+    CommandTranscoder, 
+    IntegrationTranscoder, 
+    EventTranscoder,
+    BuiltinCommandTranscoder, 
+    BuiltinIntegrationTranscoder, 
+    BuiltinEventTranscoder,
+    Message, 
+    Record, 
+    CommandRecordDict, 
+    IntegrationRecordDict, 
+    EventRecordDict, 
+    JsonStr
+)
+from .records import (
+    CommandRecord, 
+    IntegrationRecord, 
+    EventRecord, 
+    TraceRecord
+)

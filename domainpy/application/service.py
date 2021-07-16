@@ -15,7 +15,7 @@ from domainpy.utils.traceable import Traceable
 
 class ApplicationService:
     
-    def handle(self, message: 'SystemMessage'):
+    def handle(self, message: SystemMessage):
         pass
 
 

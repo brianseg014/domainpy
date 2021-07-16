@@ -1,138 +1,119 @@
+from inspect import trace
 import pytest
-from uuid import uuid4
+import uuid
 from unittest import mock
 
-from domainpy import exceptions as excs
-from domainpy.domain.model.aggregate import AggregateRoot, mutator
-from domainpy.domain.model.event import DomainEvent
-from domainpy.domain.model.value_object import Identity
+from domainpy.exceptions import DefinitionError, VersionError
+from domainpy.domain.model.aggregate import AggregateRoot, mutator, Selector
 
 
 
-def test_aggregate_apply():
-    class BasicAggregate(AggregateRoot):
-        pass
+def test_aggregate_add_to_changes_and_mutate_when_apply():
+    id = mock.MagicMock()
+    event = mock.MagicMock()
+    event.__number__ = 1
 
-    id = Identity.create()
-    e = DomainEvent()
-
-    agg = BasicAggregate(id=id)
+    agg = AggregateRoot(id=id)
     agg.mutate = mock.Mock()
-    agg.__apply__(e)
+    agg.__apply__(event)
 
-    agg.mutate.assert_called_once_with(e)
-
-    assert e.__stream_id__ == f'{id.id}:{BasicAggregate.__name__}'
-    assert e.__number__ == 1
     assert len(agg.__changes__) == 1
-    assert agg.__changes__[0] == e
+    agg.mutate.assert_called_once_with(event)
 
-def test_aggregate_route():
-    class BasicAggregate(AggregateRoot):
-        pass
+def test_aggregate_call_mutate_when_route():
+    id = mock.MagicMock()
+    event = mock.MagicMock()
+    event.__number__ = 1
 
-    id = Identity.create()
-    e = DomainEvent(
-        __stream_id__ = f'{id.id}:{BasicAggregate.__name__}',
-        __number__ = 0
-    )
-
-    agg = BasicAggregate(id=id)
+    agg = AggregateRoot(id=id)
     agg.mutate = mock.Mock()
-    agg.__route__(e)
+    agg.__route__(event)
 
-    agg.mutate.assert_called_once_with(e)
+    agg.mutate.assert_called_once_with(event)
+
+def test_aggregate_route_mismatch_version():
+    id = mock.MagicMock()
+    event = mock.MagicMock()
+    event.__number__ = 2
+
+    agg = AggregateRoot(id=id)
+    agg.mutate = mock.Mock()
+
+    with pytest.raises(VersionError):
+        agg.__route__(event)
 
 def test_selector_get_trace():
-    class BasicAggregate(AggregateRoot):
-        pass
+    trace_id = str(uuid.uuid4())
 
-    trace_id = uuid4()
-    id = Identity.create()
-    e = DomainEvent(
-        __stream_id__ = f'{id.id}:{BasicAggregate.__name__}',
-        __number__ = 0,
-        __trace_id__ = trace_id
-    )
+    event = mock.MagicMock()
+    event.__trace_id__ = trace_id
 
-    agg = BasicAggregate(id=id)
-    agg.__route__(e)
+    aggregate = mock.MagicMock()
+    aggregate.__seen__ = [
+        event
+    ]
 
-    events = agg.__selector__.get_trace(trace_id, DomainEvent)
+    selector = Selector(aggregate)
+    events = selector.get_trace(trace_id, event.__class__)
+
     assert len(events) == 1
-    assert events[0] == e
 
-def test_selector_get_trace_if_not_compensated():
-    class BasicAggregate(AggregateRoot):
-        pass
+def test_selector_get_trace_for_compensation():
+    trace_id = str(uuid.uuid4())
 
-    class StandartEvent(DomainEvent):
-        pass
+    StandarEvent = type('StandarEvent', (mock.MagicMock,), {})
+    standard_event = StandarEvent()
+    standard_event.__trace_id__ = trace_id
 
-    class CompensationEvent(DomainEvent):
-        pass
+    CompensationEvent = type('CompensationEvent', (mock.MagicMock,), {})
+    compensation_event = CompensationEvent()
+    compensation_event.__trace_id__ = trace_id
 
-    trace_id = uuid4()
-    id = Identity.create()
-    std_event = StandartEvent(
-        __stream_id__ = f'{id.id}:{BasicAggregate.__name__}',
-        __number__ = 0,
-        __trace_id__ = trace_id
-    )
-    comp_event = CompensationEvent(
-        __stream_id__ = f'{id.id}:{BasicAggregate.__name__}',
-        __number__ = 1,
-        __trace_id__ = trace_id
-    )
+    aggregate = mock.MagicMock()
+    aggregate.__seen__ = [standard_event]
 
-    agg = BasicAggregate(id=id)
-    agg.__route__(std_event)
-
-    events = agg.__selector__.get_trace_if_not_compensated(trace_id, compensate_type=CompensationEvent)
+    selector = Selector(aggregate)
+    events = selector.get_trace_if_not_compensated(trace_id, compensate_type=CompensationEvent)
     # Should return event to compensate
     assert len(events) == 1
-    assert events[0] == std_event
+    assert events[0] == standard_event
 
-    agg.__route__(comp_event)
-    events = agg.__selector__.get_trace_if_not_compensated(trace_id, compensate_type=CompensationEvent)
+    aggregate.__seen__ = [standard_event, compensation_event]
+    events = selector.get_trace_if_not_compensated(trace_id, compensate_type=CompensationEvent)
     # Should return empty as is already compensated
     assert len(events) == 0
 
+
 def test_mutator():
-    class BasicAggregate(AggregateRoot):
+    story = []
 
-        @mutator
-        def mutate(self, e: DomainEvent):
-            pass
+    something = mock.MagicMock()
+    aggregate = mock.MagicMock()
 
-        @mutate.event(DomainEvent)
-        def _(self, e: DomainEvent):
-            self.e = e
+    @mutator
+    def mutate():
+        pass
 
+    def handle_something(*args):
+        story.append(args)
 
-    id = Identity.create()
-    e = DomainEvent(
-        __stream_id__ = f'{id.id}:{BasicAggregate.__name__}',
-        __number__ = 1,
-    )
+    mutate.event(something.__class__)(handle_something)
 
-    agg = BasicAggregate(id=id)
-    agg.__route__(e)
+    mutate(aggregate, something)
 
-    assert agg.e == e
+    assert story[0][0] == aggregate
+    assert story[0][1] == something
 
 def test_mutator_must_be_unique():
-    with pytest.raises(excs.DefinitionError):
-        class BasicAggregate(AggregateRoot):
+    something = mock.MagicMock()
 
-            @mutator
-            def mutate(self, e: DomainEvent):
-                pass
+    @mutator
+    def mutate():
+        pass
 
-            @mutate.event(DomainEvent)
-            def _(self, e: DomainEvent):
-                pass
+    def handle_something(*args):
+        pass
 
-            @mutate.event(DomainEvent)
-            def _(self, e: DomainEvent):
-                pass
+    mutate.event(something.__class__)(handle_something)
+    with pytest.raises(DefinitionError):
+        mutate.event(something.__class__)(handle_something)

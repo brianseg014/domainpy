@@ -1,26 +1,25 @@
-import uuid
 
-from domainpy.application.projection import Projection, projector
-from domainpy.domain.model.event import DomainEvent
+from unittest import mock
+
+from domainpy.application.projection import projector
 
 
-def test_projector_project():
-    class BasicProjection(Projection):
+def test_projector():
+    story = []
 
-        @projector
-        def project(self, e: DomainEvent):
-            pass
+    something = mock.MagicMock()
+    projection = mock.MagicMock()
 
-        @project.event(DomainEvent)
-        def _(self, e: DomainEvent):
-            self.e = e
+    @projector
+    def project():
+        pass
 
-    e  = DomainEvent(
-        __stream_id__=uuid.uuid4(),
-        __number__=0
-    )
+    def project_something(*args):
+        story.append(args)
 
-    p = BasicProjection()
-    p.__route__(e)
+    project.event(something.__class__)(project_something)
 
-    assert p.e == e
+    project(projection, something)
+
+    assert story[0][0] == projection
+    assert story[0][1] == something

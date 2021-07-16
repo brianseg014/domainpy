@@ -1,14 +1,13 @@
 
-from domainpy.utils.constructable import Constructable
-from domainpy.utils.immutable import Immutable
-from domainpy.utils.dictable import Dictable
+from domainpy.utils.data import SystemData
 from domainpy.utils.traceable import Traceable
 
 
-class ApplicationCommand(Constructable, Dictable, Immutable, Traceable):
-    __version__ = 1
-    __message__ = 'command'
+class ApplicationCommand(SystemData, Traceable):
+    __timestamp__: float
+    __version__: int = 1
+    __message__: str = 'command'
 
-    class Struct(Constructable, Dictable, Immutable):
+    class Struct(SystemData):
         pass
     

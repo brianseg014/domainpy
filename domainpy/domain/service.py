@@ -1,3 +1,3 @@
 
-class DomainService:
+class IDomainService:
     pass
