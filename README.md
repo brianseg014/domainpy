@@ -226,18 +226,18 @@ Putting all togheter. An EventSourcedEnvionment creates internally some
 buses which will transport system messages and an event store which stores
 and retreives events from a record manager such as dynamodb.
 
-**Projection Bus** distrubite domain events to projections subscibed.
+`Projection Bus` distrubite domain events to projections subscibed.
 
-**Resolver Bus** distribute all system messages to application services
+`Resolver Bus` distribute all system messages to application services
 with semantic role of resolvers.
 
-**Handler Bus** distribute all system messages to application services
+`Handler Bus` distribute all system messages to application services
 with semantic role of handlers.
 
-**Domain publisher bus** all domain events to be published in an infrastructure
+`Domain Publisher Bus` all domain events to be published in an infrastructure
 bus such as aws event bridge.
 
-**Integration publisher bus** all integration events to be publisher in an
+`Integration Publisher Bus` all integration events to be publisher in an
 infrastructure bus such as aws event bridge.
 
 ```python
