@@ -68,7 +68,7 @@ def test_all_system():
 
     #### Events
     @event_mapper.register
-    class PetStoreCreated(DomainEvent):
+    class PetStoreRegistered(DomainEvent):
         pet_store_id: PetStoreId
         pet_store_name: PetStoreName
 
@@ -76,15 +76,24 @@ def test_all_system():
     class PetStore(AggregateRoot):
 
         @classmethod
-        def create(cls, pet_store_id: PetStoreId, pet_store_name: PetStoreName):
+        def create(cls, pet_store_id: PetStoreId, pet_store_name: PetStoreName) -> 'PetStore':
             pet_store = PetStore(pet_store_id)
             pet_store.__apply__(
-                pet_store.__stamp__(PetStoreCreated)(
+                pet_store.__stamp__(PetStoreRegistered)(
                     pet_store_id=pet_store_id,
                     pet_store_name=pet_store_name
                 )
             )
             return pet_store
+
+        @mutator
+        def mutate(self, message: DomainEvent) -> None:
+            pass
+
+        @mutate.event(PetStoreRegistered)
+        def _(self, e: PetStoreRegistered):
+            self.pet_store_id = e.pet_store_id
+            self.pet_store_name = e.pet_store_name
 
     class PetStoreRepository(IRepository[PetStore, PetStoreId]):
         pass
@@ -93,7 +102,7 @@ def test_all_system():
 
     ## Commands
     @command_mapper.register
-    class CreatePetStore(ApplicationCommand):
+    class RegisterPetStore(ApplicationCommand):
         pet_store_id: str
         pet_store_name: str
 
@@ -107,8 +116,8 @@ def test_all_system():
         def handle(self, message: SystemMessage) -> None:
             pass
 
-        @handle.command(CreatePetStore)
-        def _(self, c: CreatePetStore) -> None:
+        @handle.command(RegisterPetStore)
+        def _(self, c: RegisterPetStore) -> None:
             pet_store = PetStore.create(
                 pet_store_id=PetStoreId.from_text(c.pet_store_id),
                 pet_store_name=PetStoreName.from_text(c.pet_store_name)
@@ -132,8 +141,8 @@ def test_all_system():
         def handle(self, message: SystemMessage):
             pass
 
-        @handle.trace(CreatePetStore, PetStoreCreated)
-        def _(self, c: CreatePetStore, e: PetStoreCreated):
+        @handle.trace(RegisterPetStore, PetStoreRegistered)
+        def _(self, c: RegisterPetStore, e: PetStoreRegistered):
             self.integration_bus.publish(
                 CreatePetStoreSucceeded(
                     __timestamp__=0.0
@@ -189,16 +198,16 @@ def test_all_system():
         event_mapper=event_mapper
     )
     env.given(
-        env.stamp_event(PetStoreCreated, PetStore)(
+        env.stamp_event(PetStoreRegistered, PetStore)(
             pet_store_id=PetStoreId.create(),
             pet_store_name=PetStoreName.from_text('noe')
         )
     )
     env.when(
-        env.stamp_command(CreatePetStore)(
+        env.stamp_command(RegisterPetStore)(
             pet_store_id='ark',
             pet_store_name='ark'
         )
     )
-    env.then.domain_events.assert_has_event_n(PetStoreCreated, n=2)
+    env.then.domain_events.assert_has_event_n(PetStoreRegistered, n=2)
     env.then.integration_events.assert_has_integration(CreatePetStoreSucceeded)
