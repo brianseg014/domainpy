@@ -1,6 +1,4 @@
-
 from typing import Sequence
-
 
 
 class DefinitionError(Exception):
@@ -24,13 +22,11 @@ class ConcurrencyError(Exception):
 
 
 class PublisherError(Exception):
-
     class EntryError:
-
         def __init__(self, message, reason: str):
             self.message = message
             self.reason = reason
-    
+
     def __init__(self, message: str, errors: Sequence[EntryError]):
         self.message = message
         self.errors = errors
@@ -41,8 +37,6 @@ class IdempotencyItemError(Exception):
 
 
 class PartialBatchError(Exception):
-    
     def __init__(self, message, errors):
         self.message = message
         self.errors = errors
-    

@@ -11,11 +11,13 @@ if typing.TYPE_CHECKING:
     from domainpy.infrastructure.publishers.base import IPublisher
 
 from domainpy.utils.bus import Bus
-from domainpy.utils.bus_subscribers import ApplicationServiceSubscriber, ProjectionSubscriber
+from domainpy.utils.bus_subscribers import (
+    ApplicationServiceSubscriber,
+    ProjectionSubscriber,
+)
 
 
 class ApplicationBusAdapter:
-
     def __init__(self, bus: Bus[SystemMessage]) -> None:
         self.bus = bus
 
@@ -24,7 +26,6 @@ class ApplicationBusAdapter:
 
 
 class ProjectionBusAdapter:
-
     def __init__(self, bus: Bus[DomainEvent]) -> None:
         self.bus = bus
 
@@ -32,9 +33,12 @@ class ProjectionBusAdapter:
         self.bus.attach(ProjectionSubscriber(projection))
 
 
-PublishableMessage = typing.TypeVar('PublishableMessage', bound=typing.Union['DomainEvent', 'IntegrationEvent'])
-class PublisherBusAdapter(typing.Generic[PublishableMessage]):
+PublishableMessage = typing.TypeVar(
+    "PublishableMessage", bound=typing.Union["DomainEvent", "IntegrationEvent"]
+)
 
+
+class PublisherBusAdapter(typing.Generic[PublishableMessage]):
     def __init__(self, bus: Bus[PublishableMessage]) -> None:
         self.bus = bus
 

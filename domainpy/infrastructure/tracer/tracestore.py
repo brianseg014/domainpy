@@ -1,10 +1,10 @@
-import typing
 import dataclasses
+import typing
 
 from domainpy.application.command import ApplicationCommand
 from domainpy.infrastructure.mappers import Mapper
-from domainpy.infrastructure.tracer.recordmanager import TraceRecordManager
 from domainpy.infrastructure.records import TraceRecord
+from domainpy.infrastructure.tracer.recordmanager import TraceRecordManager
 from domainpy.utils.bus import Bus
 
 
@@ -16,16 +16,23 @@ class TraceResolution:
 
 
 class TraceStore:
-
-    def __init__(self, command_mapper: Mapper, record_manager: TraceRecordManager, resolver_bus: Bus[TraceResolution]):
+    def __init__(
+        self,
+        command_mapper: Mapper,
+        record_manager: TraceRecordManager,
+        resolver_bus: Bus[TraceResolution],
+    ):
         self.command_mapper = command_mapper
         self.record_manager = record_manager
         self.resolver_bus = resolver_bus
 
-    def store_in_progress(self, command: ApplicationCommand, contexts_resolutions: tuple[TraceRecord.ContextResolution]):
+    def store_in_progress(
+        self,
+        command: ApplicationCommand,
+        contexts_resolutions: tuple[TraceRecord.ContextResolution],
+    ):
         self.record_manager.store_in_progress(
-            self.command_mapper.serialize_asdict(command), 
-            contexts_resolutions
+            self.command_mapper.serialize_asdict(command), contexts_resolutions
         )
 
     def store_context_success(self, trace_id: str, context: str):
@@ -52,28 +59,36 @@ class TraceStore:
                 self.record_manager.store_resolve_failure(trace_id)
                 self.resolver_bus.publish(
                     TraceResolution(
-                        trace_id, 
-                        TraceRecord.Resolution.failure, 
-                        errors=self.get_trace_errors(trace_contexts)
+                        trace_id,
+                        TraceRecord.Resolution.failure,
+                        errors=self.get_trace_errors(trace_contexts),
                     )
                 )
 
-    def is_all_trace_context_resolved(self, trace_contexts: tuple[TraceRecord.ContextResolution]) -> bool:
+    def is_all_trace_context_resolved(
+        self, trace_contexts: tuple[TraceRecord.ContextResolution]
+    ) -> bool:
         return all(
             tc.resolution != TraceRecord.Resolution.pending
             for tc in trace_contexts
         )
 
-    def is_all_trace_context_resolved_success(self, trace_contexts: tuple[TraceRecord.ContextResolution]) -> bool:
+    def is_all_trace_context_resolved_success(
+        self, trace_contexts: tuple[TraceRecord.ContextResolution]
+    ) -> bool:
         return all(
             tc.resolution == TraceRecord.Resolution.success
             for tc in trace_contexts
         )
 
-    def get_trace_errors(self, trace_contexts: tuple[TraceRecord.ContextResolution]) -> tuple[str]:
-        return tuple([
-            tc.error 
-            for tc in trace_contexts
-            if tc.resolution == TraceRecord.Resolution.failure
-            and tc.error is not None
-        ])
+    def get_trace_errors(
+        self, trace_contexts: tuple[TraceRecord.ContextResolution]
+    ) -> tuple[str]:
+        return tuple(
+            [
+                tc.error
+                for tc in trace_contexts
+                if tc.resolution == TraceRecord.Resolution.failure
+                and tc.error is not None
+            ]
+        )

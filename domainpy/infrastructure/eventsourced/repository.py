@@ -11,25 +11,21 @@ from domainpy.domain.repository import IRepository
 
 
 def make_adapter(
-    AggregateRoot: typing.Type[AggregateRoot], 
-    Identity: typing.Type[Identity]
+    AggregateRoot: typing.Type[AggregateRoot], Identity: typing.Type[Identity]
 ):
     class EventSourcedRepositoryAdapter(IRepository):
-
         def __init__(self, event_store: EventStore) -> None:
             self.event_store = event_store
 
         def save(self, aggregate: AggregateRoot) -> None:
-            self.event_store.store_events(
-                aggregate.__changes__
-            )
+            self.event_store.store_events(aggregate.__changes__)
 
         def get(self, id: typing.Union[Identity, str]) -> AggregateRoot:
             if isinstance(id, str):
                 id = Identity.from_text(id)
-            
+
             events = self.event_store.get_events(
-                f'{id.id}:{AggregateRoot.__name__}'
+                f"{id.id}:{AggregateRoot.__name__}"
             )
 
             if len(events) == 0:
@@ -40,5 +36,5 @@ def make_adapter(
                 aggregate.__route__(e)
 
             return aggregate
-    
+
     return EventSourcedRepositoryAdapter

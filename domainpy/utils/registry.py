@@ -1,10 +1,9 @@
-import typing 
+import typing
 
 from domainpy.exceptions import RegistryComponentNotFound
 
 
 class Registry:
-    
     def __init__(self):
         self.components = dict[type, typing.Any]()
 
@@ -22,6 +21,5 @@ class Registry:
             return typing.cast(key, self.components[key])
         except KeyError as e:
             raise RegistryComponentNotFound(
-                f'instance for {key} not registered'
-            )
-    
+                f"instance for {key} not registered"
+            ) from e

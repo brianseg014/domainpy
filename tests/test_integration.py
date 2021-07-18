@@ -6,13 +6,15 @@ from domainpy.application import (
     ApplicationCommand, 
     IntegrationEvent
 )
-from domainpy.domain import (
+from domainpy.domain.model import (
     AggregateRoot, 
     mutator, 
     DomainEntity, 
     DomainEvent, 
     ValueObject, 
     Identity, 
+)
+from domainpy.domain import (
     DomainError,
     IRepository,
     IDomainService

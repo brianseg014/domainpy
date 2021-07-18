@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import typing
 import functools
+import typing
 
 if typing.TYPE_CHECKING:
     from domainpy.domain.model.event import DomainEvent
@@ -10,13 +10,11 @@ from domainpy.exceptions import DefinitionError
 
 
 class Projection:
-    
     def project(self, e: DomainEvent):
-        pass # pragma: no cover
+        pass  # pragma: no cover
 
 
 class projector:
-
     def __init__(self, func):
         functools.update_wrapper(self, func)
 
@@ -37,9 +35,13 @@ class projector:
     def event(self, event_type: type[DomainEvent]):
         def inner_function(func):
             if event_type in self.projectors:
-                raise DefinitionError(f'{event_type.__name__} projector already defined near to {self.func.__qualname__}')
+                event_name = event_type.__name__
+                func_name = self.func.__qualname__
+                raise DefinitionError(
+                    f"{event_name} projector already defined near {func_name}"
+                )
 
             self.projectors[event_type] = func
             return func
+
         return inner_function
-    

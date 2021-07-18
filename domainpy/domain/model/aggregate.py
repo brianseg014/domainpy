@@ -1,25 +1,23 @@
 from __future__ import annotations
 
-import typing
 import datetime
 import functools
+import typing
 
 if typing.TYPE_CHECKING:
     from domainpy.domain.model.event import DomainEvent
 
-from domainpy.exceptions import VersionError
 from domainpy.domain.model.value_object import Identity
-from domainpy.exceptions import DefinitionError
+from domainpy.exceptions import DefinitionError, VersionError
 
 
 class AggregateRoot:
-
     def __init__(self, id: Identity):
         self.__id__ = id
 
         self.__version__ = 0
-        self.__changes__ = [] # New events
-        self.__seen__ = [] # Routed events (mutated)
+        self.__changes__ = []  # New events
+        self.__seen__ = []  # Routed events (mutated)
 
     @property
     def __selector__(self):
@@ -28,9 +26,9 @@ class AggregateRoot:
     def __stamp__(self, event_type: typing.Type[DomainEvent]):
         return functools.partial(
             event_type,
-            __stream_id__ = f'{self.__id__.id}:{self.__class__.__name__}',
-            __number__ = self.__version__ + 1,
-            __timestamp__ = datetime.datetime.timestamp(datetime.datetime.now())
+            __stream_id__=f"{self.__id__.id}:{self.__class__.__name__}",
+            __number__=self.__version__ + 1,
+            __timestamp__=datetime.datetime.timestamp(datetime.datetime.now()),
         )
 
     def __apply__(self, event: DomainEvent):
@@ -50,46 +48,47 @@ class AggregateRoot:
         self.mutate(event)
 
     def mutate(self, event: DomainEvent):
-        pass # pragma: no cover
+        pass  # pragma: no cover
 
 
 class Selector:
-
     def __init__(self, aggregate: AggregateRoot):
         self.aggregate = aggregate
-    
-    def get_trace(self, trace_id: str, include_event_type: type[DomainEvent] = None) -> tuple[DomainEvent]:
-        events = tuple([
-            e for e in self.aggregate.__seen__
-            if e.__trace_id__ == trace_id
-        ])
+
+    def get_trace(
+        self, trace_id: str, include_event_type: type[DomainEvent] = None
+    ) -> tuple[DomainEvent]:
+        events = tuple(
+            [e for e in self.aggregate.__seen__ if e.__trace_id__ == trace_id]
+        )
 
         if include_event_type:
-            events = tuple([
-                e for e in events
-                if isinstance(e, include_event_type)
-            ])
+            events = tuple(
+                [e for e in events if isinstance(e, include_event_type)]
+            )
 
         return events
 
     def get_trace_if_not_compensated(
-        self, trace_id: str, 
-        compensate_type: type[DomainEvent], 
-        include_event_type: type[DomainEvent] = None
+        self,
+        trace_id: str,
+        compensate_type: type[DomainEvent],
+        include_event_type: type[DomainEvent] = None,
     ) -> tuple[DomainEvent]:
 
-        events = self.get_trace(trace_id, include_event_type=include_event_type)
-        
+        events = self.get_trace(
+            trace_id, include_event_type=include_event_type
+        )
+
         compensated = any(isinstance(e, compensate_type) for e in events)
 
         if not compensated:
             return events
         else:
             return ()
-        
+
 
 class mutator:
-
     def __init__(self, func):
         functools.update_wrapper(self, func)
 
@@ -110,9 +109,13 @@ class mutator:
     def event(self, event_type: type[DomainEvent]):
         def inner_function(func):
             if event_type in self.mutators:
-                raise DefinitionError(f'{event_type.__name__} mutator already defined near to {self.func.__qualname__}')
+                self_name = event_type.__name__
+                func_name = self.func.__qualname__
+                raise DefinitionError(
+                    f"{self_name} mutator already defined near to {func_name}"
+                )
 
             self.mutators[event_type] = func
             return func
+
         return inner_function
-    

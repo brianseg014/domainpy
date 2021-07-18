@@ -1,4 +1,3 @@
-
 from domainpy.utils.data import SystemData
 from domainpy.utils.traceable import Traceable
 
@@ -9,7 +8,7 @@ class DomainEvent(SystemData, Traceable):
     __timestamp__: float
     __version__: int = 1
 
-    def __eq__(self, other: 'DomainEvent'):
+    def __eq__(self, other: "DomainEvent"):
         if other is None:
             return False
 

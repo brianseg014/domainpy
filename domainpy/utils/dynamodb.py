@@ -1,10 +1,10 @@
 import decimal
-import enum
 
-from boto3.dynamodb.types import TypeSerializer, TypeDeserializer
+from boto3.dynamodb.types import TypeDeserializer, TypeSerializer
 
 type_serializer = TypeSerializer()
 type_deserializer = TypeDeserializer()
+
 
 def serialize(obj):
     if isinstance(obj, list):
@@ -38,12 +38,10 @@ def deserialize(obj):
     else:
         return obj
 
+
 def client_serialize(obj):
-    return type_serializer.serialize(
-        serialize(obj)
-    )
+    return type_serializer.serialize(serialize(obj))
+
 
 def client_deserialize(obj):
-    return type_deserializer.deserialize(
-        deserialize(obj)
-    )
+    return type_deserializer.deserialize(deserialize(obj))

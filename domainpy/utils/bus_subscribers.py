@@ -12,13 +12,11 @@ from domainpy.utils.bus import ISubscriber
 
 
 class BasicSubscriber(ISubscriber, list):
-
     def __route__(self, message):
         self.append(message)
 
 
 class ApplicationServiceSubscriber(ISubscriber):
-
     def __init__(self, application_service: ApplicationService):
         self.application_service = application_service
 
@@ -27,16 +25,14 @@ class ApplicationServiceSubscriber(ISubscriber):
 
 
 class ProjectionSubscriber(ISubscriber):
-
     def __init__(self, projection: Projection):
         self.projection = projection
 
     def __route__(self, message: SystemMessage):
         self.projection.project(message)
-    
+
 
 class PublisherSubciber(ISubscriber):
-
     def __init__(self, publisher: IPublisher):
         self.publisher = publisher
 

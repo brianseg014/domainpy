@@ -1,14 +1,13 @@
-
-
-from domainpy.exceptions import DefinitionError, IdempotencyItemError 
-from domainpy.infrastructure.idempotent.recordmanager import IdempotencyRecordManager
+from domainpy.exceptions import DefinitionError, IdempotencyItemError
+from domainpy.infrastructure.idempotent.recordmanager import (
+    IdempotencyRecordManager,
+)
 
 
 class Idempotency:
-
     def __init__(self, record: dict, record_manager: IdempotencyRecordManager):
-        if not ('trace_id' in record and 'topic' in record):
-            raise DefinitionError('record must have trace_id and topic keys')
+        if not ("trace_id" in record and "topic" in record):
+            raise DefinitionError("record must have trace_id and topic keys")
 
         self.record = record
         self.record_manager = record_manager
@@ -20,22 +19,22 @@ class Idempotency:
             return record
         except IdempotencyItemError:
             return None
-    
+
     def __exit__(self, exc_type, exc_value, exc_tb):
         record = self.record
         if exc_type is None:
             self.record_manager.store_success(record)
         else:
             self.record_manager.store_failure(record, exc_value)
-        
+
 
 def idempotent(record_manager: IdempotencyRecordManager):
     def inner_function(func):
-
         def wrapper(record):
             with Idempotency(record, record_manager) as record:
                 if record is not None:
                     func(record)
-            
+
         return wrapper
+
     return inner_function

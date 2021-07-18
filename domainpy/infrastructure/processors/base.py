@@ -1,10 +1,4 @@
-
-
-from domainpy.exceptions import DefinitionError
-
-
 class Processor:
-
     def __init__(self, **kwargs):
         self.success_messages: list = []
         self.fail_messages: list = []
@@ -20,7 +14,7 @@ class Processor:
 
     def __exit__(self, exc_type, exc_value, exc_tb):
         self.cleanup()
-    
+
     def process(self):
         records = self.get_records()
         for record in records:
@@ -47,7 +41,5 @@ class Processor:
 
 
 class BasicProcessor(Processor):
-
     def get_records(self):
         return [self.raw_message]
-    
