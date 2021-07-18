@@ -14,8 +14,7 @@ Domainpy is a library to implement the ideas around domain driven design,
 cqrs and event sourcing in python.
 
 The library follows clean architecture principle with three main layers:
-application, domain and infrastructure. Domain is by any means aware of 
-the existance of applicacion layer or infrastructure layer.
+application, domain and infrastructure.
 
 ## Let's see some code
 
