@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import typing
 import functools
+import datetime
 
 if typing.TYPE_CHECKING:
     from domainpy.typing import SystemMessage
@@ -14,6 +15,12 @@ from domainpy.utils.traceable import Traceable
 
 
 class ApplicationService:
+
+    def stamp_integration(self, integration_type: type[IntegrationEvent]):
+        return functools.partial(
+            integration_type,
+            __timestamp__ = datetime.datetime.timestamp(datetime.datetime.now())
+        )
     
     def handle(self, message: SystemMessage):
         pass
@@ -32,14 +39,6 @@ class handler:
         return functools.partial(self.__call__, obj)
 
     def __call__(self, service: ApplicationService, message: SystemMessage):
-        if not hasattr(message, '__trace_id__'):
-            raise DefinitionError('__trace_id__ not found in message')
-
-        if message.__trace_id__ == None:
-            raise TypeError('__trace_id__ cannot be None')
-
-        Traceable.__trace_id__ = message.__trace_id__
-
         handlers = self.handlers.get(message.__class__, None)
         if handlers:
             for h in handlers:

@@ -144,5 +144,6 @@ def test_when():
     env.handler_bus.attach(subscriber)
 
     command = ApplicationCommand()
+    command.__trace_id__ = 'tid'
     env.when(command)
     assert len(subscriber) == 1

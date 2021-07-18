@@ -19,6 +19,7 @@ from domainpy.utils import (
     PublisherBusAdapter,
     Registry
 )
+from domainpy.utils.traceable import Traceable
 
 
 class EventSourcedEnvironment:
@@ -78,6 +79,11 @@ class EventSourcedEnvironment:
         if isinstance(message, dict):
             message = self.mapper_set.deserialize(message)
         
+        if message.__trace_id__ == None:
+            raise TypeError('__trace_id__ cannot be None')
+
+        Traceable.__trace_id__ = message.__trace_id__
+
         self.resolver_bus.publish(message)
         self.handler_bus.publish(message)
 

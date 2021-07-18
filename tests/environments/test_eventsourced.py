@@ -44,6 +44,7 @@ def test_bus_handle():
     integration_mapper = mock.MagicMock()
     event_mapper = mock.MagicMock()
     command = mock.MagicMock()
+    command.__trace_id__ = 'tid'
     
     env = EventSourcedEnvironment(
         command_mapper=command_mapper,

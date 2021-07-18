@@ -1,28 +1,8 @@
-import pytest
-import uuid
+
 from unittest import mock
 
-from domainpy.exceptions import DefinitionError
 from domainpy.application.service import handler
 
-
-def test_handler_fail_if_not_trace_id():
-    story = []
-
-    something = mock.MagicMock()
-    service = mock.MagicMock()
-
-    @handler
-    def handle():
-        pass
-
-    def handle_something(*args):
-        story.append(args)
-
-    handle.command(something.__class__)(handle_something)
-
-    with pytest.raises(DefinitionError):
-        handle(service, something)
 
 def test_handler_command():
     story = []
