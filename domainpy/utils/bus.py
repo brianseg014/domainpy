@@ -25,7 +25,7 @@ class Bus(IBus[T], ISubscriber[T]):
     def __init__(
         self,
         publish_exceptions: typing.Union[
-            Exception, typing.Sequence[Exception]
+            type[Exception], typing.Tuple[type[Exception], typing.Tuple[()]]
         ] = [],
     ):
         if not isinstance(publish_exceptions, collections.abc.Sequence):

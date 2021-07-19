@@ -33,7 +33,6 @@ from domainpy.utils import (
     ApplicationBusAdapter
 )
 from domainpy.typing import SystemMessage
-from domainpy.environments import EventSourcedEnvironment
 from domainpy.mock import EventSourcedEnvironmentTestAdapter
 
 

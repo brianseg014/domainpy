@@ -123,7 +123,8 @@ def test_integrations_has_not_integration():
 
     env.then.integration_events.assert_has_not_integration(IntegrationEvent)
 
-def test_when():
+@mock.patch('domainpy.environments.eventsourced.MapperSet')
+def test_when(MapperSet):
     command_mapper = mock.MagicMock()
     integration_mapper = mock.MagicMock()
     event_mapper = mock.MagicMock()
@@ -134,6 +135,12 @@ def test_when():
         { }
     )
 
+    command = ApplicationCommand()
+    command.__trace_id__ = 'tid'
+
+    mapper_set_instance = MapperSet.return_value
+    mapper_set_instance.deserialize = mock.Mock(return_value=command)
+
     env = EventSourcedEnvironmentTestAdapter(
         command_mapper=command_mapper,
         integration_mapper=integration_mapper,
@@ -143,7 +150,5 @@ def test_when():
     subscriber = BasicSubscriber()
     env.handler_bus.attach(subscriber)
 
-    command = ApplicationCommand()
-    command.__trace_id__ = 'tid'
     env.when(command)
     assert len(subscriber) == 1

@@ -39,12 +39,16 @@ def test_bus_sequence():
 
     assert story == ['domain', 'integration', 'projection', 'resolver', 'handler']
 
-def test_bus_handle():
+@mock.patch('domainpy.environments.eventsourced.MapperSet')
+def test_bus_handle(MapperSet):
     command_mapper = mock.MagicMock()
     integration_mapper = mock.MagicMock()
     event_mapper = mock.MagicMock()
     command = mock.MagicMock()
     command.__trace_id__ = 'tid'
+
+    mapper_set_instance = MapperSet.return_value
+    mapper_set_instance.deserialize = mock.Mock(return_value=command)
     
     env = EventSourcedEnvironment(
         command_mapper=command_mapper,

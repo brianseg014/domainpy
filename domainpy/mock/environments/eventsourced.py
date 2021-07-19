@@ -1,31 +1,29 @@
 from __future__ import annotations
 
-import dataclasses
+import sys
+import json
+import uuid
+import types
+import typing
 import datetime
 import functools
 import itertools
-import json
-import sys
-import types
-import typing
-import uuid
-
-from domainpy.application.command import ApplicationCommand
-from domainpy.domain.model.aggregate import AggregateRoot
+import dataclasses
 
 if typing.TYPE_CHECKING:
     from domainpy.typing import SystemMessage
 
-from domainpy.application import IntegrationEvent
-from domainpy.domain.model import DomainEvent
+from domainpy.application import ApplicationCommand, IntegrationEvent
+from domainpy.domain.model import AggregateRoot, DomainEvent
 from domainpy.environments import EventSourcedEnvironment
 from domainpy.infrastructure import (
+    EventStream,
     EventRecordManager,
     Mapper,
     MemoryEventRecordManager,
     MemoryPublisher,
 )
-from domainpy.utils import PublisherBusAdapter, PublisherSubciber
+from domainpy.utils import PublisherBusAdapter
 
 
 @dataclasses.dataclass(frozen=True)
@@ -38,7 +36,7 @@ class EventSourcedEnvironmentTestAdapter(EventSourcedEnvironment):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
-        self.sequences = {}
+        self.sequences: dict[str, typing.Iterator[int]] = {}
 
     def setup_event_record_manager(
         self, setupargs: dict
@@ -52,7 +50,7 @@ class EventSourcedEnvironmentTestAdapter(EventSourcedEnvironment):
         setupargs: dict,
     ) -> None:
         self.domain_events = MemoryPublisher()
-        domain_publisher_bus.attach(PublisherSubciber(self.domain_events))
+        domain_publisher_bus.attach(self.domain_events)
 
     def setup_integration_publisher_bus(
         self,
@@ -61,9 +59,7 @@ class EventSourcedEnvironmentTestAdapter(EventSourcedEnvironment):
         setupargs: dict,
     ) -> None:
         self.integration_events = MemoryPublisher()
-        integration_publisher_bus.attach(
-            PublisherSubciber(self.integration_events)
-        )
+        integration_publisher_bus.attach(self.integration_events)
 
     def stamp_command(
         self,
@@ -114,7 +110,7 @@ class EventSourcedEnvironmentTestAdapter(EventSourcedEnvironment):
         )
 
     def given(self, event: DomainEvent):
-        self.event_store.store_events([event])
+        self.event_store.store_events(EventStream([event]))
 
     def when(self, message: SystemMessage):
         self.handle(message)

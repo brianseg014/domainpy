@@ -39,8 +39,8 @@ class Specification:
     def __or__(self, other: "Specification") -> "DisjunctionSpecification":
         return self.or_(other)
 
-    def __neg__(self, other: "Specification") -> "NegationSpecification":
-        return self.not_(other)
+    def __neg__(self) -> "NegationSpecification":
+        return self.not_()
 
 
 class CompositeSpecification(Specification):

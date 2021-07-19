@@ -1,4 +1,5 @@
 from __future__ import annotations
+from domainpy.application.command import ApplicationCommand
 
 import typing
 
@@ -12,7 +13,7 @@ from domainpy.infrastructure import (
     MapperSet,
     MemoryEventRecordManager,
 )
-from domainpy.typing import SystemMessage
+from domainpy.typing import JsonStr, RecordDict, SystemMessage
 from domainpy.utils import (
     ApplicationBusAdapter,
     Bus,
@@ -93,9 +94,11 @@ class EventSourcedEnvironment:
             self.setupargs,
         )
 
-    def handle(self, message: typing.Union[SystemMessage, dict]):
-        if isinstance(message, dict):
+    def handle(self, message: typing.Union[SystemMessage, RecordDict, JsonStr]):
+        if not isinstance(message, (ApplicationCommand, IntegrationEvent, DomainEvent)):
             message = self.mapper_set.deserialize(message)
+
+        print(type(self.mapper_set))
 
         if message.__trace_id__ is None:
             raise TypeError("__trace_id__ cannot be None")
@@ -139,7 +142,7 @@ class EventSourcedEnvironment:
     def setup_resolver_bus(
         self,
         resolver_bus: ApplicationBusAdapter,
-        publisher_integration_bus: Bus[DomainEvent],
+        publisher_integration_bus: Bus[IntegrationEvent],
         setupargs: dict,
     ) -> None:
         pass

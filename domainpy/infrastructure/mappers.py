@@ -1,14 +1,9 @@
 import dataclasses
 import typing
 
+from domainpy.typing import Message, Record, RecordDict, JsonStr
 from domainpy.exceptions import MapperNotFoundError
-from domainpy.infrastructure.transcoder import (
-    ITranscoder,
-    JsonStr,
-    Message,
-    Record,
-    RecordDict,
-)
+from domainpy.infrastructure.transcoder import ITranscoder
 
 
 class Mapper(typing.Generic[Message, Record, RecordDict]):

@@ -14,6 +14,7 @@ from domainpy.utils.bus import Bus
 from domainpy.utils.bus_subscribers import (
     ApplicationServiceSubscriber,
     ProjectionSubscriber,
+    PublisherSubciber
 )
 
 
@@ -43,4 +44,4 @@ class PublisherBusAdapter(typing.Generic[PublishableMessage]):
         self.bus = bus
 
     def attach(self, publisher: IPublisher) -> None:
-        self.bus.attach(publisher)
+        self.bus.attach(PublisherSubciber(publisher))

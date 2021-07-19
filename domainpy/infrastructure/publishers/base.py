@@ -6,7 +6,7 @@ if typing.TYPE_CHECKING:
     from domainpy.typing import SystemMessage
 
 
-class IPublisher:
+class IPublisher(typing.Protocol):
     def publish(
         self,
         messages: typing.Union[SystemMessage, typing.Sequence[SystemMessage]],
