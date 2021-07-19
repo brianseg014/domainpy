@@ -141,17 +141,17 @@ def create_fromdict_fn(cls, fields: list[Field]):
                 if tuple_arg in (str, int, float, bool):
                     dctcode.append(
                         f'  "{f.name}": '
-                        f'      _type_{f.name}(['
+                        f"      _type_{f.name}(["
                         f'          _type_{f.name}_i_(i) for i in dct["{f.name}"]'  # noqa: E501
-                        '       ])'
+                        "       ])"
                     )
                 elif "__from_dict__" in dir(tuple_arg):
                     dctcode.append(
                         f'  "{f.name}": '
-                        f'      _type_{f.name}(['
-                        f'          _type_{f.name}_i_.__from_dict__(i_dct) '
+                        f"      _type_{f.name}(["
+                        f"          _type_{f.name}_i_.__from_dict__(i_dct) "
                         f'          for i_dct in dct["{f.name}"]'
-                        '       ])'
+                        "       ])"
                     )
                 else:
                     raise TypeError(
@@ -170,7 +170,10 @@ def create_fromdict_fn(cls, fields: list[Field]):
             origin_args = typing.get_args(f.type)
 
             if origin is typing.Union:
-                if len(origin_args) == 2 and origin_args[-1] == type(None):  # noqa: E501,E721
+                if (
+                    len(origin_args) == 2
+                    and origin_args[-1] == type(None)  # noqa: E721
+                ):
                     union_arg = origin_args[0]
 
                     locals.update({f"_type_{f.name}": union_arg})
@@ -180,14 +183,14 @@ def create_fromdict_fn(cls, fields: list[Field]):
                             f'  "{f.name}": '
                             f'      _type_{f.name}(dct["{f.name}"]) '
                             f'      if dct["{f.name}"] is not None '
-                            f'      else None'
+                            f"      else None"
                         )
                     elif "__from_dict__" in dir(union_arg):
                         dctcode.append(
                             f'  "{f.name}": '
                             f'      _type_{f.name}.__from_dict__(dct["{f.name}"]) '  # noqa: E501
                             f'      if dct["{f.name}"] is not None '
-                            '       else None'
+                            "       else None"
                         )
                 else:
                     raise TypeError(
@@ -215,9 +218,9 @@ def create_fromdict_fn(cls, fields: list[Field]):
     dct = "{" + ",".join(dctcode) + "}"
 
     txt = (
-        f' @classmethod\n'
+        f" @classmethod\n"
         f' def {fnname}(cls, dct: dict) -> "{cls.__name__}":\n'
-        f'  return cls(**{dct})'
+        f"  return cls(**{dct})"
     )
 
     return create_fn(fnname, txt, cls, globals, locals)
@@ -281,14 +284,12 @@ def create_repr_fn(cls, fields):
 
     globals = sys.modules[cls.__module__].__dict__
 
-    init_fields = [
-        f for f in fields if f.default is MISSING
-    ]
+    init_fields = [f for f in fields if f.default is MISSING]
 
     args = ", ".join(f"{f.name}={{self.{f.name}!r}}" for f in init_fields)
 
     txt = (
-        f' def {fnname}(self):\n'
+        f" def {fnname}(self):\n"
         f'  return f"{{self.__class__.__name__}}({args})"'
     )
 
@@ -303,7 +304,7 @@ def create_str_fn(cls, fields):
     args = ", ".join(f"{f.name}={{self.{f.name}!r}}" for f in fields)
 
     txt = (
-        f' def {fnname}(self):\n'
+        f" def {fnname}(self):\n"
         f'  return f"{{self.__class__.__name__}}({args})"'
     )
 

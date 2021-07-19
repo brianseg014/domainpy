@@ -1,15 +1,14 @@
-
 import json
 import typing
 
 from domainpy.typing import (
-    Message, 
-    Record, 
-    RecordDict, 
-    JsonStr, 
+    Message,
+    Record,
+    RecordDict,
+    JsonStr,
     CommandRecordDict,
     IntegrationRecordDict,
-    EventRecordDict
+    EventRecordDict,
 )
 from domainpy.application.command import ApplicationCommand
 from domainpy.application.integration import IntegrationEvent

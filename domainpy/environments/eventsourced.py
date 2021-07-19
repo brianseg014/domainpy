@@ -94,8 +94,12 @@ class EventSourcedEnvironment:
             self.setupargs,
         )
 
-    def handle(self, message: typing.Union[SystemMessage, RecordDict, JsonStr]):
-        if not isinstance(message, (ApplicationCommand, IntegrationEvent, DomainEvent)):
+    def handle(
+        self, message: typing.Union[SystemMessage, RecordDict, JsonStr]
+    ):
+        if not isinstance(
+            message, (ApplicationCommand, IntegrationEvent, DomainEvent)
+        ):
             message = self.mapper_set.deserialize(message)
 
         print(type(self.mapper_set))

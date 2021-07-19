@@ -14,7 +14,7 @@ from domainpy.utils.bus import Bus
 from domainpy.utils.bus_subscribers import (
     ApplicationServiceSubscriber,
     ProjectionSubscriber,
-    PublisherSubciber
+    PublisherSubciber,
 )
 
 
