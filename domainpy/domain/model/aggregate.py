@@ -23,7 +23,7 @@ class AggregateRoot:
     def __selector__(self):
         return Selector(self)
 
-    def __stamp__(self, event_type: typing.Type[DomainEvent]):
+    def __stamp__(self, event_type: type[DomainEvent]):
         return functools.partial(
             event_type,
             __stream_id__=f"{self.__id__.id}:{self.__class__.__name__}",
