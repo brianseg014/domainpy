@@ -70,6 +70,8 @@ def test_all_system():
     #### Events
     @event_mapper.register
     class PetStoreRegistered(DomainEvent):
+        __version__: int = 1
+        
         pet_store_id: PetStoreId
         pet_store_name: PetStoreName
 

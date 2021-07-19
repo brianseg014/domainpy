@@ -10,6 +10,13 @@ def test_event_store_given_has_event():
     integration_mapper = mock.MagicMock()
     event_mapper = mock.MagicMock()
 
+    Aggregate = type(
+        'Aggregate',
+        (mock.MagicMock,),
+        {}
+    )
+    Aggregate.__name__ = 'Aggregate'
+
     DomainEvent = type(
         'DomainEvent', 
         (mock.MagicMock,),
@@ -22,14 +29,14 @@ def test_event_store_given_has_event():
         event_mapper=event_mapper
     )
     
-    stream_id = str(uuid.uuid4())
+    aggreagte_id = str(uuid.uuid4())
     
     event = DomainEvent()
-    event.__stream_id__=stream_id
+    event.__stream_id__=f'{aggreagte_id}:{Aggregate.__name__}'
     event.some_property='x'
 
     env.given(event)
-    env.then.domain_events.assert_has_event(event.__class__, stream_id=stream_id)
+    env.then.domain_events.assert_has_event(event.__class__, aggregate_type=Aggregate, aggregate_id=aggreagte_id)
     env.then.domain_events.assert_has_event_once(event.__class__)
     env.then.domain_events.assert_has_event_n(event.__class__, n=1)
     env.then.domain_events.assert_has_event_with(event.__class__, some_property='x')

@@ -198,6 +198,7 @@ def test_event_serialize():
         __stream_id__ = 'sid',
         __number__=1,
         __timestamp__=0.0,
+        __version__=1,
         some_property='x'
     )
     ct = BuiltinEventTranscoder('some_context')

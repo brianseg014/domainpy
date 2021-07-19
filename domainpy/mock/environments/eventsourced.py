@@ -1,4 +1,5 @@
 from __future__ import annotations
+from domainpy.utils.traceable import Traceable
 
 import sys
 import json
@@ -78,6 +79,15 @@ class EventSourcedEnvironmentTestAdapter(EventSourcedEnvironment):
             __timestamp__=datetime.datetime.timestamp(datetime.datetime.now()),
         )
 
+    def stamp_integration(
+        self,
+        integration_type: type[IntegrationEvent]
+    ):
+        return functools.partial(
+            integration_type,
+            __timestamp__=datetime.datetime.timestamp(datetime.datetime.now())
+        )
+
     def stamp_event(
         self,
         event_type: type[DomainEvent],
@@ -96,9 +106,11 @@ class EventSourcedEnvironmentTestAdapter(EventSourcedEnvironment):
             self.stream_id = f"{aggregate_id}:{aggregate_type.__name__}"
         elif new_stream:
             self.stream_id = f"{str(uuid.uuid4())}:{aggregate_type.__name__}"
+        else:
+            raise AttributeError('either aggregate id or new_stream should be set')
 
         sequence = self.sequences.setdefault(
-            self.stream_id, itertools.count(start=0, step=1)
+            self.stream_id, itertools.count(start=1, step=1)
         )
 
         return functools.partial(
@@ -113,6 +125,7 @@ class EventSourcedEnvironmentTestAdapter(EventSourcedEnvironment):
         self.event_store.store_events(EventStream([event]))
 
     def when(self, message: SystemMessage):
+        Traceable.__trace_id__ = str(uuid.uuid4())
         self.handle(message)
 
     @property
@@ -129,39 +142,70 @@ class DomeinEventsTestExpression:
     def __init__(self, domain_events: list[DomainEvent]):
         self.domain_events = domain_events
 
-    def get_events(self, event_type: type[DomainEvent], stream_id: str = None):
+    def get_stream_id(self, aggregate_type: type[AggregateRoot], aggregate_id: str) -> str:
+        return f'{aggregate_id}:{aggregate_type.__name__}'
+
+    def get_events(
+        self, 
+        event_type: type[DomainEvent],
+        aggregate_type: type[AggregateRoot] = None,
+        aggregate_id: str = None
+    ) -> tuple[DomainEvent]:
         events = tuple(
             [e for e in self.domain_events if isinstance(e, event_type)]
         )
-        if stream_id is not None:
+        if aggregate_type is not None or aggregate_id is not None:
+            if aggregate_type is None or aggregate_id is None:
+                raise AttributeError('both aggregate_type and aggregate_id should be set')
+
+            stream_id = self.get_stream_id(aggregate_type, aggregate_id)
             events = tuple([e for e in events if e.__stream_id__ == stream_id])
         return events
 
     def has_not_event(
-        self, event_type: type[DomainEvent], stream_id: str = None
-    ):
-        events = self.get_events(event_type, stream_id=stream_id)
+        self,
+        event_type: type[DomainEvent],
+        aggregate_type: type[AggregateRoot] = None,
+        aggregate_id: str = None
+    ) -> bool:
+        events = self.get_events(event_type, aggregate_type, aggregate_id)
         return len(events) == 0
 
-    def has_event(self, event_type: type[DomainEvent], stream_id: str = None):
-        events = self.get_events(event_type, stream_id=stream_id)
+    def has_event(
+        self,
+        event_type: type[DomainEvent],
+        aggregate_type: type[AggregateRoot] = None,
+        aggregate_id: str = None
+    ) -> bool:
+        events = self.get_events(event_type, aggregate_type, aggregate_id)
         return len(events) > 0
 
     def has_event_n(
-        self, event_type: type[DomainEvent], n: int, stream_id: str = None
-    ):
-        events = self.get_events(event_type, stream_id=stream_id)
+        self,
+        event_type: type[DomainEvent],
+        n: int,
+        aggregate_type: type[AggregateRoot] = None,
+        aggregate_id: str = None
+    ) -> bool:
+        events = self.get_events(event_type, aggregate_type, aggregate_id)
         return len(events) == n
 
     def has_event_once(
-        self, event_type: type[DomainEvent], stream_id: str = None
+        self,
+        event_type: type[DomainEvent],
+        aggregate_type: type[AggregateRoot] = None,
+        aggregate_id: str = None
     ):
-        return self.has_event_n(event_type, n=1, stream_id=stream_id)
+        return self.has_event_n(event_type, 1, aggregate_type, aggregate_id)
 
     def has_event_with(
-        self, event_type: type[DomainEvent], stream_id: str = None, **kwargs
-    ):
-        events = self.get_events(event_type, stream_id=stream_id)
+        self,
+        event_type: type[DomainEvent],
+        aggregate_type: type[AggregateRoot] = None,
+        aggregate_id: str = None,
+        **kwargs
+    ) -> bool:
+        events = self.get_events(event_type, aggregate_type, aggregate_id)
         return any(
             True
             for e in events
@@ -169,61 +213,63 @@ class DomeinEventsTestExpression:
         )
 
     def assert_has_not_event(
-        self, event_type: type[DomainEvent], stream_id: str = None
+        self,
+        event_type: type[DomainEvent],
+        aggregate_type: type[AggregateRoot] = None,
+        aggregate_id: str = None,
     ):
         try:
-            assert self.has_not_event(event_type, stream_id=stream_id)
+            assert self.has_not_event(event_type, aggregate_type, aggregate_id)
         except AssertionError:
-            self.raise_error(
-                f"event found: stream_id {stream_id} and "
-                f"topic {event_type.__name__}"
-            )
+            self.raise_error("event found")
 
     def assert_has_event(
-        self, event_type: type[DomainEvent], stream_id: str = None
+        self,
+        event_type: type[DomainEvent],
+        aggregate_type: type[AggregateRoot] = None,
+        aggregate_id: str = None,
     ):
         try:
-            assert self.has_event(event_type, stream_id=stream_id)
+            assert self.has_event(event_type, aggregate_type, aggregate_id)
         except AssertionError:
-            self.raise_error(
-                f"event not found: stream_id {stream_id} "
-                f"and topic {event_type.__name__}"
-            )
+            self.raise_error("event not found")
 
     def assert_has_event_n(
-        self, event_type: type[DomainEvent], n: int, stream_id: str = None
+        self,
+        event_type: type[DomainEvent],
+        n: int,
+        aggregate_type: type[AggregateRoot] = None,
+        aggregate_id: str = None,
     ):
         try:
-            assert self.has_event_n(event_type, n=n, stream_id=stream_id)
+            assert self.has_event_n(event_type, n, aggregate_type, aggregate_id)
         except AssertionError:
-            self.raise_error(
-                f"event not found {n} times: stream_id {stream_id} and "
-                f"topic {event_type.__name__}"
-            )
+            self.raise_error(f"event not found {n} time(s)")
 
     def assert_has_event_once(
-        self, event_type: type[DomainEvent], stream_id: str = None
+        self,
+        event_type: type[DomainEvent],
+        aggregate_type: type[AggregateRoot] = None,
+        aggregate_id: str = None,
     ):
         try:
-            assert self.has_event_once(event_type, stream_id=stream_id)
+            assert self.has_event_once(event_type, aggregate_type, aggregate_id)
         except AssertionError:
-            self.raise_error(
-                f"event not found once: stream_id {stream_id} and "
-                f"topic {event_type.__name__}"
-            )
+            self.raise_error("event not found 1 time")
 
     def assert_has_event_with(
-        self, event_type: type[DomainEvent], stream_id: str = None, **kwargs
+        self,
+        event_type: type[DomainEvent],
+        aggregate_type: type[AggregateRoot] = None,
+        aggregate_id: str = None,
+        **kwargs
     ):
         try:
             assert self.has_event_with(
-                event_type, stream_id=stream_id, **kwargs
+                event_type, aggregate_type, aggregate_id, **kwargs
             )
         except AssertionError:
-            self.raise_error(
-                f"event not found: stream_id {stream_id} and "
-                f"topic {event_type.__name__} and {json.dumps(kwargs)}"
-            )
+            self.raise_error("event not found")
 
     def raise_error(self, message):
         tb = None

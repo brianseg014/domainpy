@@ -9,9 +9,9 @@ from .eventsourced import (
     make_repository_adapter as make_eventsourced_repository_adapter,
 )
 from .idempotent import (
-    DynamoDBIdempotencyRecordManager,
     Idempotency,
     IdempotencyRecordManager,
+    DynamoDBIdempotencyRecordManager,
     MemoryIdempotencyRecordManager,
 )
 from .mappers import Mapper, MapperSet
@@ -19,6 +19,7 @@ from .processors import (
     Processor,
     BasicProcessor,
     AwsSimpleQueueServiceBatchProcessor,
+    sqs_batch_processor
 )
 from .publishers import (
     AwsEventBridgePublisher,
