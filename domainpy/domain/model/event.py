@@ -6,7 +6,7 @@ class DomainEvent(SystemData, Traceable):
     __stream_id__: str
     __number__: int
     __timestamp__: float
-    __version__: int = 1
+    __version__: int
 
     def __eq__(self, other: "DomainEvent"):
         if other is None:
