@@ -21,7 +21,7 @@ class IBus(typing.Generic[T]):
         pass
 
 
-class Bus(IBus[T], ISubscriber[T]):
+class Bus(IBus[T]):
     def __init__(
         self,
         publish_exceptions: typing.Union[
@@ -34,9 +34,6 @@ class Bus(IBus[T], ISubscriber[T]):
         self.publish_exceptions = publish_exceptions
 
         self.subscribers = list[ISubscriber[T]]()
-
-    def __route__(self, message: T):
-        self.publish(message)
 
     def attach(self, subscriber: ISubscriber[T]):
         if not hasattr(subscriber, "__route__"):

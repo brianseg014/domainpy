@@ -1,8 +1,8 @@
 from __future__ import annotations
-from domainpy.application.command import ApplicationCommand
 
 import typing
 
+from domainpy.application.command import ApplicationCommand
 from domainpy.application import IntegrationEvent
 from domainpy.domain import DomainError
 from domainpy.domain.model import DomainEvent
@@ -17,6 +17,7 @@ from domainpy.typing import JsonStr, RecordDict, SystemMessage
 from domainpy.utils import (
     ApplicationBusAdapter,
     Bus,
+    BusSubscriber,
     ProjectionBusAdapter,
     PublisherBusAdapter,
     Registry,
@@ -60,14 +61,18 @@ class EventSourcedEnvironment:
         self.domain_publisher_bus = Bus[DomainEvent]()
         self.integration_publisher_bus = Bus[IntegrationEvent]()
         self.projection_bus = Bus[DomainEvent]()
-        self.resolver_bus = Bus[SystemMessage]()
-        self.handler_bus = Bus[SystemMessage](publish_exceptions=DomainError)
+        self.resolver_bus = Bus[typing.Union[SystemMessage, DomainError]]()
+        self.handler_bus = Bus[typing.Union[SystemMessage, DomainError]](
+            publish_exceptions=DomainError
+        )
 
-        self.event_store_bus.attach(self.domain_publisher_bus)
-        self.event_store_bus.attach(self.integration_publisher_bus)
-        self.event_store_bus.attach(self.projection_bus)
-        self.event_store_bus.attach(self.resolver_bus)
-        self.event_store_bus.attach(self.handler_bus)
+        self.event_store_bus.attach(BusSubscriber(self.domain_publisher_bus))
+        self.event_store_bus.attach(
+            BusSubscriber(self.integration_publisher_bus)
+        )
+        self.event_store_bus.attach(BusSubscriber(self.projection_bus))
+        self.event_store_bus.attach(BusSubscriber(self.resolver_bus))
+        self.event_store_bus.attach(BusSubscriber(self.handler_bus))
 
         self.setup_registry(self.registry, self.event_store, self.setupargs)
         self.setup_domain_publisher_bus(

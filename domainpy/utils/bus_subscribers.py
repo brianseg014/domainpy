@@ -7,6 +7,7 @@ if typing.TYPE_CHECKING:
     from domainpy.application.service import ApplicationService
     from domainpy.application.projection import Projection
     from domainpy.infrastructure.publishers.base import IPublisher
+    from domainpy.utils.bus import Bus
 
 from domainpy.utils.bus import ISubscriber
 
@@ -14,6 +15,14 @@ from domainpy.utils.bus import ISubscriber
 class BasicSubscriber(ISubscriber, list):
     def __route__(self, message):
         self.append(message)
+
+
+class BusSubscriber(ISubscriber):
+    def __init__(self, bus: Bus):
+        self.bus = bus
+
+    def __route__(self, message: SystemMessage):
+        self.bus.publish(message)
 
 
 class ApplicationServiceSubscriber(ISubscriber):

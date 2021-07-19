@@ -1,4 +1,5 @@
 from __future__ import annotations
+from domainpy.domain.exceptions import DomainError
 
 import typing
 
@@ -19,7 +20,7 @@ from domainpy.utils.bus_subscribers import (
 
 
 class ApplicationBusAdapter:
-    def __init__(self, bus: Bus[SystemMessage]) -> None:
+    def __init__(self, bus: Bus[SystemMessage, DomainError]) -> None:
         self.bus = bus
 
     def attach(self, application_service: ApplicationService) -> None:

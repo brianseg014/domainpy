@@ -170,10 +170,14 @@ def create_fromdict_fn(cls, fields: list[Field]):
             origin_args = typing.get_args(f.type)
 
             if origin is typing.Union:
-                if (
+                # fmt: off
+                optional_args_signature = (
                     len(origin_args) == 2
                     and origin_args[-1] == type(None)  # noqa: E721
-                ):
+                )
+                # fmt: on
+                if optional_args_signature:
+
                     union_arg = origin_args[0]
 
                     locals.update({f"_type_{f.name}": union_arg})

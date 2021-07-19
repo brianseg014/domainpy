@@ -2,7 +2,6 @@ import typing
 
 from domainpy.application.command import ApplicationCommand
 from domainpy.application.integration import IntegrationEvent
-from domainpy.domain.exceptions import DomainError
 from domainpy.domain.model.event import DomainEvent
 from domainpy.infrastructure.records import (
     CommandRecord,
@@ -10,8 +9,7 @@ from domainpy.infrastructure.records import (
     EventRecord,
 )
 
-ApplicationMessage = typing.Union[ApplicationCommand, IntegrationEvent]
-DomainMessage = typing.Union[DomainEvent, DomainError]
+
 SystemMessage = typing.Union[ApplicationCommand, IntegrationEvent, DomainEvent]
 
 Message = typing.TypeVar(
