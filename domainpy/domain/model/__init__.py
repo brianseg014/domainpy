@@ -3,6 +3,7 @@ from .entity import DomainEntity
 from .event import DomainEvent
 from .specification import Specification
 from .value_object import Identity, ValueObject
+from .exceptions import DomainError
 
 __all__ = [
     "AggregateRoot",
@@ -12,4 +13,5 @@ __all__ = [
     "Specification",
     "ValueObject",
     "Identity",
+    "DomainError"
 ]

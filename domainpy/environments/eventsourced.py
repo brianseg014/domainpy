@@ -4,8 +4,7 @@ import typing
 
 from domainpy.application.command import ApplicationCommand
 from domainpy.application import IntegrationEvent
-from domainpy.domain import DomainError
-from domainpy.domain.model import DomainEvent
+from domainpy.domain.model import DomainEvent, DomainError
 from domainpy.infrastructure import (
     EventRecordManager,
     EventStore,

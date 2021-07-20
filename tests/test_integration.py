@@ -12,10 +12,10 @@ from domainpy.domain.model import (
     DomainEntity, 
     DomainEvent, 
     ValueObject, 
-    Identity, 
+    Identity,
+    DomainError
 )
 from domainpy.domain import (
-    DomainError,
     IRepository,
     IDomainService
 )

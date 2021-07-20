@@ -1,5 +1,5 @@
 from __future__ import annotations
-from domainpy.domain.exceptions import DomainError
+from domainpy.domain.model.exceptions import DomainError
 
 import typing
 
