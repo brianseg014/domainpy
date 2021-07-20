@@ -40,7 +40,7 @@ class DynamodbTraceRecordManager:
 
     def store_in_progress(
         self, trace_id: str, command: dict, contexts_resolutions: tuple[str]
-    ):
+    ) -> None:
         contexts_resolutions: dict[str, dict] = {
             context_name: dataclasses.asdict(
                 TraceRecord.ContextResolution(
@@ -68,7 +68,7 @@ class DynamodbTraceRecordManager:
         }
         self.client.put_item(**item)
 
-    def store_resolve_success(self, trace_id: str):
+    def store_resolve_success(self, trace_id: str) -> None:
         item = {
             "TableName": self.table_name,
             "Key": {"trace_id": serialize(trace_id)},
@@ -79,7 +79,7 @@ class DynamodbTraceRecordManager:
         }
         self.client.update_item(**item)
 
-    def store_resolve_failure(self, trace_id: str):
+    def store_resolve_failure(self, trace_id: str) -> None:
         item = {
             "TableName": self.table_name,
             "Key": {"trace_id": serialize(trace_id)},
@@ -90,7 +90,7 @@ class DynamodbTraceRecordManager:
         }
         self.client.update_item(**item)
 
-    def store_context_resolve_success(self, trace_id: str, context: str):
+    def store_context_resolve_success(self, trace_id: str, context: str) -> None:
         item = {
             "TableName": self.table_name,
             "Key": {"trace_id": serialize(trace_id)},
@@ -103,7 +103,7 @@ class DynamodbTraceRecordManager:
 
     def store_context_resolve_failure(
         self, trace_id: str, context: str, error: str
-    ):
+    ) -> None:
         item = {
             "TableName": self.table_name,
             "Key": {"trace_id": serialize(trace_id)},
