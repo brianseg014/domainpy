@@ -1,4 +1,3 @@
-
 from domainpy.utils.data import SystemData
 from domainpy.utils.traceable import Traceable
 from domainpy.typing.infrastructure import EventRecordDict

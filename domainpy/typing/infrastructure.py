@@ -34,8 +34,10 @@ EventRecordDict = typing.TypedDict(
     context=str,
     payload=dict,
 )
-RecordDict = typing.Union[CommandRecordDict, IntegrationRecordDict, EventRecordDict]
+RecordDict = typing.Union[
+    CommandRecordDict, IntegrationRecordDict, EventRecordDict
+]
 
 TMessage = typing.TypeVar("TMessage")
 TRecord = typing.TypeVar("TRecord")
-TRecordDict = typing.TypeVar('TRecordDict')
+TRecordDict = typing.TypeVar("TRecordDict")

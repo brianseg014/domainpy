@@ -380,16 +380,14 @@ class system_data(type):
         return new_cls
 
 
-Class = typing.TypeVar('Class')
-Dict = typing.TypeVar('Dict', bound=dict)
-class SystemData(typing.Generic[Dict], metaclass=system_data):
+Class = typing.TypeVar("Class")
+Dict = typing.TypeVar("Dict", bound=dict)
 
+
+class SystemData(typing.Generic[Dict], metaclass=system_data):
     def __to_dict__(self) -> Dict:
         return super().__to_dict__()
-    
+
     @classmethod
     def __from_dict__(cls: type[Class], dct: dict) -> Class:
-        return typing.cast(
-            cls,
-            super().__from_dict__(cls, dict)
-        )
+        return typing.cast(cls, super().__from_dict__(cls, dict))
