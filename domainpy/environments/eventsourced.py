@@ -22,8 +22,8 @@ from domainpy.utils import (
     Registry,
 )
 from domainpy.utils.traceable import Traceable
-from domainpy.typing.application import SystemMessage
-from domainpy.typing.infrastructure import JsonStr, RecordDict
+from domainpy.typing.application import SystemMessage  # type: ignore
+from domainpy.typing.infrastructure import JsonStr, RecordDict  # type: ignore
 
 
 class EventSourcedEnvironment:
@@ -43,7 +43,7 @@ class EventSourcedEnvironment:
         self.setupargs = setupargs
 
         self.mapper_set = MapperSet(
-            [self.command_mapper, self.integration_mapper, self.event_mapper]
+            tuple([self.command_mapper, self.integration_mapper, self.event_mapper])
         )
 
         self.event_record_manager = self.setup_event_record_manager(setupargs)

@@ -50,7 +50,7 @@ class Mapper(typing.Generic[TMessage, TRecord, TRecordDict]):
 
 
 class MapperSet:
-    def __init__(self, mappers: tuple[Mapper]):
+    def __init__(self, mappers: tuple[Mapper, ...]):
         self.mappers = mappers
 
     def is_deserializable(
