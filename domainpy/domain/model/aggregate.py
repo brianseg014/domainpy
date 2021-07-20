@@ -4,9 +4,8 @@ import datetime
 import functools
 import typing
 
-if typing.TYPE_CHECKING:
-    from domainpy.domain.model.event import DomainEvent
 
+from domainpy.domain.model.event import DomainEvent
 from domainpy.domain.model.value_object import Identity
 from domainpy.exceptions import DefinitionError, VersionError
 
@@ -15,13 +14,13 @@ class AggregateRoot:
     def __init__(self, id: Identity):
         self.__id__ = id
 
-        self.__version__ = 0
-        self.__changes__ = []  # New events
-        self.__seen__ = []  # Routed events (mutated)
+        self.__version__: str = 0
+        self.__changes__: list[DomainEvent] = []  # New events
+        self.__seen__: list[DomainEvent] = []  # Routed events (mutated)
 
     @property
     def __selector__(self):
-        return Selector(self)
+        return Selector(e for e in self.__seen__)
 
     def __stamp__(self, event_type: type[DomainEvent]):
         return functools.partial(
@@ -51,42 +50,41 @@ class AggregateRoot:
         pass  # pragma: no cover
 
 
-class Selector:
-    def __init__(self, aggregate: AggregateRoot):
-        self.aggregate = aggregate
+class Selector(tuple[DomainEvent]):
 
-    def get_trace(
-        self, trace_id: str, include_event_type: type[DomainEvent] = None
-    ) -> tuple[DomainEvent]:
-        events = tuple(
-            [e for e in self.aggregate.__seen__ if e.__trace_id__ == trace_id]
-        )
+    def filter_trace(self, trace_id: str) -> Selector:
+        return Selector([
+            e for e in self if e.__trace_id__ == trace_id
+        ])
 
-        if include_event_type:
-            events = tuple(
-                [e for e in events if isinstance(e, include_event_type)]
-            )
+    def filter_event_type(
+        self, 
+        event_type: typing.Union[type[DomainEvent], tuple[type[DomainEvent]]]
+    ) -> Selector:
+        return Selector([
+            e for e in self if isinstance(e, event_type)
+        ])
 
-        return events
+    def get_events_for_compensation(
+        self, 
+        trace_id: str, 
+        empty_if_has_event: typing.Union[type[DomainEvent], tuple[type[DomainEvent]]],
+        return_event: typing.Union[type[DomainEvent], tuple[type[DomainEvent]]]
+    ) -> Selector:
+        compensated = len(
+            self
+            .filter_trace(trace_id)
+            .filter_event_type(empty_if_has_event)
+        ) > 0
 
-    def get_trace_if_not_compensated(
-        self,
-        trace_id: str,
-        compensate_type: type[DomainEvent],
-        include_event_type: type[DomainEvent] = None,
-    ) -> tuple[DomainEvent]:
-
-        events = self.get_trace(
-            trace_id, include_event_type=include_event_type
-        )
-
-        compensated = any(isinstance(e, compensate_type) for e in events)
-
-        if not compensated:
-            return events
-        else:
+        if compensated:
             return ()
-
+        else:
+            return (
+                self
+                .filter_trace(trace_id)
+                .filter_event_type(return_event)
+            )
 
 class mutator:
     def __init__(self, func):

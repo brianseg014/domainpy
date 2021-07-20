@@ -42,21 +42,16 @@ def test_aggregate_route_mismatch_version():
     with pytest.raises(VersionError):
         agg.__route__(event)
 
-def test_selector_get_trace():
+def test_selector_filter_trace():
     trace_id = str(uuid.uuid4())
 
     event = mock.MagicMock()
     event.__trace_id__ = trace_id
 
-    aggregate = mock.MagicMock()
-    aggregate.__seen__ = [
-        event
-    ]
+    selector = Selector(e for e in [event])
+    events = selector.filter_trace(trace_id)
 
-    selector = Selector(aggregate)
-    events = selector.get_trace(trace_id, event.__class__)
-
-    assert len(events) == 1
+    assert len([e for e in events]) == 1
 
 def test_selector_get_trace_for_compensation():
     trace_id = str(uuid.uuid4())
@@ -69,17 +64,18 @@ def test_selector_get_trace_for_compensation():
     compensation_event = CompensationEvent()
     compensation_event.__trace_id__ = trace_id
 
-    aggregate = mock.MagicMock()
-    aggregate.__seen__ = [standard_event]
-
-    selector = Selector(aggregate)
-    events = selector.get_trace_if_not_compensated(trace_id, compensate_type=CompensationEvent)
+    selector = Selector(e for e in [standard_event])
+    events = selector.get_events_for_compensation(
+        trace_id, empty_if_has_event=CompensationEvent, return_event=StandarEvent
+    )
     # Should return event to compensate
     assert len(events) == 1
     assert events[0] == standard_event
 
-    aggregate.__seen__ = [standard_event, compensation_event]
-    events = selector.get_trace_if_not_compensated(trace_id, compensate_type=CompensationEvent)
+    selector = Selector(e for e in [standard_event, compensation_event])
+    events = selector.get_events_for_compensation(
+        trace_id, empty_if_has_event=CompensationEvent, return_event=StandarEvent
+    )
     # Should return empty as is already compensated
     assert len(events) == 0
 
