@@ -37,7 +37,7 @@ def test_bus_sequence():
     
     env.event_store.store_events([event])
 
-    assert story == ['domain', 'integration', 'projection', 'resolver', 'handler']
+    assert story == ['domain', 'projection', 'resolver', 'handler']
 
 @mock.patch('domainpy.environments.eventsourced.MapperSet')
 def test_bus_handle(MapperSet):

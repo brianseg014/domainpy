@@ -1,5 +1,5 @@
 from __future__ import annotations
-from domainpy.utils.traceable import Traceable
+from inspect import trace
 
 import sys
 import json
@@ -8,16 +8,17 @@ import types
 import typing
 import datetime
 import functools
-import itertools
 import dataclasses
 
 if typing.TYPE_CHECKING:
     from domainpy.typing import SystemMessage
 
 from domainpy.application import ApplicationCommand, IntegrationEvent
+from domainpy.domain import IRepository
 from domainpy.domain.model import AggregateRoot, DomainEvent
 from domainpy.environments import EventSourcedEnvironment
 from domainpy.infrastructure import (
+    IPublisher,
     EventStream,
     EventRecordManager,
     Mapper,
@@ -25,19 +26,18 @@ from domainpy.infrastructure import (
     MemoryPublisher,
 )
 from domainpy.utils import PublisherBusAdapter
+from domainpy.utils.traceable import Traceable
 
 
 @dataclasses.dataclass(frozen=True)
 class Then:
-    domain_events: "DomeinEventsTestExpression"
-    integration_events: "IntegrationEventsTestExpression"
+    domain_events: DomeinEventsTestExpression
+    integration_events: IntegrationEventsTestExpression
 
 
 class EventSourcedEnvironmentTestAdapter(EventSourcedEnvironment):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-
-        self.sequences: dict[str, typing.Iterator[int]] = {}
 
     def setup_event_record_manager(
         self, setupargs: dict
@@ -65,26 +65,30 @@ class EventSourcedEnvironmentTestAdapter(EventSourcedEnvironment):
     def stamp_command(
         self,
         command_type: type[ApplicationCommand],
-        new_trace: bool = True,
+        *,
         trace_id: str = None,
     ):
-        if trace_id is not None:
-            self.trace_id = trace_id
-        elif new_trace:
-            self.trace_id = str(uuid.uuid4())
-
+        if trace_id is None:
+            trace_id = str(uuid.uuid4())
+        
         return functools.partial(
             command_type,
-            __trace_id__=self.trace_id,
-            __timestamp__=datetime.datetime.timestamp(datetime.datetime.now()),
+            __trace_id__=trace_id,
+            __timestamp__=    datetime.datetime.timestamp(datetime.datetime.now())
         )
 
     def stamp_integration(
         self,
-        integration_type: type[IntegrationEvent]
+        integration_type: type[IntegrationEvent],
+        *,
+        trace_id: str = None
     ):
+        if trace_id is None:
+            trace_id = str(uuid.uuid4())
+        
         return functools.partial(
             integration_type,
+            __trace_id__=trace_id,
             __timestamp__=datetime.datetime.timestamp(datetime.datetime.now())
         )
 
@@ -92,32 +96,23 @@ class EventSourcedEnvironmentTestAdapter(EventSourcedEnvironment):
         self,
         event_type: type[DomainEvent],
         aggregate_type: type[AggregateRoot],
-        new_trace: bool = True,
-        new_stream: bool = True,
-        trace_id: str = None,
         aggregate_id: str = None,
+        *,
+        trace_id: str = None,
     ):
+        if aggregate_id is None:
+            aggregate_id = str(uuid.uuid4())
+
         if trace_id is not None:
-            self.trace_id = trace_id
-        elif new_trace:
-            self.trace_id = str(uuid.uuid4())
+            trace_id = str(uuid.uuid4())
 
-        if aggregate_id is not None:
-            self.stream_id = f"{aggregate_id}:{aggregate_type.__name__}"
-        elif new_stream:
-            self.stream_id = f"{str(uuid.uuid4())}:{aggregate_type.__name__}"
-        else:
-            raise AttributeError('either aggregate id or new_stream should be set')
-
-        sequence = self.sequences.setdefault(
-            self.stream_id, itertools.count(start=1, step=1)
-        )
+        events = self.event_store.get_events(f'{aggregate_id}:{aggregate_type.__name__}')
 
         return functools.partial(
             event_type,
-            __trace_id__=self.trace_id,
-            __stream_id__=self.stream_id,
-            __number__=next(sequence),
+            __trace_id__=trace_id,
+            __stream_id__=f'{aggregate_id}:{aggregate_type.__name__}',
+            __number__=len(events) + 1,
             __timestamp__=datetime.datetime.timestamp(datetime.datetime.now()),
         )
 
