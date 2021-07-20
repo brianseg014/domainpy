@@ -90,7 +90,9 @@ class DynamodbTraceRecordManager:
         }
         self.client.update_item(**item)
 
-    def store_context_resolve_success(self, trace_id: str, context: str) -> None:
+    def store_context_resolve_success(
+        self, trace_id: str, context: str
+    ) -> None:
         item = {
             "TableName": self.table_name,
             "Key": {"trace_id": serialize(trace_id)},

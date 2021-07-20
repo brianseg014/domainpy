@@ -19,7 +19,7 @@ from .processors import (
     Processor,
     BasicProcessor,
     AwsSimpleQueueServiceBatchProcessor,
-    sqs_batch_processor
+    sqs_batch_processor,
 )
 from .publishers import (
     AwsEventBridgePublisher,
@@ -64,6 +64,7 @@ __all__ = [
     "AwsEventBridgePublisher",
     "AwsSimpleNotificationServicePublisher",
     "AwsSimpleQueueServicePublisher",
+    "sqs_batch_processor",
     "Mapper",
     "MapperSet",
     "ITranscoder",

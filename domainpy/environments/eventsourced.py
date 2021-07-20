@@ -104,8 +104,6 @@ class EventSourcedEnvironment:
         ):
             message = self.mapper_set.deserialize(message)
 
-        print(type(self.mapper_set))
-
         if message.__trace_id__ is None:
             raise TypeError("__trace_id__ cannot be None")
 

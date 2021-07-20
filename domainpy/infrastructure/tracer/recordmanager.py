@@ -27,7 +27,9 @@ class TraceRecordManager(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def store_context_resolve_success(self, trace_id: str, context: str) -> None:
+    def store_context_resolve_success(
+        self, trace_id: str, context: str
+    ) -> None:
         pass
 
     @abc.abstractmethod

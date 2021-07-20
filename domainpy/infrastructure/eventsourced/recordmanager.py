@@ -7,7 +7,6 @@ from domainpy.infrastructure.records import EventRecord
 
 
 class EventRecordManager(abc.ABC):
-
     @abc.abstractmethod
     def session(self) -> Session:
         pass

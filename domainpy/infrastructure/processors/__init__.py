@@ -6,5 +6,5 @@ __all__ = [
     "BasicProcessor",
     "Processor",
     "AwsSimpleQueueServiceBatchProcessor",
-    "sqs_batch_processor"
+    "sqs_batch_processor",
 ]

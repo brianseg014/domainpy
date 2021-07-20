@@ -1,9 +1,8 @@
 from __future__ import annotations
 
+import typing
 import datetime
 import functools
-import typing
-
 
 from domainpy.domain.model.event import DomainEvent
 from domainpy.domain.model.value_object import Identity
@@ -50,41 +49,45 @@ class AggregateRoot:
         pass  # pragma: no cover
 
 
-class Selector(tuple[DomainEvent]):
+TDomainEvent = typing.TypeVar("TDomainEvent", bound=DomainEvent)
 
+
+class Selector(tuple[DomainEvent]):
     def filter_trace(self, trace_id: str) -> Selector:
-        return Selector([
-            e for e in self if e.__trace_id__ == trace_id
-        ])
+        return Selector([e for e in self if e.__trace_id__ == trace_id])
 
     def filter_event_type(
-        self, 
-        event_type: typing.Union[type[DomainEvent], tuple[type[DomainEvent]]]
-    ) -> Selector:
-        return Selector([
-            e for e in self if isinstance(e, event_type)
-        ])
+        self,
+        event_type: typing.Union[
+            type[TDomainEvent], tuple[type[TDomainEvent]]
+        ],
+    ) -> Selector[TDomainEvent]:
+        return Selector([e for e in self if isinstance(e, event_type)])
 
     def get_events_for_compensation(
-        self, 
-        trace_id: str, 
-        empty_if_has_event: typing.Union[type[DomainEvent], tuple[type[DomainEvent]]],
-        return_event: typing.Union[type[DomainEvent], tuple[type[DomainEvent]]]
-    ) -> Selector:
-        compensated = len(
-            self
-            .filter_trace(trace_id)
-            .filter_event_type(empty_if_has_event)
-        ) > 0
+        self,
+        trace_id: str,
+        empty_if_has_event: typing.Union[
+            type[DomainEvent], tuple[type[DomainEvent]]
+        ],
+        return_event: typing.Union[
+            type[TDomainEvent], tuple[type[TDomainEvent]]
+        ],
+    ) -> tuple[TDomainEvent, ...]:
+        compensated = (
+            len(
+                self.filter_trace(trace_id).filter_event_type(
+                    empty_if_has_event
+                )
+            )
+            > 0
+        )
 
         if compensated:
             return ()
         else:
-            return (
-                self
-                .filter_trace(trace_id)
-                .filter_event_type(return_event)
-            )
+            return self.filter_trace(trace_id).filter_event_type(return_event)
+
 
 class mutator:
     def __init__(self, func):
