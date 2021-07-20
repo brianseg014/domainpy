@@ -74,14 +74,14 @@ class Selector(tuple[DomainEvent]):
             type[TDomainEvent], tuple[type[TDomainEvent]]
         ],
     ) -> tuple[TDomainEvent, ...]:
-        compensated = (
-            len(
-                self.filter_trace(trace_id).filter_event_type(
-                    empty_if_has_event
-                )
-            )
-            > 0
+        # fmt: off
+        compensation_events = (
+            self
+            .filter_trace(trace_id)
+            .filter_event_type(empty_if_has_event)
         )
+        # fmt: on
+        compensated = len(compensation_events) > 0
 
         if compensated:
             return ()
