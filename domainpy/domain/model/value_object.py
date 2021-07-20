@@ -59,7 +59,7 @@ class identity(system_data):
 class Identity(ValueObject, metaclass=identity):
     @classmethod
     def from_text(cls, id: str):
-        return cls(id=id)
+        return cls(id=id)  # type: ignore
 
     @classmethod
     def create(cls):

@@ -13,7 +13,7 @@ class AggregateRoot:
     def __init__(self, id: Identity):
         self.__id__ = id
 
-        self.__version__: str = 0
+        self.__version__: int = 0
         self.__changes__: list[DomainEvent] = []  # New events
         self.__seen__: list[DomainEvent] = []  # Routed events (mutated)
 
@@ -24,7 +24,7 @@ class AggregateRoot:
     def __stamp__(self, event_type: type[DomainEvent]):
         return functools.partial(
             event_type,
-            __stream_id__=f"{self.__id__.id}:{self.__class__.__name__}",
+            __stream_id__=f"{self.__id__.id}:{self.__class__.__name__}",  # type: ignore # noqa: E501
             __number__=self.__version__ + 1,
             __timestamp__=datetime.datetime.timestamp(datetime.datetime.now()),
         )
@@ -52,7 +52,7 @@ class AggregateRoot:
 TDomainEvent = typing.TypeVar("TDomainEvent", bound=DomainEvent)
 
 
-class Selector(tuple[DomainEvent]):
+class Selector(tuple):
     def filter_trace(self, trace_id: str) -> Selector:
         return Selector([e for e in self if e.__trace_id__ == trace_id])
 
@@ -61,7 +61,7 @@ class Selector(tuple[DomainEvent]):
         event_type: typing.Union[
             type[TDomainEvent], tuple[type[TDomainEvent]]
         ],
-    ) -> Selector[TDomainEvent]:
+    ) -> Selector:
         return Selector([e for e in self if isinstance(e, event_type)])
 
     def get_events_for_compensation(

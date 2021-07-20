@@ -1,6 +1,6 @@
 from domainpy.utils.data import SystemData
 from domainpy.utils.traceable import Traceable
-from domainpy.typing.infrastructure import EventRecordDict
+from domainpy.typing.infrastructure import EventRecordDict  # type: ignore
 
 
 class DomainEvent(SystemData[EventRecordDict], Traceable):
