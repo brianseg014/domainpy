@@ -14,7 +14,7 @@ class EventStream(list[DomainEvent]):
         to_timestamp: datetime.datetime = None,
         from_number: int = None,
         to_number: int = None,
-    ) -> "EventStream":
+    ) -> EventStream:
 
         filters = []
         if topic_type is not None:

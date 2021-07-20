@@ -18,6 +18,7 @@ class MemoryEventRecordManager(EventRecordManager):
     def get_records(
         self,
         stream_id: str,
+        *,
         topic: str = None,
         from_timestamp: datetime = None,
         to_timestamp: datetime = None,

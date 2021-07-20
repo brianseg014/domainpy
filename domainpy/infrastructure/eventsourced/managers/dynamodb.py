@@ -24,6 +24,7 @@ class DynamoDBEventRecordManager(EventRecordManager):
     def get_records(
         self,
         stream_id: str,
+        *,
         topic: str = None,
         from_timestamp: datetime.datetime = None,
         to_timestamp: datetime.datetime = None,

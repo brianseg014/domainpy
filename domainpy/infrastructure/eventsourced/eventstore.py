@@ -20,12 +20,12 @@ class EventStore:
         event_mapper: Mapper,
         record_manager: EventRecordManager,
         bus: Bus,
-    ):
+    ) -> None:
         self.event_mapper = event_mapper
         self.record_manager = record_manager
         self.bus = bus
 
-    def store_events(self, stream: EventStream):
+    def store_events(self, stream: EventStream) -> None:
         with self.record_manager.session() as session:
             for e in stream:
                 session.append(self.event_mapper.serialize(e))
@@ -38,6 +38,7 @@ class EventStore:
     def get_events(
         self,
         stream_id: str,
+        *,
         event_type: type[DomainEvent] = None,
         from_timestamp: datetime.datetime = None,
         to_timestamp: datetime.datetime = None,
