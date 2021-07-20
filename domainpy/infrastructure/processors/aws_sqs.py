@@ -1,4 +1,4 @@
-import boto3
+import boto3  # type: ignore
 
 from domainpy.exceptions import PartialBatchError
 from domainpy.infrastructure.processors.base import Processor
