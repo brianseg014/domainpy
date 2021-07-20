@@ -10,7 +10,7 @@ import functools
 import dataclasses
 
 if typing.TYPE_CHECKING:
-    from domainpy.typing import SystemMessage
+    from domainpy.typing.application import SystemMessage  # type: ignore
 
 from domainpy.application import ApplicationCommand, IntegrationEvent
 from domainpy.domain.model import AggregateRoot, DomainEvent
@@ -144,7 +144,7 @@ class DomeinEventsTestExpression:
         event_type: type[DomainEvent],
         aggregate_type: type[AggregateRoot] = None,
         aggregate_id: str = None,
-    ) -> tuple[DomainEvent]:
+    ) -> tuple[DomainEvent, ...]:
         events = tuple(
             [e for e in self.domain_events if isinstance(e, event_type)]
         )
