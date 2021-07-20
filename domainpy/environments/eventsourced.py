@@ -67,9 +67,6 @@ class EventSourcedEnvironment:
         )
 
         self.event_store_bus.attach(BusSubscriber(self.domain_publisher_bus))
-        self.event_store_bus.attach(
-            BusSubscriber(self.integration_publisher_bus)
-        )
         self.event_store_bus.attach(BusSubscriber(self.projection_bus))
         self.event_store_bus.attach(BusSubscriber(self.resolver_bus))
         self.event_store_bus.attach(BusSubscriber(self.handler_bus))
