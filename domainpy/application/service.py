@@ -5,7 +5,7 @@ import functools
 import typing
 
 if typing.TYPE_CHECKING:
-    from domainpy.typing.application import SystemMessage  # type: ignore
+    from domainpy.typing.application import SystemMessage  # type: ignore # noqa: E501
     from domainpy.application.command import ApplicationCommand
     from domainpy.application.integration import IntegrationEvent
     from domainpy.domain.model.event import DomainEvent
@@ -40,7 +40,7 @@ class handler:
                 h(service, message)
 
         if hasattr(service, "__partials__"):
-            partials = service.__partials__.get(message.__class__, None)  # type: ignore
+            partials = service.__partials__.get(message.__class__, None)  # type: ignore # noqa: E501
             if partials:
                 for p in set(partials):
                     p(service, message)
