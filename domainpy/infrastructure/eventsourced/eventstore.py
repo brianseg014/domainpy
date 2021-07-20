@@ -45,6 +45,7 @@ class EventStore:
         from_number: int = None,
         to_number: int = None,
     ) -> EventStream:
+        topic: typing.Optional[str]
 
         if event_type is not None:
             topic = event_type.__name__

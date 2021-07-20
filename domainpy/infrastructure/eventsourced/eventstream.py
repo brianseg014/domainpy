@@ -9,16 +9,16 @@ from domainpy.domain.model.event import DomainEvent
 class EventStream(list[DomainEvent]):
     def substream(
         self,
-        topic_type: typing.Type[DomainEvent] = None,
-        from_timestamp: datetime.datetime = None,
-        to_timestamp: datetime.datetime = None,
-        from_number: int = None,
-        to_number: int = None,
+        topic_type: typing.Optional[type[DomainEvent]] = None,
+        from_timestamp: typing.Optional[datetime.datetime] = None,
+        to_timestamp: typing.Optional[datetime.datetime] = None,
+        from_number: typing.Optional[int] = None,
+        to_number: typing.Optional[int] = None,
     ) -> EventStream:
 
         filters = []
         if topic_type is not None:
-            filters.append(lambda e: isinstance(e, topic_type))
+            filters.append(lambda e: isinstance(e, topic_type))  # type: ignore
 
         if from_timestamp is not None:
             filters.append(lambda e: e.__timestamp__ >= from_timestamp)

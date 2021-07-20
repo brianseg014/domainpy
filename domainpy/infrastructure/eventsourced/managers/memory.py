@@ -24,7 +24,7 @@ class MemoryEventRecordManager(EventRecordManager):
         to_timestamp: datetime = None,
         from_number: int = None,
         to_number: int = None,
-    ) -> tuple[EventRecord]:
+    ) -> tuple[EventRecord, ...]:
 
         filters = [lambda er: er.stream_id == stream_id]
 
@@ -43,7 +43,7 @@ class MemoryEventRecordManager(EventRecordManager):
         if to_number is not None:
             filters.append(lambda er: er.number <= to_number)
 
-        return [er for er in self.heap if all(f(er) for f in filters)]
+        return tuple([er for er in self.heap if all(f(er) for f in filters)])
 
     def clear(self):
         self.heap = []

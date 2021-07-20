@@ -1,6 +1,5 @@
+import boto3  # type: ignore
 import datetime
-
-import boto3
 
 from domainpy.exceptions import ConcurrencyError
 from domainpy.infrastructure.eventsourced.recordmanager import (
@@ -30,7 +29,7 @@ class DynamoDBEventRecordManager(EventRecordManager):
         to_timestamp: datetime.datetime = None,
         from_number: int = None,
         to_number: int = None,
-    ) -> tuple[EventRecord]:
+    ) -> tuple[EventRecord, ...]:
 
         key_conditions_expressions = []
         filter_expressions = []

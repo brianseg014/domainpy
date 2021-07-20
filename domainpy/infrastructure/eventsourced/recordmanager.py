@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import abc
 import datetime
+import contextlib
 
 from domainpy.infrastructure.records import EventRecord
 
@@ -21,11 +22,11 @@ class EventRecordManager(abc.ABC):
         to_timestamp: datetime.datetime = None,
         from_number: int = None,
         to_number: int = None,
-    ) -> tuple[EventRecord]:
+    ) -> tuple[EventRecord, ...]:
         pass
 
 
-class Session(abc.ABC):
+class Session(contextlib.AbstractContextManager):
     @abc.abstractmethod
     def append(self, event_record: EventRecord) -> None:
         pass
