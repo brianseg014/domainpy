@@ -113,11 +113,10 @@ class EventSourcedEnvironmentTestAdapter(EventSourcedEnvironment):
         )
 
     def given(self, event: DomainEvent):
+        Traceable.__trace_id__ = event.__trace_id__
         self.event_store.store_events(EventStream([event]))
 
     def when(self, message: SystemMessage):
-        Traceable.__trace_id__ = message.__trace_id__
-
         self.handle(message)
 
     @property

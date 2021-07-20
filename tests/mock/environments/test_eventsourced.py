@@ -32,6 +32,7 @@ def test_event_store_given_has_event():
     aggreagte_id = str(uuid.uuid4())
     
     event = DomainEvent()
+    event.__trace_id__='tid'
     event.__stream_id__=f'{aggreagte_id}:{Aggregate.__name__}'
     event.some_property='x'
 
