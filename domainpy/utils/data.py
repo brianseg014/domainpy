@@ -26,23 +26,37 @@ class MISSING:
     pass
 
 
-def create_fn(fnname, txt, cls, globals, locals):
+def create_fn(
+    fnname,
+    args,
+    body_lines,
+    *,
+    globals={},
+    locals={},
+    return_type=MISSING,
+    decorators=[],
+):
     globals = {k: v for k, v in globals.items()}
     globals["typeguard"] = typeguard
     globals["typing"] = typing
+
+    return_annotation = ""
+    if return_type is not MISSING:
+        locals["_return_type"] = return_type
+        return_annotation = " -> _return_type"
+
+    args = ", ".join(args)
+    body = "\n".join(f"  {line}" for line in body_lines)
+
+    decorators = "\n".join(f" {d}" for d in decorators)
+    txt = f"{decorators}\n def {fnname}({args}){return_annotation}:\n{body}"
 
     local_args = ", ".join(locals.keys())
     txt = f"def __create_fn__({local_args}):\n{txt}\n return {fnname}"
 
     ns = {}
     exec(txt, globals, ns)
-
-    fn = ns["__create_fn__"](**locals)
-
-    if hasattr(fn, "__name__"):
-        fn.__qualname__ = f"{cls.__qualname__}.{fn.__name__}"
-
-    return fn
+    return ns["__create_fn__"](**locals)
 
 
 def get_fields(cls):
@@ -78,29 +92,29 @@ def create_init_fn(cls, fields: list[Field]):
     # still can pass the arg as kwarg
     init_fields = [f for f in fields if f.default is MISSING]
 
+    args = []
+    body_lines = []
+
     if len(init_fields) > 0:
         locals = {f"_type_{f.name}": f.type for f in init_fields}
 
-        args = (f"{f.name}:_type_{f.name}" for f in init_fields)
+        args.extend(f"{f.name}:_type_{f.name}" for f in init_fields)
 
         # Assignment for immutable self
-        assignments = (
-            f'  self.__dict__.update({{ "{f.name}": {f.name} }})'
+        body_lines.extend(
+            f'self.__dict__.update({{ "{f.name}": {f.name} }})'
             for f in init_fields
         )
 
-        args = ", ".join(itertools.chain(["self"], args, ["**kwargs"]))
-
-        body = "\n".join(
-            itertools.chain(assignments, ["  self.__dict__.update(kwargs)"])
-        )
-
-        txt = f" def {fnname}({args}):\n{body}"
-        txt = f" @typeguard.typechecked\n{txt}"
-    else:
-        txt = f" def {fnname}(self, **kwargs):\n  self.__dict__.update(kwargs)"
-
-    return create_fn(fnname, txt, cls, globals, locals)
+    return create_fn(
+        fnname,
+        ["self"] + args + ["**kwargs"],
+        body_lines + ["self.__dict__.update(kwargs)"],
+        globals=globals,
+        locals=locals,
+        return_type=None,
+        decorators=["@typeguard.typechecked"],
+    )
 
 
 def create_fromdict_fn(cls, fields: list[Field]):
@@ -108,6 +122,8 @@ def create_fromdict_fn(cls, fields: list[Field]):
 
     globals = sys.modules[cls.__module__].__dict__
     locals = {}
+
+    body_lines = []
 
     dctcode = []
     for f in fields:
@@ -221,13 +237,17 @@ def create_fromdict_fn(cls, fields: list[Field]):
 
     dct = "{" + ",".join(dctcode) + "}"
 
-    txt = (
-        f" @classmethod\n"
-        f' def {fnname}(cls, dct: dict) -> "{cls.__name__}":\n'
-        f"  return cls(**{dct})"
-    )
+    body_lines.append(f"return cls(**{dct})")
 
-    return create_fn(fnname, txt, cls, globals, locals)
+    return create_fn(
+        fnname,
+        ["cls", "dct: dict"],
+        body_lines,
+        globals=globals,
+        locals=locals,
+        return_type=cls,
+        decorators=["@classmethod"],
+    )
 
 
 def create_todict_fn(cls, field):
@@ -236,27 +256,32 @@ def create_todict_fn(cls, field):
     globals = sys.modules[cls.__module__].__dict__
     locals = {}
 
-    code = [
+    body_lines = [
         "",
-        "  dct = {}",
-        "  for f_name,f_value in self.__dict__.items():",
+        "dct = {}",
+        "for f_name,f_value in self.__dict__.items():",
+        ' if hasattr(f_value, "__to_dict__"):',
+        "  dct[f_name] = f_value.__to_dict__()",
+        " elif isinstance(f_value, (list, tuple)):",
+        "  dct[f_name] = []",
+        "  for i in f_value:",
         '   if hasattr(f_value, "__to_dict__"):',
-        "    dct[f_name] = f_value.__to_dict__()",
-        "   elif isinstance(f_value, (list, tuple)):",
-        "    dct[f_name] = []",
-        "    for i in f_value:",
-        '     if hasattr(f_value, "__to_dict__"):',
-        "      dct[f_name].append(f_value.__to_dict__())",
-        "     else:",
-        "      dct[f_name].append(f_value)",
+        "    dct[f_name].append(f_value.__to_dict__())",
         "   else:",
-        "    dct[f_name] = f_value",
+        "    dct[f_name].append(f_value)",
+        " else:",
+        "  dct[f_name] = f_value",
+        "return dct",
     ]
-    body = "\n".join(code)
 
-    txt = f" def {fnname}(self):\n  {body}\n  return dct"
-
-    return create_fn(fnname, txt, cls, globals, locals)
+    return create_fn(
+        fnname,
+        ["self"],
+        body_lines,
+        globals=globals,
+        locals=locals,
+        return_type=dict,
+    )
 
 
 def create_setattr_fn(cls):
@@ -264,11 +289,12 @@ def create_setattr_fn(cls):
 
     globals = sys.modules[cls.__module__].__dict__
 
-    body = '  raise AttributeError("attributes are read-only")'
+    args = ["self, key, value"]
+    body_lines = ['raise AttributeError("attributes are read-only")']
 
-    txt = f" def {fnname}(self, key, value):\n{body}"
-
-    return create_fn(fnname, txt, cls, globals, {})
+    return create_fn(
+        fnname, args, body_lines, globals=globals, return_type=None
+    )
 
 
 def create_delattr_fn(cls):
@@ -276,11 +302,12 @@ def create_delattr_fn(cls):
 
     globals = sys.modules[cls.__module__].__dict__
 
-    body = '  raise AttributeError("attributes are read-only")'
+    args = ["self, name"]
+    body_lines = ['raise AttributeError("attributes are read-only")']
 
-    txt = f" def {fnname}(self, name: str) -> None:\n{body}"
-
-    return create_fn(fnname, txt, cls, globals, {})
+    return create_fn(
+        fnname, args, body_lines, globals=globals, return_type=None
+    )
 
 
 def create_repr_fn(cls, fields):
@@ -290,14 +317,18 @@ def create_repr_fn(cls, fields):
 
     init_fields = [f for f in fields if f.default is MISSING]
 
-    args = ", ".join(f"{f.name}={{self.{f.name}!r}}" for f in init_fields)
-
-    txt = (
-        f" def {fnname}(self):\n"
-        f'  return f"{{self.__class__.__name__}}({args})"'
+    expression = ", ".join(
+        f"{f.name}={{self.{f.name}!r}}" for f in init_fields
     )
 
-    return create_fn(fnname, txt, cls, globals, {})
+    body_lines = []
+    body_lines.append(
+        'return f"{{self.__class__.__name__}}(' + expression + ')"'
+    )
+
+    return create_fn(
+        fnname, ["self"], body_lines, globals=globals, return_type=str
+    )
 
 
 def create_str_fn(cls, fields):
@@ -305,14 +336,16 @@ def create_str_fn(cls, fields):
 
     globals = sys.modules[cls.__module__].__dict__
 
-    args = ", ".join(f"{f.name}={{self.{f.name}!r}}" for f in fields)
+    expression = ", ".join(f"{f.name}={{self.{f.name}!r}}" for f in fields)
 
-    txt = (
-        f" def {fnname}(self):\n"
-        f'  return f"{{self.__class__.__name__}}({args})"'
+    body_lines = []
+    body_lines.append(
+        'return f"{{self.__class__.__name__}}(' + expression + ')"'
     )
 
-    return create_fn(fnname, txt, cls, globals, {})
+    return create_fn(
+        fnname, ["self"], body_lines, globals=globals, return_type=str
+    )
 
 
 class system_data(type):
