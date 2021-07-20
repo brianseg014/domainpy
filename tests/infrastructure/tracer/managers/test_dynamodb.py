@@ -73,8 +73,8 @@ def _(dynamodb, table_name, example_trace):
 @pytest.fixture
 def init_example_trace(dynamodb, table_name, example_trace):
     example_trace = dataclasses.asdict(example_trace)
-    example_trace['resolution'] = example_trace['resolution'].name
-    example_trace['contexts_resolutions'][0]['resolution'] = example_trace['contexts_resolutions'][0]['resolution'].name
+    example_trace['resolution'] = example_trace['resolution']
+    example_trace['contexts_resolutions'][0]['resolution'] = example_trace['contexts_resolutions'][0]['resolution']
 
     dynamodb.put_item(
         TableName=table_name,
@@ -113,9 +113,9 @@ def test_store_in_progress(dynamodb, table_name: str, region_name: str, example_
 
     items = dynamodb.scan(TableName=table_name)['Items']
     assert len(items) == 1
-    assert items[0]['resolution']['S'] == TraceRecord.Resolution.pending.name
+    assert items[0]['resolution']['S'] == TraceRecord.Resolution.pending
     for context in contexts:
-        assert items[0]['contexts_resolutions']['M'][context]['M']['resolution']['S'] == TraceRecord.Resolution.pending.name
+        assert items[0]['contexts_resolutions']['M'][context]['M']['resolution']['S'] == TraceRecord.Resolution.pending
 
 def test_store_resolve_success(init_example_trace, dynamodb, table_name: str, region_name: str, example_trace: TraceRecord):
     trace_id = example_trace.trace_id
@@ -124,7 +124,7 @@ def test_store_resolve_success(init_example_trace, dynamodb, table_name: str, re
     manager.store_resolve_success(trace_id)
 
     items = dynamodb.scan(TableName=table_name)['Items']
-    assert items[0]['resolution']['S'] == TraceRecord.Resolution.success.name
+    assert items[0]['resolution']['S'] == TraceRecord.Resolution.success
 
 def test_store_resolve_failure(init_example_trace, dynamodb, table_name: str, region_name: str, example_trace: TraceRecord):
     trace_id = example_trace.trace_id
@@ -133,7 +133,7 @@ def test_store_resolve_failure(init_example_trace, dynamodb, table_name: str, re
     manager.store_resolve_failure(trace_id)
 
     items = dynamodb.scan(TableName=table_name)['Items']
-    assert items[0]['resolution']['S'] == TraceRecord.Resolution.failure.name
+    assert items[0]['resolution']['S'] == TraceRecord.Resolution.failure
 
 def test_store_context_resolve_success(init_example_trace, dynamodb, table_name: str, region_name: str, example_trace: TraceRecord):
     trace_id = example_trace.trace_id
@@ -143,7 +143,7 @@ def test_store_context_resolve_success(init_example_trace, dynamodb, table_name:
     manager.store_context_resolve_success(trace_id, context)
 
     items = dynamodb.scan(TableName=table_name)['Items']
-    assert items[0]['contexts_resolutions']['M'][context]['M']['resolution']['S'] == TraceRecord.Resolution.success.name
+    assert items[0]['contexts_resolutions']['M'][context]['M']['resolution']['S'] == TraceRecord.Resolution.success
 
 def test_store_context_resolve_failure(init_example_trace, dynamodb, table_name: str, region_name: str, example_trace: TraceRecord):
     trace_id = example_trace.trace_id
@@ -153,4 +153,4 @@ def test_store_context_resolve_failure(init_example_trace, dynamodb, table_name:
     manager.store_context_resolve_failure(trace_id, context, 'some error')
 
     items = dynamodb.scan(TableName=table_name)['Items']
-    assert items[0]['contexts_resolutions']['M'][context]['M']['resolution']['S'] == TraceRecord.Resolution.failure.name
+    assert items[0]['contexts_resolutions']['M'][context]['M']['resolution']['S'] == TraceRecord.Resolution.failure

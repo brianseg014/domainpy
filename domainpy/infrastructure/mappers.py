@@ -4,12 +4,12 @@ import typing
 
 from domainpy.exceptions import MapperNotFoundError
 from domainpy.infrastructure.transcoder import ITranscoder
-from domainpy.typing.infrastructure import (
-    TMessage,
-    TRecord,
-    TRecordDict,
-    JsonStr,
-)
+from domainpy.typing.infrastructure import JsonStr  # type: ignore
+
+
+TMessage = typing.TypeVar("TMessage")
+TRecord = typing.TypeVar("TRecord")
+TRecordDict = typing.TypeVar("TRecordDict")
 
 
 class Mapper(typing.Generic[TMessage, TRecord, TRecordDict]):
@@ -18,7 +18,7 @@ class Mapper(typing.Generic[TMessage, TRecord, TRecordDict]):
     ):
         self.transcoder = transcoder
 
-        self.map = {}
+        self.map: dict[str, typing.Any] = {}
 
     def register(self, cls):
         self.map[cls.__name__] = cls
@@ -39,14 +39,14 @@ class Mapper(typing.Generic[TMessage, TRecord, TRecordDict]):
 
     def serialize_asdict(
         self, message: TMessage, optimized: bool = False
-    ) -> dict:
+    ) -> TRecordDict:
         return self.asdict(self.serialize(message), optimized)
 
     def asdict(self, record: TRecord, optimized: bool = False) -> TRecordDict:
         if optimized:
-            return record.__dict__
+            return typing.cast(TRecordDict, record.__dict__)
         else:
-            return dataclasses.asdict(record)
+            return typing.cast(TRecordDict, dataclasses.asdict(record))
 
 
 class MapperSet:

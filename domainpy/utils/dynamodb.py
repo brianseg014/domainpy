@@ -1,6 +1,9 @@
 import decimal
 
-from boto3.dynamodb.types import TypeDeserializer, TypeSerializer
+from boto3.dynamodb.types import (  # type: ignore
+    TypeDeserializer,
+    TypeSerializer,
+)
 
 type_serializer = TypeSerializer()
 type_deserializer = TypeDeserializer()

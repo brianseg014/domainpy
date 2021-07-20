@@ -1,4 +1,4 @@
-import boto3
+import boto3  # type: ignore
 import datetime
 import dataclasses
 
@@ -15,7 +15,7 @@ class DynamodbTraceRecordManager:
 
     def get_trace_contexts(
         self, trace_id: str
-    ) -> tuple[TraceRecord.ContextResolution]:
+    ) -> tuple[TraceRecord.ContextResolution, ...]:
         item = {
             "TableName": self.table_name,
             "Key": {"trace_id": serialize(trace_id)},
@@ -30,7 +30,7 @@ class DynamodbTraceRecordManager:
             [
                 TraceRecord.ContextResolution(
                     context=cr["context"],
-                    resolution=TraceRecord.Resolution[cr["resolution"]],
+                    resolution=cr["resolution"],
                     timestamp_resolution=cr["timestamp_resolution"],
                     error=cr["error"],
                 )
@@ -41,11 +41,11 @@ class DynamodbTraceRecordManager:
     def store_in_progress(
         self, trace_id: str, command: dict, contexts_resolutions: tuple[str]
     ) -> None:
-        contexts_resolutions: dict[str, dict] = {
+        resolutions: dict[str, dict] = {
             context_name: dataclasses.asdict(
                 TraceRecord.ContextResolution(
                     context=context_name,
-                    resolution=TraceRecord.Resolution.pending.name,
+                    resolution=TraceRecord.Resolution.pending,
                 )
             )
             for context_name in contexts_resolutions
@@ -58,12 +58,12 @@ class DynamodbTraceRecordManager:
                 "command": serialize(command),
                 "status_code": serialize(TraceRecord.StatusCode.CODE_200),
                 "number": serialize(0),
-                "resolution": serialize(TraceRecord.Resolution.pending.name),
+                "resolution": serialize(TraceRecord.Resolution.pending),
                 "version": serialize(1),
                 "timestamp": serialize(
                     datetime.datetime.timestamp(datetime.datetime.now())
                 ),
-                "contexts_resolutions": serialize(contexts_resolutions),
+                "contexts_resolutions": serialize(resolutions),
             },
         }
         self.client.put_item(**item)
@@ -74,7 +74,7 @@ class DynamodbTraceRecordManager:
             "Key": {"trace_id": serialize(trace_id)},
             "UpdateExpression": "SET resolution = :resolution",
             "ExpressionAttributeValues": {
-                ":resolution": serialize(TraceRecord.Resolution.success.name)
+                ":resolution": serialize(TraceRecord.Resolution.success)
             },
         }
         self.client.update_item(**item)
@@ -85,7 +85,7 @@ class DynamodbTraceRecordManager:
             "Key": {"trace_id": serialize(trace_id)},
             "UpdateExpression": "SET resolution = :resolution",
             "ExpressionAttributeValues": {
-                ":resolution": serialize(TraceRecord.Resolution.failure.name)
+                ":resolution": serialize(TraceRecord.Resolution.failure)
             },
         }
         self.client.update_item(**item)
@@ -98,7 +98,7 @@ class DynamodbTraceRecordManager:
             "Key": {"trace_id": serialize(trace_id)},
             "UpdateExpression": f"SET contexts_resolutions.{context}.resolution = :resolution",  # noqa: E501
             "ExpressionAttributeValues": {
-                ":resolution": serialize(TraceRecord.Resolution.success.name)
+                ":resolution": serialize(TraceRecord.Resolution.success)
             },
         }
         self.client.update_item(**item)
@@ -111,7 +111,7 @@ class DynamodbTraceRecordManager:
             "Key": {"trace_id": serialize(trace_id)},
             "UpdateExpression": f"SET contexts_resolutions.{context}.resolution = :resolution",  # noqa: E501
             "ExpressionAttributeValues": {
-                ":resolution": serialize(TraceRecord.Resolution.failure.name)
+                ":resolution": serialize(TraceRecord.Resolution.failure)
             },
         }
         self.client.update_item(**item)

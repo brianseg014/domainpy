@@ -92,8 +92,8 @@ def create_init_fn(cls, fields: list[Field]):
     # still can pass the arg as kwarg
     init_fields = [f for f in fields if f.default is MISSING]
 
-    args = []
-    body_lines = []
+    args: list[str] = []
+    body_lines: list[str] = []
 
     if len(init_fields) > 0:
         locals = {f"_type_{f.name}": f.type for f in init_fields}
@@ -386,8 +386,8 @@ Dict = typing.TypeVar("Dict", bound=dict)
 
 class SystemData(typing.Generic[Dict], metaclass=system_data):
     def __to_dict__(self) -> Dict:
-        return super().__to_dict__()
+        return super().__to_dict__()  # type: ignore
 
     @classmethod
     def __from_dict__(cls: type[Class], dct: dict) -> Class:
-        return typing.cast(cls, super().__from_dict__(cls, dict))
+        return super().__from_dict__(cls, dict)  # type: ignore

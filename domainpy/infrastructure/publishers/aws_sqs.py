@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-import collections.abc
+import boto3  # type: ignore
 import json
 import typing
+import collections.abc
 
-import boto3
 
 if typing.TYPE_CHECKING:
-    from domainpy.typing import SystemMessage
+    from domainpy.typing.application import SystemMessage  # type: ignore
     from domainpy.infrastructure.mappers import Mapper
 
 from domainpy.exceptions import PublisherError

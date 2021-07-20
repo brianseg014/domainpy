@@ -25,8 +25,8 @@ class Bus(IBus[T]):
     def __init__(
         self,
         publish_exceptions: typing.Union[
-            type[Exception], typing.Tuple[type[Exception], typing.Tuple[()]]
-        ] = [],
+            type[Exception], tuple[type[Exception], ...], tuple[()]
+        ] = (),
     ):
         if not isinstance(publish_exceptions, collections.abc.Sequence):
             publish_exceptions = tuple([publish_exceptions])
@@ -59,5 +59,5 @@ class Bus(IBus[T]):
                     exceptions.append(e)
                 else:
                     raise e
-        for e in exceptions:
-            self.publish(e)
+        for ex in exceptions:
+            self.publish(ex)  # type: ignore

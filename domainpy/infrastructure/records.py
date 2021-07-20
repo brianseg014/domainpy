@@ -1,6 +1,5 @@
-import dataclasses
-import enum
 import typing
+import dataclasses
 
 
 @dataclasses.dataclass(frozen=True)
@@ -9,7 +8,7 @@ class CommandRecord:
     topic: str
     version: int
     timestamp: float
-    message: float
+    message: str
     payload: dict
 
 
@@ -19,7 +18,7 @@ class IntegrationRecord:
     context: str
     topic: str
     resolve: str
-    error: str
+    error: typing.Optional[str]
     version: int
     timestamp: float
     message: str
@@ -41,10 +40,10 @@ class EventRecord:
 
 @dataclasses.dataclass
 class TraceRecord:
-    class StatusCode(enum.IntEnum):
+    class StatusCode:
         CODE_200 = 200
 
-    class Resolution(enum.Enum):
+    class Resolution:
         pending = "pending"
         success = "success"
         failure = "failure"
@@ -52,15 +51,15 @@ class TraceRecord:
     @dataclasses.dataclass
     class ContextResolution:
         context: str
-        resolution: "TraceRecord.Resolution"
+        resolution: str
         timestamp_resolution: typing.Optional[float] = None
         error: typing.Optional[str] = None
 
     trace_id: str
     command: CommandRecord
-    status_code: "TraceRecord.StatusCode"
+    status_code: int
     number: int
-    resolution: "TraceRecord.Resolution"
+    resolution: str
     version: int
     timestamp: float
     contexts_resolutions: tuple[ContextResolution]

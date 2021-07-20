@@ -4,7 +4,7 @@ import collections.abc
 import typing
 
 if typing.TYPE_CHECKING:
-    from domainpy.typing import SystemMessage
+    from domainpy.typing.application import SystemMessage  # type: ignore
 
 from domainpy.infrastructure.publishers.base import IPublisher
 

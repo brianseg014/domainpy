@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-import collections.abc
 import json
+import boto3  # type: ignore
 import typing
+import collections.abc
 
-import boto3
 
 if typing.TYPE_CHECKING:
-    from domainpy.typing import SystemMessage
+    from domainpy.typing.application import SystemMessage  # type: ignore
     from domainpy.infrastructure.mappers import Mapper
 
 from domainpy.exceptions import PublisherError
@@ -15,8 +15,9 @@ from domainpy.infrastructure.publishers.base import IPublisher
 
 
 class AwsEventBridgePublisher(IPublisher):
-    def __init__(self, bus_name: str, mapper: Mapper, **kwargs):
+    def __init__(self, bus_name: str, context: str, mapper: Mapper, **kwargs):
         self.bus_name = bus_name
+        self.context = context
         self.mapper = mapper
 
         self.client = boto3.client("events", **kwargs)
@@ -30,7 +31,7 @@ class AwsEventBridgePublisher(IPublisher):
 
         entries = [
             {
-                "Source": self.mapper.context,
+                "Source": self.context,
                 "Detail": json.dumps(self.mapper.serialize_asdict(m)),
                 "DetailType": m.__class__.__name__,
                 "EventBusName": self.bus_name,

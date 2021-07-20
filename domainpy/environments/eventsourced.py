@@ -43,7 +43,13 @@ class EventSourcedEnvironment:
         self.setupargs = setupargs
 
         self.mapper_set = MapperSet(
-            tuple([self.command_mapper, self.integration_mapper, self.event_mapper])
+            tuple(
+                [
+                    self.command_mapper,
+                    self.integration_mapper,
+                    self.event_mapper,
+                ]
+            )
         )
 
         self.event_record_manager = self.setup_event_record_manager(setupargs)

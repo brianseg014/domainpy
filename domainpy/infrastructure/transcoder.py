@@ -1,3 +1,4 @@
+import abc
 import json
 import typing
 
@@ -9,10 +10,7 @@ from domainpy.infrastructure.records import (
     EventRecord,
     IntegrationRecord,
 )
-from domainpy.typing.infrastructure import (
-    TMessage,
-    TRecord,
-    TRecordDict,
+from domainpy.typing.infrastructure import (  # type: ignore
     JsonStr,
     CommandRecordDict,
     IntegrationRecordDict,
@@ -20,7 +18,13 @@ from domainpy.typing.infrastructure import (
 )
 
 
-class ITranscoder(typing.Protocol[TMessage, TRecord, TRecordDict]):
+TMessage = typing.TypeVar("TMessage")
+TRecord = typing.TypeVar("TRecord")
+TRecordDict = typing.TypeVar("TRecordDict")
+
+
+class ITranscoder(typing.Generic[TMessage, TRecord, TRecordDict], abc.ABC):
+    @abc.abstractmethod
     def is_deserializable(
         self,
         deserializable: typing.Union[TRecord, TRecordDict, JsonStr],
@@ -28,15 +32,22 @@ class ITranscoder(typing.Protocol[TMessage, TRecord, TRecordDict]):
     ) -> bool:
         pass
 
+    @abc.abstractmethod
     def serialize(self, message: TMessage) -> TRecord:
         pass
 
+    @abc.abstractmethod
     def deserialize(
         self,
         deserializable: typing.Union[TRecord, TRecordDict, JsonStr],
         message_type: typing.Union[type[TMessage], dict[str, type[TMessage]]],
     ) -> TMessage:
         pass
+
+
+class TranscoderContexted(ITranscoder[TMessage, TRecord, TRecordDict]):
+    def __init__(self, context: str) -> None:
+        self.context = context
 
 
 class CommandTranscoder(
@@ -78,6 +89,9 @@ class CommandTranscoder(
 
 class BuiltinCommandTranscoder(CommandTranscoder):
     def serialize(self, message: ApplicationCommand) -> CommandRecord:
+        if message.__trace_id__ is None:
+            raise TypeError("message.__trace_id__ should not be None")
+
         record = CommandRecord(
             trace_id=message.__trace_id__,
             topic=message.__class__.__name__,
@@ -126,12 +140,11 @@ class BuiltinCommandTranscoder(CommandTranscoder):
 
 
 class IntegrationTranscoder(
-    ITranscoder[IntegrationEvent, IntegrationRecord, IntegrationRecordDict]
+    TranscoderContexted[
+        IntegrationEvent, IntegrationRecord, IntegrationRecordDict
+    ]
 ):
     message = "integration_event"
-
-    def __init__(self, context: str):
-        self.context = context
 
     def is_deserializable(
         self,
@@ -168,6 +181,9 @@ class IntegrationTranscoder(
 
 class BuiltinIntegrationTranscoder(IntegrationTranscoder):
     def serialize(self, message: IntegrationEvent) -> IntegrationRecord:
+        if message.__trace_id__ is None:
+            raise TypeError("message.__trace_id__ should not be None")
+
         record = IntegrationRecord(
             trace_id=message.__trace_id__,
             context=self.context,
@@ -225,11 +241,10 @@ class BuiltinIntegrationTranscoder(IntegrationTranscoder):
         return message_type.__from_dict__(dct)
 
 
-class EventTranscoder(ITranscoder[DomainEvent, EventRecord, EventRecordDict]):
+class EventTranscoder(
+    TranscoderContexted[DomainEvent, EventRecord, EventRecordDict]
+):
     message = "domain_event"
-
-    def __init__(self, context: str):
-        self.context = context
 
     def is_deserializable(
         self,
@@ -262,6 +277,9 @@ class EventTranscoder(ITranscoder[DomainEvent, EventRecord, EventRecordDict]):
 
 class BuiltinEventTranscoder(EventTranscoder):
     def serialize(self, message: DomainEvent) -> EventRecord:
+        if message.__trace_id__ is None:
+            raise TypeError("message.__trace_id__ should not be None")
+
         record = EventRecord(
             stream_id=message.__stream_id__,
             number=message.__number__,

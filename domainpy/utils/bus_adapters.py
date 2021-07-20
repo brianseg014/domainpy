@@ -4,7 +4,7 @@ from domainpy.domain.exceptions import DomainError
 import typing
 
 if typing.TYPE_CHECKING:
-    from domainpy.typing import SystemMessage
+    from domainpy.typing.application import SystemMessage  # type: ignore
     from domainpy.application.service import ApplicationService
     from domainpy.application.projection import Projection
     from domainpy.application.integration import IntegrationEvent
@@ -20,7 +20,9 @@ from domainpy.utils.bus_subscribers import (
 
 
 class ApplicationBusAdapter:
-    def __init__(self, bus: Bus[SystemMessage, DomainError]) -> None:
+    def __init__(
+        self, bus: Bus[typing.Union[SystemMessage, DomainError]]
+    ) -> None:
         self.bus = bus
 
     def attach(self, application_service: ApplicationService) -> None:

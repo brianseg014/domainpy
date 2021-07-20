@@ -11,8 +11,8 @@ from domainpy.utils.bus import Bus
 @dataclasses.dataclass(frozen=True)
 class TraceResolution:
     trace_id: str
-    resolution: TraceRecord.Resolution
-    errors: typing.Optional[tuple[str]]
+    resolution: str
+    errors: typing.Optional[tuple[str, ...]] = None
 
 
 class TraceStore:
@@ -21,7 +21,7 @@ class TraceStore:
         command_mapper: Mapper,
         record_manager: TraceRecordManager,
         resolver_bus: Bus[TraceResolution],
-    ):
+    ) -> None:
         self.command_mapper = command_mapper
         self.record_manager = record_manager
         self.resolver_bus = resolver_bus
@@ -30,20 +30,24 @@ class TraceStore:
         self,
         command: ApplicationCommand,
         contexts_resolutions: tuple[TraceRecord.ContextResolution],
-    ):
+    ) -> None:
         self.record_manager.store_in_progress(
             self.command_mapper.serialize_asdict(command), contexts_resolutions
         )
 
-    def store_context_success(self, trace_id: str, context: str):
-        self.record_manager.store_context_success(trace_id, context)
+    def store_context_success(self, trace_id: str, context: str) -> None:
+        self.record_manager.store_context_resolve_success(trace_id, context)
         self.trace_resolution(trace_id)
 
-    def store_context_failure(self, trace_id: str, context: str, error: str):
-        self.record_manager.store_context_failure(trace_id, context, error)
+    def store_context_failure(
+        self, trace_id: str, context: str, error: str
+    ) -> None:
+        self.record_manager.store_context_resolve_failure(
+            trace_id, context, error
+        )
         self.trace_resolution(trace_id)
 
-    def trace_resolution(self, trace_id: str):
+    def trace_resolution(self, trace_id: str) -> None:
         trace_contexts = self.record_manager.get_trace_contexts(trace_id)
 
         if self.is_all_trace_context_resolved(trace_contexts):
@@ -83,7 +87,7 @@ class TraceStore:
 
     def get_trace_errors(
         self, trace_contexts: tuple[TraceRecord.ContextResolution]
-    ) -> tuple[str]:
+    ) -> tuple[str, ...]:
         return tuple(
             [
                 tc.error

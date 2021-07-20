@@ -29,8 +29,7 @@ def test_eventbridge_publish(bus_name):
     some_message = SomeMessageType()
 
     mapper = mock.MagicMock()
-    mapper.context = 'some-context'
     mapper.serialize_asdict = mock.Mock(return_value={ 'some_property': 'x' })
 
-    pub = AwsEventBridgePublisher(bus_name, mapper)
+    pub = AwsEventBridgePublisher(bus_name, 'some_context', mapper)
     pub.publish(some_message)

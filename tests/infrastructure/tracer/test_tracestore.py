@@ -32,14 +32,14 @@ def test_store_context_success():
     manager.get_trace_contexts = mock.Mock(return_value=[
         TraceRecord.ContextResolution(
             context='some_context',
-            resolution=TraceRecord.Resolution.success.name
+            resolution=TraceRecord.Resolution.success
         )
     ])
 
     store = TraceStore(mapper, manager, bus)
     store.store_context_success(trace_id, 'some_context')
 
-    manager.store_context_success.assert_called()
+    manager.store_context_resolve_success.assert_called()
     bus.publish.assert_called()
 
 def test_store_context_failure():
@@ -52,7 +52,7 @@ def test_store_context_failure():
     manager.get_trace_contexts = mock.Mock(return_value=[
         TraceRecord.ContextResolution(
             context='some_context',
-            resolution=TraceRecord.Resolution.failure.name,
+            resolution=TraceRecord.Resolution.failure,
             error='some-error-description'
         )
     ])
@@ -60,5 +60,5 @@ def test_store_context_failure():
     store = TraceStore(mapper, manager, bus)
     store.store_context_failure(trace_id, 'some_context', 'some-error')
 
-    manager.store_context_failure.assert_called()
+    manager.store_context_resolve_failure.assert_called()
     bus.publish.assert_called()
