@@ -1,6 +1,5 @@
+import boto3  # type: ignore
 import typing
-
-import boto3
 
 from domainpy.exceptions import IdempotencyItemError
 from domainpy.infrastructure.idempotent.recordmanager import (
