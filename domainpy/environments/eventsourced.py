@@ -89,7 +89,9 @@ class EventSourcedEnvironment:
             self.setupargs,
         )
         self.setup_projection_bus(
-            ProjectionBusAdapter(self.projection_bus), self.setupargs
+            ProjectionBusAdapter(self.projection_bus),
+            self.registry,
+            self.setupargs,
         )
         self.setup_resolver_bus(
             ApplicationBusAdapter(self.resolver_bus),
@@ -145,7 +147,10 @@ class EventSourcedEnvironment:
         pass
 
     def setup_projection_bus(
-        self, projection_bus: ProjectionBusAdapter, setupargs: dict
+        self,
+        projection_bus: ProjectionBusAdapter,
+        registry: Registry,
+        setupargs: dict,
     ) -> None:
         pass
 
