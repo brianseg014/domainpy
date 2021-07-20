@@ -1,4 +1,3 @@
-
 from .repository import IRepository
 from .service import IDomainService
 

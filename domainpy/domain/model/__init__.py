@@ -13,5 +13,5 @@ __all__ = [
     "Specification",
     "ValueObject",
     "Identity",
-    "DomainError"
+    "DomainError",
 ]
