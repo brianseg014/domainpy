@@ -103,7 +103,7 @@ class EventSourcedEnvironmentTestAdapter(EventSourcedEnvironment):
         if aggregate_id is None:
             aggregate_id = str(uuid.uuid4())
 
-        if trace_id is not None:
+        if trace_id is None:
             trace_id = str(uuid.uuid4())
 
         events = self.event_store.get_events(f'{aggregate_id}:{aggregate_type.__name__}')
@@ -120,7 +120,8 @@ class EventSourcedEnvironmentTestAdapter(EventSourcedEnvironment):
         self.event_store.store_events(EventStream([event]))
 
     def when(self, message: SystemMessage):
-        Traceable.__trace_id__ = str(uuid.uuid4())
+        Traceable.__trace_id__ = message.__trace_id__
+
         self.handle(message)
 
     @property
