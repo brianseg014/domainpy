@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import abc
 import datetime
 import functools
 import typing
@@ -11,13 +12,14 @@ if typing.TYPE_CHECKING:
     from domainpy.domain.model.event import DomainEvent
 
 
-class ApplicationService:
+class ApplicationService(abc.ABC):
     def stamp_integration(self, integration_type: type[IntegrationEvent]):
         return functools.partial(
             integration_type,
             __timestamp__=datetime.datetime.timestamp(datetime.datetime.now()),
         )
 
+    @abc.abstractmethod
     def handle(self, message: SystemMessage):
         pass
 
