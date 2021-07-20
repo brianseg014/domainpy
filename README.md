@@ -55,6 +55,8 @@ the are immutable as we cannot change the history.
 from domainpy.domain.model import DomainEvent
 
 class PetStoreRegistered(DomainEvent):
+    __version__: int = 1
+    
     pet_store_id: PetStoreId
     pet_store_name: PetStoreName
 ```
