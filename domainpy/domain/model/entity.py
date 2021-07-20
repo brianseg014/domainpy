@@ -7,39 +7,37 @@ if typing.TYPE_CHECKING:
     from domainpy.domain.model.event import DomainEvent
 
 from domainpy.domain.model.value_object import Identity
-from domainpy.exceptions import DefinitionError
 
 
 class DomainEntity:
-    def __init__(self, id: Identity, aggregate: AggregateRoot):
+    def __init__(self, id: Identity, aggregate: AggregateRoot) -> None:
         self.__id__ = id
         self.__aggregate__ = aggregate
 
-    def __apply__(self, event: DomainEvent):
+    def __apply__(self, event: DomainEvent) -> None:
         self.__aggregate__.__apply__(event)
 
-    def __route__(self, event: DomainEvent):
+    def __route__(self, event: DomainEvent) -> None:
         self.mutate(event)
 
-    def __eq__(self, other: typing.Union["DomainEntity", Identity]):
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, (self.__class__, self.__id__.__class__)):
+            return False
+
         if other is None:
             return False
 
-        if isinstance(other, DomainEntity):
+        if isinstance(other, self.__class__):
             return self.__id__ == other.__id__
-        elif isinstance(other, Identity):
+        elif isinstance(other, self.__id__.__class__):
             return self.__id__ == other
         else:
-            self_name = self.__class__.__name__
-            other_name = other.__class__.__name__
-            raise DefinitionError(
-                f"cannot compare {self_name} with {other_name}"
-            )
+            return False
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         self_name = self.__class__.__name__
         self_id = self.__id__
         return f"{self_name}(id={self_id})"  # pragma: no cover
 
-    def mutate(self, event: "DomainEvent"):
+    def mutate(self, event: DomainEvent) -> None:
         pass  # pragma: no cover

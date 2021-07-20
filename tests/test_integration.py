@@ -32,8 +32,8 @@ from domainpy.utils import (
     Bus,
     ApplicationBusAdapter
 )
-from domainpy.typing import SystemMessage
 from domainpy.mock import EventSourcedEnvironmentTestAdapter
+from domainpy.typing.application import SystemMessage
 
 
 def test_all_system():

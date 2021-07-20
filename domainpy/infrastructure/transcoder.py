@@ -1,15 +1,6 @@
 import json
 import typing
 
-from domainpy.typing import (
-    Message,
-    Record,
-    RecordDict,
-    JsonStr,
-    CommandRecordDict,
-    IntegrationRecordDict,
-    EventRecordDict,
-)
 from domainpy.application.command import ApplicationCommand
 from domainpy.application.integration import IntegrationEvent
 from domainpy.domain.model.event import DomainEvent
@@ -18,24 +9,33 @@ from domainpy.infrastructure.records import (
     EventRecord,
     IntegrationRecord,
 )
+from domainpy.typing.infrastructure import (
+    TMessage,
+    TRecord,
+    TRecordDict,
+    JsonStr,
+    CommandRecordDict,
+    IntegrationRecordDict,
+    EventRecordDict,
+)
 
 
-class ITranscoder(typing.Protocol[Message, Record, RecordDict]):
+class ITranscoder(typing.Protocol[TMessage, TRecord, TRecordDict]):
     def is_deserializable(
         self,
-        deserializable: typing.Union[Record, RecordDict, JsonStr],
-        message_type: typing.Union[type[Message], dict[str, type[Message]]],
+        deserializable: typing.Union[TRecord, TRecordDict, JsonStr],
+        message_type: typing.Union[type[TMessage], dict[str, type[TMessage]]],
     ) -> bool:
         pass
 
-    def serialize(self, message: Message) -> Record:
+    def serialize(self, message: TMessage) -> TRecord:
         pass
 
     def deserialize(
         self,
-        deserializable: typing.Union[Record, RecordDict, JsonStr],
-        message_type: typing.Union[type[Message], dict[str, type[Message]]],
-    ) -> Message:
+        deserializable: typing.Union[TRecord, TRecordDict, JsonStr],
+        message_type: typing.Union[type[TMessage], dict[str, type[TMessage]]],
+    ) -> TMessage:
         pass
 
 

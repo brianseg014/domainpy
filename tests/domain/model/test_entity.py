@@ -39,12 +39,3 @@ def test_entity_inequality():
     assert a != b
     assert a != entity_b_id
     assert a != None
-
-def test_entity_equality_failes():
-    aggregate = mock.MagicMock()
-    entity_id = mock.MagicMock(spec=Identity.create())
-
-    x = DomainEntity(id=entity_id, aggregate=aggregate)
-    
-    with pytest.raises(DefinitionError):
-        x == {}

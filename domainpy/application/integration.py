@@ -2,9 +2,10 @@ import typing
 
 from domainpy.utils.data import SystemData
 from domainpy.utils.traceable import Traceable
+from domainpy.typing.infrastructure import IntegrationRecordDict
 
 
-class IntegrationEvent(SystemData, Traceable):
+class IntegrationEvent(SystemData[IntegrationRecordDict], Traceable):
     __trace_id__: str
     __resolve__: str
     __timestamp__: float

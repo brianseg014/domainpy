@@ -1,7 +1,8 @@
 
 from unittest import mock
 
-from domainpy.typing import SystemMessage
+from domainpy.typing.application import SystemMessage
+
 from domainpy.environments.eventsourced import EventSourcedEnvironment
 from domainpy.utils.bus import ISubscriber
 

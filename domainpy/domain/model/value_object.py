@@ -6,17 +6,17 @@ from domainpy.utils.data import SystemData, system_data
 
 
 class ValueObject(SystemData):
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(json.dumps(self.__to_dict__(), sort_keys=True))
 
-    def __eq__(self, other: "ValueObject"):
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, self.__class__):
+            return False
+
         if other is None:
             return False
 
-        return (
-            self.__class__ == other.__class__
-            and self.__hash__() == other.__hash__()
-        )
+        return self.__hash__() == other.__hash__()
 
     def __repr__(self):
         self_name = self.__class__.__name__

@@ -13,7 +13,6 @@ from domainpy.infrastructure import (
     MapperSet,
     MemoryEventRecordManager,
 )
-from domainpy.typing import JsonStr, RecordDict, SystemMessage
 from domainpy.utils import (
     ApplicationBusAdapter,
     Bus,
@@ -23,6 +22,8 @@ from domainpy.utils import (
     Registry,
 )
 from domainpy.utils.traceable import Traceable
+from domainpy.typing.application import SystemMessage
+from domainpy.typing.infrastructure import JsonStr, RecordDict
 
 
 class EventSourcedEnvironment:
