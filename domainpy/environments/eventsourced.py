@@ -72,9 +72,10 @@ class EventSourcedEnvironment:
             publish_exceptions=DomainError
         )
 
+        self.handler_bus.attach(BusSubscriber(self.resolver_bus))
+
         self.event_store_bus.attach(BusSubscriber(self.domain_publisher_bus))
         self.event_store_bus.attach(BusSubscriber(self.projection_bus))
-        self.event_store_bus.attach(BusSubscriber(self.resolver_bus))
         self.event_store_bus.attach(BusSubscriber(self.handler_bus))
 
         self.setup_registry(self.registry, self.event_store, self.setupargs)
@@ -117,7 +118,6 @@ class EventSourcedEnvironment:
 
         Traceable.__trace_id__ = message.__trace_id__
 
-        self.resolver_bus.publish(message)
         self.handler_bus.publish(message)
 
     def setup_event_record_manager(
