@@ -28,7 +28,9 @@ class ITranscoder(typing.Generic[TMessage, TRecord, TRecordDict], abc.ABC):
     def is_deserializable(
         self,
         deserializable: typing.Union[TRecord, TRecordDict, JsonStr],
-        message_type: typing.Union[type[TMessage], dict[str, type[TMessage]]],
+        message_type: typing.Union[
+            typing.Type[TMessage], typing.Dict[str, typing.Type[TMessage]]
+        ],
     ) -> bool:
         pass
 
@@ -40,7 +42,9 @@ class ITranscoder(typing.Generic[TMessage, TRecord, TRecordDict], abc.ABC):
     def deserialize(
         self,
         deserializable: typing.Union[TRecord, TRecordDict, JsonStr],
-        message_type: typing.Union[type[TMessage], dict[str, type[TMessage]]],
+        message_type: typing.Union[
+            typing.Type[TMessage], typing.Dict[str, typing.Type[TMessage]]
+        ],
     ) -> TMessage:
         pass
 
@@ -61,7 +65,8 @@ class CommandTranscoder(
             CommandRecord, CommandRecordDict, JsonStr
         ],
         message_type: typing.Union[
-            type[ApplicationCommand], dict[str, type[ApplicationCommand]]
+            typing.Type[ApplicationCommand],
+            typing.Dict[str, typing.Type[ApplicationCommand]],
         ],
     ) -> bool:
         deserializable = self.get_as_record(deserializable)
@@ -108,7 +113,8 @@ class BuiltinCommandTranscoder(CommandTranscoder):
             CommandRecord, CommandRecordDict, JsonStr
         ],
         message_type: typing.Union[
-            type[ApplicationCommand], dict[str, type[ApplicationCommand]]
+            typing.Type[ApplicationCommand],
+            typing.Dict[str, typing.Type[ApplicationCommand]],
         ],
     ) -> ApplicationCommand:
         deserializable = self.get_as_record(deserializable)
@@ -152,7 +158,8 @@ class IntegrationTranscoder(
             IntegrationRecord, IntegrationRecordDict, JsonStr
         ],
         message_type: typing.Union[
-            type[IntegrationEvent], dict[str, type[IntegrationEvent]]
+            typing.Type[IntegrationEvent],
+            typing.Dict[str, typing.Type[IntegrationEvent]],
         ],
     ) -> bool:
         deserializable = self.get_as_record(deserializable)
@@ -203,7 +210,8 @@ class BuiltinIntegrationTranscoder(IntegrationTranscoder):
             IntegrationRecord, IntegrationRecordDict, JsonStr
         ],
         message_type: typing.Union[
-            type[IntegrationEvent], dict[str, type[IntegrationEvent]]
+            typing.Type[IntegrationEvent],
+            typing.Dict[str, typing.Type[IntegrationEvent]],
         ],
     ) -> IntegrationEvent:
         deserializable = self.get_as_record(deserializable)
@@ -250,7 +258,8 @@ class EventTranscoder(
         self,
         deserializable: typing.Union[EventRecord, EventRecordDict, JsonStr],
         message_type: typing.Union[
-            type[DomainEvent], dict[str, type[DomainEvent]]
+            typing.Type[DomainEvent],
+            typing.Dict[str, typing.Type[DomainEvent]],
         ],
     ) -> bool:
         deserializable = self.get_as_record(deserializable)
@@ -297,7 +306,8 @@ class BuiltinEventTranscoder(EventTranscoder):
         self,
         deserializable: typing.Union[EventRecord, EventRecordDict, JsonStr],
         message_type: typing.Union[
-            type[DomainEvent], dict[str, type[DomainEvent]]
+            typing.Type[DomainEvent],
+            typing.Dict[str, typing.Type[DomainEvent]],
         ],
     ) -> DomainEvent:
         deserializable = self.get_as_record(deserializable)

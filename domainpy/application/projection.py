@@ -32,7 +32,7 @@ class projector:
         projector = self.projectors[event.__class__]
         projector(projection, event)
 
-    def event(self, event_type: type[DomainEvent]):
+    def event(self, event_type: typing.Type[DomainEvent]):
         def inner_function(func):
             if event_type in self.projectors:
                 event_name = event_type.__name__

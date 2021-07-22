@@ -1,4 +1,5 @@
 import boto3  # type: ignore
+import typing
 import datetime
 import dataclasses
 
@@ -15,7 +16,7 @@ class DynamodbTraceRecordManager:
 
     def get_trace_contexts(
         self, trace_id: str
-    ) -> tuple[TraceRecord.ContextResolution, ...]:
+    ) -> typing.Tuple[TraceRecord.ContextResolution, ...]:
         item = {
             "TableName": self.table_name,
             "Key": {"trace_id": serialize(trace_id)},
@@ -39,9 +40,12 @@ class DynamodbTraceRecordManager:
         )
 
     def store_in_progress(
-        self, trace_id: str, command: dict, contexts_resolutions: tuple[str]
+        self,
+        trace_id: str,
+        command: dict,
+        contexts_resolutions: typing.Tuple[str],
     ) -> None:
-        resolutions: dict[str, dict] = {
+        resolutions: typing.Dict[str, dict] = {
             context_name: dataclasses.asdict(
                 TraceRecord.ContextResolution(
                     context=context_name,

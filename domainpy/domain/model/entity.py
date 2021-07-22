@@ -14,7 +14,7 @@ class DomainEntity:
         self.__id__ = id
         self.__aggregate__ = aggregate
 
-    def __stamp__(self, event_type: type[DomainEvent]):
+    def __stamp__(self, event_type: typing.Type[DomainEvent]):
         return self.__aggregate__.__stamp__(event_type)
 
     def __apply__(self, event: DomainEvent) -> None:

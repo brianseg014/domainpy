@@ -1,4 +1,4 @@
-
+import sys
 import pytest
 import typing
 
@@ -161,6 +161,7 @@ def test_from_dict_nested():
     x = ContainerData.__from_dict__(dct)
     assert x.some_property.some_property == 'x'
 
+@pytest.mark.skipif(sys.version_info < (3,9), reason="requires python3.9 or higher")
 def test_from_dict_sequence():
     Data = type(
         'Data',

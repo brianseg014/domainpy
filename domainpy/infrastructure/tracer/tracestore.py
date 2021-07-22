@@ -12,7 +12,7 @@ from domainpy.utils.bus import Bus
 class TraceResolution:
     trace_id: str
     resolution: str
-    errors: typing.Optional[tuple[str, ...]] = None
+    errors: typing.Optional[typing.Tuple[str, ...]] = None
 
 
 class TraceStore:
@@ -29,7 +29,7 @@ class TraceStore:
     def store_in_progress(
         self,
         command: ApplicationCommand,
-        contexts_resolutions: tuple[TraceRecord.ContextResolution],
+        contexts_resolutions: typing.Tuple[TraceRecord.ContextResolution],
     ) -> None:
         self.record_manager.store_in_progress(
             self.command_mapper.serialize_asdict(command), contexts_resolutions
@@ -70,7 +70,7 @@ class TraceStore:
                 )
 
     def is_all_trace_context_resolved(
-        self, trace_contexts: tuple[TraceRecord.ContextResolution]
+        self, trace_contexts: typing.Tuple[TraceRecord.ContextResolution]
     ) -> bool:
         return all(
             tc.resolution != TraceRecord.Resolution.pending
@@ -78,7 +78,7 @@ class TraceStore:
         )
 
     def is_all_trace_context_resolved_success(
-        self, trace_contexts: tuple[TraceRecord.ContextResolution]
+        self, trace_contexts: typing.Tuple[TraceRecord.ContextResolution]
     ) -> bool:
         return all(
             tc.resolution == TraceRecord.Resolution.success
@@ -86,8 +86,8 @@ class TraceStore:
         )
 
     def get_trace_errors(
-        self, trace_contexts: tuple[TraceRecord.ContextResolution]
-    ) -> tuple[str, ...]:
+        self, trace_contexts: typing.Tuple[TraceRecord.ContextResolution]
+    ) -> typing.Tuple[str, ...]:
         return tuple(
             [
                 tc.error

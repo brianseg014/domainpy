@@ -1,4 +1,5 @@
 import abc
+import typing
 
 from domainpy.infrastructure.records import TraceRecord
 
@@ -7,14 +8,14 @@ class TraceRecordManager(abc.ABC):
     @abc.abstractmethod
     def get_trace_contexts(
         self, trace_id: str
-    ) -> tuple[TraceRecord.ContextResolution]:
+    ) -> typing.Tuple[TraceRecord.ContextResolution]:
         pass
 
     @abc.abstractmethod
     def store_in_progress(
         self,
         command: dict,
-        contexts_resolutions: tuple[TraceRecord.ContextResolution],
+        contexts_resolutions: typing.Tuple[TraceRecord.ContextResolution],
     ) -> None:
         pass
 

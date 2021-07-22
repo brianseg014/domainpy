@@ -5,7 +5,7 @@ from domainpy.exceptions import RegistryComponentNotFound
 
 class Registry:
     def __init__(self):
-        self.components = dict[type, typing.Any]()
+        self.components: typing.Dict[type, typing.Any] = {}
 
     def has(self, key: type) -> bool:
         return key in self.components

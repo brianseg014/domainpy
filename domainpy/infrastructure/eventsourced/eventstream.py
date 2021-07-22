@@ -6,10 +6,10 @@ import typing
 from domainpy.domain.model.event import DomainEvent
 
 
-class EventStream(list[DomainEvent]):
+class EventStream(typing.List[DomainEvent]):
     def substream(
         self,
-        topic_type: typing.Optional[type[DomainEvent]] = None,
+        topic_type: typing.Optional[typing.Type[DomainEvent]] = None,
         from_timestamp: typing.Optional[datetime.datetime] = None,
         to_timestamp: typing.Optional[datetime.datetime] = None,
         from_number: typing.Optional[int] = None,

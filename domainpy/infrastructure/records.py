@@ -62,5 +62,5 @@ class TraceRecord:
     resolution: str
     version: int
     timestamp: float
-    contexts_resolutions: tuple[ContextResolution]
+    contexts_resolutions: typing.Tuple[ContextResolution]
     timestamp_resolution: typing.Optional[float] = None

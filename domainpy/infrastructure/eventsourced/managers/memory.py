@@ -1,3 +1,4 @@
+import typing
 from datetime import datetime
 
 from domainpy import exceptions as excs
@@ -10,7 +11,7 @@ from domainpy.infrastructure.records import EventRecord
 
 class MemoryEventRecordManager(EventRecordManager):
     def __init__(self, *args, **kwargs):
-        self.heap: list[EventRecord] = []
+        self.heap: typing.List[EventRecord] = []
 
     def session(self):
         return MemorySession(self)
@@ -24,7 +25,7 @@ class MemoryEventRecordManager(EventRecordManager):
         to_timestamp: datetime = None,
         from_number: int = None,
         to_number: int = None,
-    ) -> tuple[EventRecord, ...]:
+    ) -> typing.Tuple[EventRecord, ...]:
 
         filters = [lambda er: er.stream_id == stream_id]
 

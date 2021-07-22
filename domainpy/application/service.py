@@ -13,7 +13,9 @@ if typing.TYPE_CHECKING:
 
 
 class ApplicationService(abc.ABC):
-    def stamp_integration(self, integration_type: type[IntegrationEvent]):
+    def stamp_integration(
+        self, integration_type: typing.Type[IntegrationEvent]
+    ):
         return functools.partial(
             integration_type,
             __timestamp__=datetime.datetime.timestamp(datetime.datetime.now()),

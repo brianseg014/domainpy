@@ -1,4 +1,4 @@
-import typing
+import domainpy.compat_typing as typing
 
 JsonStr = str
 CommandRecordDict = typing.TypedDict(

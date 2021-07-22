@@ -1,8 +1,8 @@
 import sys
-import typing
 import itertools
 import typeguard
 import collections
+import domainpy.compat_typing as typing
 
 
 class Field:
@@ -60,7 +60,7 @@ def create_fn(
 
 
 def get_fields(cls):
-    fields: dict[str, Field] = collections.OrderedDict()
+    fields: typing.OrderedDict[str, Field] = collections.OrderedDict()
     for cls in itertools.chain(cls.__bases__, [cls]):
         cls_annotations = cls.__dict__.get("__annotations__")
         if cls_annotations:
@@ -82,7 +82,7 @@ def get_fields(cls):
     return fields.values()
 
 
-def create_init_fn(cls, fields: list[Field]):
+def create_init_fn(cls, fields: typing.List[Field]):
     fnname = "__init__"
 
     globals = sys.modules[cls.__module__].__dict__
@@ -92,8 +92,8 @@ def create_init_fn(cls, fields: list[Field]):
     # still can pass the arg as kwarg
     init_fields = [f for f in fields if f.default is MISSING]
 
-    args: list[str] = []
-    body_lines: list[str] = []
+    args: typing.List[str] = []
+    body_lines: typing.List[str] = []
 
     if len(init_fields) > 0:
         locals = {f"_type_{f.name}": f.type for f in init_fields}
@@ -117,7 +117,7 @@ def create_init_fn(cls, fields: list[Field]):
     )
 
 
-def create_fromdict_fn(cls, fields: list[Field]):
+def create_fromdict_fn(cls, fields: typing.List[Field]):
     fnname = "__from_dict__"
 
     globals = sys.modules[cls.__module__].__dict__
@@ -128,7 +128,7 @@ def create_fromdict_fn(cls, fields: list[Field]):
     dctcode = []
     for f in fields:
         # Field is one of three types
-        # raw (str, int...), list/tuple[str, ...], or has __from_dict__
+        # raw (str, int...), list/typing.Tuple[str, ...], or has __from_dict__
 
         # typing: str
         if f.type in (str, int, float, bool):
@@ -137,8 +137,8 @@ def create_fromdict_fn(cls, fields: list[Field]):
 
             dctcode.append(f'  "{f.name}": _type_{f.name}(dct["{f.name}"])')
 
-        # typing: tuple[str]
-        # typing: tuple[SystemMessage]
+        # typing: typing.Tuple[str]
+        # typing: typing.Tuple[SystemMessage]
         elif f.type in (list, tuple) or typing.get_origin(f.type) in (
             list,
             tuple,
@@ -389,5 +389,5 @@ class SystemData(typing.Generic[Dict], metaclass=system_data):
         return super().__to_dict__()  # type: ignore
 
     @classmethod
-    def __from_dict__(cls: type[Class], dct: dict) -> Class:
+    def __from_dict__(cls: typing.Type[Class], dct: dict) -> Class:
         return super().__from_dict__(cls, dict)  # type: ignore

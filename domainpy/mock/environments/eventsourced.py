@@ -60,7 +60,7 @@ class EventSourcedEnvironmentTestAdapter(EventSourcedEnvironment):
 
     def stamp_command(
         self,
-        command_type: type[ApplicationCommand],
+        command_type: typing.Type[ApplicationCommand],
         *,
         trace_id: str = None,
     ):
@@ -74,7 +74,10 @@ class EventSourcedEnvironmentTestAdapter(EventSourcedEnvironment):
         )
 
     def stamp_integration(
-        self, integration_type: type[IntegrationEvent], *, trace_id: str = None
+        self,
+        integration_type: typing.Type[IntegrationEvent],
+        *,
+        trace_id: str = None,
     ):
         if trace_id is None:
             trace_id = str(uuid.uuid4())
@@ -87,8 +90,8 @@ class EventSourcedEnvironmentTestAdapter(EventSourcedEnvironment):
 
     def stamp_event(
         self,
-        event_type: type[DomainEvent],
-        aggregate_type: type[AggregateRoot],
+        event_type: typing.Type[DomainEvent],
+        aggregate_type: typing.Type[AggregateRoot],
         aggregate_id: str = None,
         *,
         trace_id: str = None,
@@ -132,21 +135,21 @@ TDomainEvent = typing.TypeVar("TDomainEvent", bound=DomainEvent)
 
 
 class DomeinEventsTestExpression:
-    def __init__(self, domain_events: list[DomainEvent]):
+    def __init__(self, domain_events: typing.List[DomainEvent]):
         self.domain_events = domain_events
 
     def get_stream_id(
-        self, aggregate_type: type[AggregateRoot], aggregate_id: str
+        self, aggregate_type: typing.Type[AggregateRoot], aggregate_id: str
     ) -> str:
         return f"{aggregate_id}:{aggregate_type.__name__}"
 
     def get_events(
         self,
-        event_type: type[TDomainEvent],
-        aggregate_type: type[AggregateRoot] = None,
+        event_type: typing.Type[TDomainEvent],
+        aggregate_type: typing.Type[AggregateRoot] = None,
         aggregate_id: str = None,
-    ) -> tuple[TDomainEvent, ...]:
-        events: tuple[TDomainEvent, ...] = tuple(
+    ) -> typing.Tuple[TDomainEvent, ...]:
+        events: typing.Tuple[TDomainEvent, ...] = tuple(
             [e for e in self.domain_events if isinstance(e, event_type)]
         )
         if aggregate_type is not None or aggregate_id is not None:
@@ -161,8 +164,8 @@ class DomeinEventsTestExpression:
 
     def has_not_event(
         self,
-        event_type: type[DomainEvent],
-        aggregate_type: type[AggregateRoot] = None,
+        event_type: typing.Type[DomainEvent],
+        aggregate_type: typing.Type[AggregateRoot] = None,
         aggregate_id: str = None,
     ) -> bool:
         events = self.get_events(event_type, aggregate_type, aggregate_id)
@@ -170,8 +173,8 @@ class DomeinEventsTestExpression:
 
     def has_event(
         self,
-        event_type: type[DomainEvent],
-        aggregate_type: type[AggregateRoot] = None,
+        event_type: typing.Type[DomainEvent],
+        aggregate_type: typing.Type[AggregateRoot] = None,
         aggregate_id: str = None,
     ) -> bool:
         events = self.get_events(event_type, aggregate_type, aggregate_id)
@@ -179,9 +182,9 @@ class DomeinEventsTestExpression:
 
     def has_event_n(
         self,
-        event_type: type[DomainEvent],
+        event_type: typing.Type[DomainEvent],
         n: int,
-        aggregate_type: type[AggregateRoot] = None,
+        aggregate_type: typing.Type[AggregateRoot] = None,
         aggregate_id: str = None,
     ) -> bool:
         events = self.get_events(event_type, aggregate_type, aggregate_id)
@@ -189,16 +192,16 @@ class DomeinEventsTestExpression:
 
     def has_event_once(
         self,
-        event_type: type[DomainEvent],
-        aggregate_type: type[AggregateRoot] = None,
+        event_type: typing.Type[DomainEvent],
+        aggregate_type: typing.Type[AggregateRoot] = None,
         aggregate_id: str = None,
     ) -> bool:
         return self.has_event_n(event_type, 1, aggregate_type, aggregate_id)
 
     def has_event_with(
         self,
-        event_type: type[DomainEvent],
-        aggregate_type: type[AggregateRoot] = None,
+        event_type: typing.Type[DomainEvent],
+        aggregate_type: typing.Type[AggregateRoot] = None,
         aggregate_id: str = None,
         **kwargs,
     ) -> bool:
@@ -211,8 +214,8 @@ class DomeinEventsTestExpression:
 
     def has_not_event_with(
         self,
-        event_type: type[DomainEvent],
-        aggregate_type: type[AggregateRoot] = None,
+        event_type: typing.Type[DomainEvent],
+        aggregate_type: typing.Type[AggregateRoot] = None,
         aggregate_id: str = None,
         **kwargs,
     ) -> bool:
@@ -222,8 +225,8 @@ class DomeinEventsTestExpression:
 
     def assert_has_not_event(
         self,
-        event_type: type[DomainEvent],
-        aggregate_type: type[AggregateRoot] = None,
+        event_type: typing.Type[DomainEvent],
+        aggregate_type: typing.Type[AggregateRoot] = None,
         aggregate_id: str = None,
     ) -> None:
         try:
@@ -233,8 +236,8 @@ class DomeinEventsTestExpression:
 
     def assert_has_event(
         self,
-        event_type: type[DomainEvent],
-        aggregate_type: type[AggregateRoot] = None,
+        event_type: typing.Type[DomainEvent],
+        aggregate_type: typing.Type[AggregateRoot] = None,
         aggregate_id: str = None,
     ) -> None:
         try:
@@ -244,9 +247,9 @@ class DomeinEventsTestExpression:
 
     def assert_has_event_n(
         self,
-        event_type: type[DomainEvent],
+        event_type: typing.Type[DomainEvent],
         n: int,
-        aggregate_type: type[AggregateRoot] = None,
+        aggregate_type: typing.Type[AggregateRoot] = None,
         aggregate_id: str = None,
     ) -> None:
         try:
@@ -258,8 +261,8 @@ class DomeinEventsTestExpression:
 
     def assert_has_event_once(
         self,
-        event_type: type[DomainEvent],
-        aggregate_type: type[AggregateRoot] = None,
+        event_type: typing.Type[DomainEvent],
+        aggregate_type: typing.Type[AggregateRoot] = None,
         aggregate_id: str = None,
     ) -> None:
         try:
@@ -271,8 +274,8 @@ class DomeinEventsTestExpression:
 
     def assert_has_event_with(
         self,
-        event_type: type[DomainEvent],
-        aggregate_type: type[AggregateRoot] = None,
+        event_type: typing.Type[DomainEvent],
+        aggregate_type: typing.Type[AggregateRoot] = None,
         aggregate_id: str = None,
         **kwargs,
     ) -> None:
@@ -285,8 +288,8 @@ class DomeinEventsTestExpression:
 
     def assert_has_not_event_with(
         self,
-        event_type: type[DomainEvent],
-        aggregate_type: type[AggregateRoot] = None,
+        event_type: typing.Type[DomainEvent],
+        aggregate_type: typing.Type[AggregateRoot] = None,
         aggregate_id: str = None,
         **kwargs,
     ) -> None:
@@ -321,12 +324,14 @@ class DomeinEventsTestExpression:
 
 
 class IntegrationEventsTestExpression:
-    def __init__(self, integration_events: tuple[IntegrationEvent, ...]):
+    def __init__(
+        self, integration_events: typing.Tuple[IntegrationEvent, ...]
+    ):
         self.integration_events = integration_events
 
     def get_integrations(
-        self, integration_type: type[IntegrationEvent]
-    ) -> tuple[IntegrationEvent, ...]:
+        self, integration_type: typing.Type[IntegrationEvent]
+    ) -> typing.Tuple[IntegrationEvent, ...]:
         integrations = tuple(
             [
                 i
@@ -337,19 +342,19 @@ class IntegrationEventsTestExpression:
         return integrations
 
     def has_not_integration(
-        self, integration_type: type[IntegrationEvent]
+        self, integration_type: typing.Type[IntegrationEvent]
     ) -> bool:
         integrations = self.get_integrations(integration_type)
         return len(integrations) == 0
 
     def has_integration(
-        self, integration_type: type[IntegrationEvent]
+        self, integration_type: typing.Type[IntegrationEvent]
     ) -> bool:
         integrations = self.get_integrations(integration_type)
         return len(integrations) >= 1
 
     def has_integration_with(
-        self, integration_type: type[IntegrationEvent], **kwargs
+        self, integration_type: typing.Type[IntegrationEvent], **kwargs
     ) -> bool:
         integrations = self.get_integrations(integration_type)
         return any(
@@ -359,12 +364,12 @@ class IntegrationEventsTestExpression:
         )
 
     def has_not_integration_with(
-        self, integration_type: type[IntegrationEvent], **kwargs
+        self, integration_type: typing.Type[IntegrationEvent], **kwargs
     ) -> bool:
         return not self.has_integration_with(integration_type, **kwargs)
 
     def assert_has_not_integration(
-        self, integration_type: type[IntegrationEvent]
+        self, integration_type: typing.Type[IntegrationEvent]
     ) -> None:
         try:
             assert self.has_not_integration(integration_type)
@@ -372,7 +377,7 @@ class IntegrationEventsTestExpression:
             self.raise_error("integration event found")
 
     def assert_has_integration(
-        self, integration_type: type[IntegrationEvent]
+        self, integration_type: typing.Type[IntegrationEvent]
     ) -> None:
         try:
             assert self.has_integration(integration_type)
@@ -380,7 +385,7 @@ class IntegrationEventsTestExpression:
             self.raise_error("integration not found")
 
     def assert_has_integration_with(
-        self, integration_type: type[IntegrationEvent], **kwargs
+        self, integration_type: typing.Type[IntegrationEvent], **kwargs
     ) -> None:
         try:
             assert self.has_integration_with(integration_type, **kwargs)
@@ -388,7 +393,7 @@ class IntegrationEventsTestExpression:
             self.raise_error("integration not found")
 
     def assert_has_not_integration_with(
-        self, integration_type: type[IntegrationEvent], **kwargs
+        self, integration_type: typing.Type[IntegrationEvent], **kwargs
     ) -> None:
         try:
             assert self.has_not_integration_with(integration_type, **kwargs)

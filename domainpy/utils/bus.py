@@ -25,7 +25,9 @@ class Bus(IBus[T]):
     def __init__(
         self,
         publish_exceptions: typing.Union[
-            type[Exception], tuple[type[Exception], ...], tuple[()]
+            typing.Type[Exception],
+            typing.Tuple[typing.Type[Exception], ...],
+            typing.Tuple[()],
         ] = (),
     ):
         if not isinstance(publish_exceptions, collections.abc.Sequence):
@@ -33,7 +35,7 @@ class Bus(IBus[T]):
 
         self.publish_exceptions = publish_exceptions
 
-        self.subscribers = list[ISubscriber[T]]()
+        self.subscribers: typing.List[ISubscriber[T]] = []
 
     def attach(self, subscriber: ISubscriber[T]):
         if not hasattr(subscriber, "__route__"):

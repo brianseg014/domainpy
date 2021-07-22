@@ -1,4 +1,4 @@
-
+import typing
 from unittest import mock
 
 from domainpy.typing.application import SystemMessage
@@ -9,7 +9,7 @@ from domainpy.utils.bus import ISubscriber
 
 class StorySubscriber(ISubscriber[SystemMessage]):
 
-    def __init__(self, name: str, story: list[str]):
+    def __init__(self, name: str, story: typing.List[str]):
         self.name = name
         self.story = story
 

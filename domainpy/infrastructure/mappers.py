@@ -18,7 +18,7 @@ class Mapper(typing.Generic[TMessage, TRecord, TRecordDict]):
     ):
         self.transcoder = transcoder
 
-        self.map: dict[str, typing.Any] = {}
+        self.map: typing.Dict[str, typing.Any] = {}
 
     def register(self, cls):
         self.map[cls.__name__] = cls
@@ -50,7 +50,7 @@ class Mapper(typing.Generic[TMessage, TRecord, TRecordDict]):
 
 
 class MapperSet:
-    def __init__(self, mappers: tuple[Mapper, ...]):
+    def __init__(self, mappers: typing.Tuple[Mapper, ...]):
         self.mappers = mappers
 
     def is_deserializable(

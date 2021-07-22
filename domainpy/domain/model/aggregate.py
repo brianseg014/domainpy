@@ -14,14 +14,14 @@ class AggregateRoot:
         self.__id__ = id
 
         self.__version__: int = 0
-        self.__changes__: list[DomainEvent] = []  # New events
-        self.__seen__: list[DomainEvent] = []  # Routed events (mutated)
+        self.__changes__: typing.List[DomainEvent] = []  # New events
+        self.__seen__: typing.List[DomainEvent] = []  # Routed events (mutated)
 
     @property
     def __selector__(self):
         return Selector(e for e in self.__seen__)
 
-    def __stamp__(self, event_type: type[DomainEvent]):
+    def __stamp__(self, event_type: typing.Type[DomainEvent]):
         return functools.partial(
             event_type,
             __stream_id__=f"{self.__id__.id}:{self.__class__.__name__}",  # type: ignore # noqa: E501
@@ -59,7 +59,7 @@ class Selector(tuple):
     def filter_event_type(
         self,
         event_type: typing.Union[
-            type[TDomainEvent], tuple[type[TDomainEvent]]
+            typing.Type[TDomainEvent], typing.Tuple[typing.Type[TDomainEvent]]
         ],
     ) -> Selector:
         return Selector([e for e in self if isinstance(e, event_type)])
@@ -68,12 +68,12 @@ class Selector(tuple):
         self,
         trace_id: str,
         empty_if_has_event: typing.Union[
-            type[DomainEvent], tuple[type[DomainEvent]]
+            typing.Type[DomainEvent], typing.Tuple[typing.Type[DomainEvent]]
         ],
         return_event: typing.Union[
-            type[TDomainEvent], tuple[type[TDomainEvent]]
+            typing.Type[TDomainEvent], typing.Tuple[typing.Type[TDomainEvent]]
         ],
-    ) -> tuple[TDomainEvent, ...]:
+    ) -> typing.Tuple[TDomainEvent, ...]:
         # fmt: off
         compensation_events = (
             self
@@ -107,7 +107,7 @@ class mutator:
         mutator = self.mutators[event.__class__]
         mutator(aggregate, event)
 
-    def event(self, event_type: type[DomainEvent]):
+    def event(self, event_type: typing.Type[DomainEvent]):
         def inner_function(func):
             if event_type in self.mutators:
                 self_name = event_type.__name__

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import abc
+import typing
 import datetime
 import contextlib
 
@@ -22,7 +23,7 @@ class EventRecordManager(abc.ABC):
         to_timestamp: datetime.datetime = None,
         from_number: int = None,
         to_number: int = None,
-    ) -> tuple[EventRecord, ...]:
+    ) -> typing.Tuple[EventRecord, ...]:
         pass
 
 

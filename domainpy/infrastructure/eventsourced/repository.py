@@ -10,7 +10,9 @@ from domainpy.domain.model.value_object import Identity
 from domainpy.domain.repository import IRepository
 
 
-def make_adapter(AggregateRoot: type[AggregateRoot], Identity: type[Identity]):
+def make_adapter(
+    AggregateRoot: typing.Type[AggregateRoot], Identity: typing.Type[Identity]
+):
     class EventSourcedRepositoryAdapter(IRepository):
         def __init__(self, event_store: EventStore) -> None:
             self.event_store = event_store

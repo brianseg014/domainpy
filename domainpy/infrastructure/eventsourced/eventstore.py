@@ -39,7 +39,7 @@ class EventStore:
         self,
         stream_id: str,
         *,
-        event_type: type[DomainEvent] = None,
+        event_type: typing.Type[DomainEvent] = None,
         from_timestamp: datetime.datetime = None,
         to_timestamp: datetime.datetime = None,
         from_number: int = None,
