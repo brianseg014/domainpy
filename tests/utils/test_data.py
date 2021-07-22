@@ -190,6 +190,40 @@ def test_from_dict_sequence():
     }
 
     x = ContainerData.__from_dict__(dct)
+    assert x.some_property == ('x', 'y')
+    assert x.some_other_property[0].some_property == 'x'
+
+def test_from_dict_sequence_using_typing():
+    Data = type(
+        'Data',
+        (SystemData,),
+        {
+            '__annotations__': {
+                'some_property': str
+            }
+        }
+    )
+    ContainerData = type(
+        'ContainerMessage',
+        (SystemData,),
+        {
+            '__annotations__': {
+                'some_property': typing.Tuple[str, ...],
+                'some_other_property': typing.Tuple[Data, ...]
+            }
+        }
+    )
+
+    dct = {
+        'some_property': ['x', 'y'],
+        'some_other_property': [
+            { 'some_property': 'x' }
+        ]
+    }
+
+    x = ContainerData.__from_dict__(dct)
+    assert x.some_property == ('x', 'y')
+    assert x.some_other_property[0].some_property == 'x'
 
 def test_from_dict_fails():
     with pytest.raises(TypeError):
