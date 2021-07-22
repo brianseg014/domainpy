@@ -11,5 +11,7 @@ class IRepository(typing.Generic[TAggregateRoot, TIdentity], abc.ABC):
         pass
 
     @abc.abstractmethod
-    def get(self, identity: typing.Union[TIdentity, str]) -> TAggregateRoot:  # pragma: no cover
+    def get(
+        self, identity: typing.Union[TIdentity, str]
+    ) -> TAggregateRoot:  # pragma: no cover
         pass

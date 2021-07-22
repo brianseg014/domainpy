@@ -32,6 +32,8 @@ class DomainEntity:
         elif isinstance(other, self.__id__.__class__):
             return self.__id__ == other
 
+        return False
+
     def __repr__(self) -> str:  # pragma: no cover
         self_name = self.__class__.__name__
         self_id = self.__id__

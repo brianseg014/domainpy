@@ -1,4 +1,4 @@
-from domainpy.exceptions import DefinitionError, IdempotencyItemError
+from domainpy.exceptions import IdempotencyItemError
 from domainpy.infrastructure.idempotent.recordmanager import (
     IdempotencyRecordManager,
 )
