@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import sys
-import json
 import uuid
 import types
 import typing
@@ -129,6 +128,9 @@ class EventSourcedEnvironmentTestAdapter(EventSourcedEnvironment):
         )
 
 
+TDomainEvent = typing.TypeVar("TDomainEvent", bound=DomainEvent)
+
+
 class DomeinEventsTestExpression:
     def __init__(self, domain_events: list[DomainEvent]):
         self.domain_events = domain_events
@@ -140,11 +142,11 @@ class DomeinEventsTestExpression:
 
     def get_events(
         self,
-        event_type: type[DomainEvent],
+        event_type: type[TDomainEvent],
         aggregate_type: type[AggregateRoot] = None,
         aggregate_id: str = None,
-    ) -> tuple[DomainEvent, ...]:
-        events = tuple(
+    ) -> tuple[TDomainEvent, ...]:
+        events: tuple[TDomainEvent, ...] = tuple(
             [e for e in self.domain_events if isinstance(e, event_type)]
         )
         if aggregate_type is not None or aggregate_id is not None:
@@ -190,7 +192,7 @@ class DomeinEventsTestExpression:
         event_type: type[DomainEvent],
         aggregate_type: type[AggregateRoot] = None,
         aggregate_id: str = None,
-    ):
+    ) -> bool:
         return self.has_event_n(event_type, 1, aggregate_type, aggregate_id)
 
     def has_event_with(
@@ -207,12 +209,23 @@ class DomeinEventsTestExpression:
             if all(e.__dict__.get(k) == v for k, v in kwargs.items())
         )
 
+    def has_not_event_with(
+        self,
+        event_type: type[DomainEvent],
+        aggregate_type: type[AggregateRoot] = None,
+        aggregate_id: str = None,
+        **kwargs,
+    ) -> bool:
+        return not self.has_event_with(
+            event_type, aggregate_type, aggregate_id, **kwargs
+        )
+
     def assert_has_not_event(
         self,
         event_type: type[DomainEvent],
         aggregate_type: type[AggregateRoot] = None,
         aggregate_id: str = None,
-    ):
+    ) -> None:
         try:
             assert self.has_not_event(event_type, aggregate_type, aggregate_id)
         except AssertionError:
@@ -223,7 +236,7 @@ class DomeinEventsTestExpression:
         event_type: type[DomainEvent],
         aggregate_type: type[AggregateRoot] = None,
         aggregate_id: str = None,
-    ):
+    ) -> None:
         try:
             assert self.has_event(event_type, aggregate_type, aggregate_id)
         except AssertionError:
@@ -235,7 +248,7 @@ class DomeinEventsTestExpression:
         n: int,
         aggregate_type: type[AggregateRoot] = None,
         aggregate_id: str = None,
-    ):
+    ) -> None:
         try:
             assert self.has_event_n(
                 event_type, n, aggregate_type, aggregate_id
@@ -248,7 +261,7 @@ class DomeinEventsTestExpression:
         event_type: type[DomainEvent],
         aggregate_type: type[AggregateRoot] = None,
         aggregate_id: str = None,
-    ):
+    ) -> None:
         try:
             assert self.has_event_once(
                 event_type, aggregate_type, aggregate_id
@@ -262,13 +275,30 @@ class DomeinEventsTestExpression:
         aggregate_type: type[AggregateRoot] = None,
         aggregate_id: str = None,
         **kwargs,
-    ):
+    ) -> None:
         try:
             assert self.has_event_with(
                 event_type, aggregate_type, aggregate_id, **kwargs
             )
         except AssertionError:
             self.raise_error("event not found")
+
+    def assert_has_not_event_with(
+        self,
+        event_type: type[DomainEvent],
+        aggregate_type: type[AggregateRoot] = None,
+        aggregate_id: str = None,
+        **kwargs,
+    ) -> None:
+        try:
+            assert self.has_not_event_with(
+                event_type,
+                aggregate_type,
+                aggregate_id,
+                **kwargs,
+            )
+        except AssertionError:
+            self.raise_error("event found")
 
     def raise_error(self, message):
         tb = None
@@ -291,10 +321,12 @@ class DomeinEventsTestExpression:
 
 
 class IntegrationEventsTestExpression:
-    def __init__(self, integration_events):
+    def __init__(self, integration_events: tuple[IntegrationEvent, ...]):
         self.integration_events = integration_events
 
-    def get_integrations(self, integration_type: type[IntegrationEvent]):
+    def get_integrations(
+        self, integration_type: type[IntegrationEvent]
+    ) -> tuple[IntegrationEvent, ...]:
         integrations = tuple(
             [
                 i
@@ -304,53 +336,64 @@ class IntegrationEventsTestExpression:
         )
         return integrations
 
-    def has_not_integration(self, integration_type: type[IntegrationEvent]):
+    def has_not_integration(
+        self, integration_type: type[IntegrationEvent]
+    ) -> bool:
         integrations = self.get_integrations(integration_type)
         return len(integrations) == 0
 
-    def has_integration(self, integration_type: type[IntegrationEvent]):
+    def has_integration(
+        self, integration_type: type[IntegrationEvent]
+    ) -> bool:
         integrations = self.get_integrations(integration_type)
-        return len(integrations) == 1
+        return len(integrations) >= 1
 
     def has_integration_with(
         self, integration_type: type[IntegrationEvent], **kwargs
-    ):
+    ) -> bool:
         integrations = self.get_integrations(integration_type)
-        integrations = tuple(
-            [
-                i
-                for i in integrations
-                if all(i.__dict__.get(k) == v for k, v in kwargs.items())
-            ]
+        return any(
+            True
+            for i in integrations
+            if all(i.__dict__.get(k) == v for k, v in kwargs.items())
         )
-        return len(integrations) == 1
+
+    def has_not_integration_with(
+        self, integration_type: type[IntegrationEvent], **kwargs
+    ) -> bool:
+        return not self.has_integration_with(integration_type, **kwargs)
 
     def assert_has_not_integration(
         self, integration_type: type[IntegrationEvent]
-    ):
+    ) -> None:
         try:
             assert self.has_not_integration(integration_type)
         except AssertionError:
-            topic = integration_type.__name__
-            self.raise_error(f"integration event found: topic {topic}")
+            self.raise_error("integration event found")
 
-    def assert_has_integration(self, integration_type: type[IntegrationEvent]):
+    def assert_has_integration(
+        self, integration_type: type[IntegrationEvent]
+    ) -> None:
         try:
             assert self.has_integration(integration_type)
         except AssertionError:
-            topic = integration_type.__name__
-            self.raise_error(f"integration not found: topic {topic}")
+            self.raise_error("integration not found")
 
     def assert_has_integration_with(
         self, integration_type: type[IntegrationEvent], **kwargs
-    ):
+    ) -> None:
         try:
             assert self.has_integration_with(integration_type, **kwargs)
         except AssertionError:
-            topic = integration_type.__name__
-            self.raise_error(
-                f"integration not found: {topic} and {json.dumps(kwargs)}"
-            )
+            self.raise_error("integration not found")
+
+    def assert_has_not_integration_with(
+        self, integration_type: type[IntegrationEvent], **kwargs
+    ) -> None:
+        try:
+            assert self.has_not_integration_with(integration_type, **kwargs)
+        except AssertionError:
+            self.raise_error("integration found")
 
     def raise_error(self, message):
         tb = None
