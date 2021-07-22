@@ -323,7 +323,7 @@ def create_repr_fn(cls, fields):
 
     body_lines = []
     body_lines.append(
-        'return f"{{self.__class__.__name__}}(' + expression + ')"'
+        'return f"{self.__class__.__name__}(' + expression + ')"'
     )
 
     return create_fn(
@@ -340,7 +340,7 @@ def create_str_fn(cls, fields):
 
     body_lines = []
     body_lines.append(
-        'return f"{{self.__class__.__name__}}(' + expression + ')"'
+        'return f"{self.__class__.__name__}(' + expression + ')"'
     )
 
     return create_fn(
