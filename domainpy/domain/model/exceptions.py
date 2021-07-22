@@ -1,4 +1,3 @@
-
 from domainpy.utils.data import SystemData
 
 
