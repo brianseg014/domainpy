@@ -29,6 +29,7 @@ def test_not():
     white_spec = WhiteSpecification()
 
     assert white_spec.not_().is_satisfied_by(device)
+    assert (-white_spec)(device)
     
 def test_and():
     device = Device(type='phone', color='white')
@@ -37,7 +38,9 @@ def test_and():
     white_spec = WhiteSpecification()
 
     some_rule_spec = phone_spec.and_(white_spec)
+    assert some_rule_spec.is_satisfied_by(device)
 
+    some_rule_spec = phone_spec & white_spec
     assert some_rule_spec.is_satisfied_by(device)
 
 def test_or():
@@ -47,7 +50,9 @@ def test_or():
     white_spec = WhiteSpecification()
 
     some_rule_spec = phone_spec.or_(white_spec)
+    assert some_rule_spec.is_satisfied_by(device)
 
+    some_rule_spec = phone_spec | white_spec
     assert some_rule_spec.is_satisfied_by(device)
 
 def test_remainder_unsatisfied():

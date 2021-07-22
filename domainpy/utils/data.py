@@ -14,7 +14,7 @@ class Field:
         self.type = type
         self.default = default
 
-    def __repr__(self):
+    def __repr__(self):  # pragma: no cover
         return (
             f"{self.__class__.__name__}("
             f"  name={self.name}, type={self.type}, default={self.default}"

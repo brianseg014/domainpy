@@ -1,8 +1,23 @@
-
+import functools
 from unittest import mock
 
-from domainpy.application.service import handler
+from domainpy.application.service import ApplicationService, handler
 
+
+def test_service_stamp():
+    IntegrationEvent = type(
+        'IntegrationEvent',
+        (mock.MagicMock,),
+        {}
+    )
+    
+    class Service(ApplicationService):
+        def handle(self, message):
+            pass
+
+    service = Service()
+    partial_integration = service.stamp_integration(IntegrationEvent)
+    assert isinstance(partial_integration, functools.partial)
 
 def test_handler_command():
     story = []

@@ -1,8 +1,8 @@
 import sys
 
-if sys.version_info >= (3, 8):
+if sys.version_info >= (3, 8):  # pragma: no cover
     from typing import *  # noqa
-else:
+else:  # pragma: no cover
     from typing import *  # noqa
     from typing_extensions import (  # noqa
         TypedDict,

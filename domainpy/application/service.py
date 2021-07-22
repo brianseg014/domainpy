@@ -5,7 +5,7 @@ import datetime
 import functools
 import typing
 
-if typing.TYPE_CHECKING:
+if typing.TYPE_CHECKING:  # pragma: no cover
     from domainpy.typing.application import SystemMessage  # type: ignore # noqa: E501
     from domainpy.application.command import ApplicationCommand
     from domainpy.application.integration import IntegrationEvent
@@ -23,7 +23,7 @@ class ApplicationService(abc.ABC):
 
     @abc.abstractmethod
     def handle(self, message: SystemMessage):
-        pass
+        pass  # pragma: no cover
 
 
 class handler:

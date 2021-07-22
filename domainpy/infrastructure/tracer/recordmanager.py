@@ -9,7 +9,7 @@ class TraceRecordManager(abc.ABC):
     def get_trace_contexts(
         self, trace_id: str
     ) -> typing.Tuple[TraceRecord.ContextResolution]:
-        pass
+        pass  # pragma: no cover
 
     @abc.abstractmethod
     def store_in_progress(
@@ -17,24 +17,24 @@ class TraceRecordManager(abc.ABC):
         command: dict,
         contexts_resolutions: typing.Tuple[TraceRecord.ContextResolution],
     ) -> None:
-        pass
+        pass  # pragma: no cover
 
     @abc.abstractmethod
     def store_resolve_success(self, trace_id: str) -> None:
-        pass
+        pass  # pragma: no cover
 
     @abc.abstractmethod
     def store_resolve_failure(self, trace_id: str) -> None:
-        pass
+        pass  # pragma: no cover
 
     @abc.abstractmethod
     def store_context_resolve_success(
         self, trace_id: str, context: str
     ) -> None:
-        pass
+        pass  # pragma: no cover
 
     @abc.abstractmethod
     def store_context_resolve_failure(
         self, trace_id: str, context: str, error: str
     ) -> None:
-        pass
+        pass  # pragma: no cover

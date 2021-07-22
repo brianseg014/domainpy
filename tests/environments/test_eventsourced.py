@@ -1,3 +1,4 @@
+import pytest
 import typing
 from unittest import mock
 
@@ -64,3 +65,23 @@ def test_bus_handle(MapperSet):
     env.handle(command)
 
     assert story == ['resolver', 'handler']
+
+@mock.patch('domainpy.environments.eventsourced.MapperSet')
+def test_bus_handle_fails_if_trace_id_is_None(MapperSet):
+    command_mapper = mock.MagicMock()
+    integration_mapper = mock.MagicMock()
+    event_mapper = mock.MagicMock()
+    command = mock.MagicMock()
+    command.__trace_id__ = None
+
+    mapper_set_instance = MapperSet.return_value
+    mapper_set_instance.deserialize = mock.Mock(return_value=command)
+    
+    env = EventSourcedEnvironment(
+        command_mapper=command_mapper,
+        integration_mapper=integration_mapper,
+        event_mapper=event_mapper,
+    )
+
+    with pytest.raises(TypeError):
+        env.handle(command)

@@ -42,6 +42,11 @@ def test_aggregate_route_mismatch_version():
     with pytest.raises(VersionError):
         agg.__route__(event)
 
+def test_aggregate_selector():
+    id = mock.MagicMock()
+    agg = AggregateRoot(id=id)
+    assert isinstance(agg.__selector__, Selector)
+
 def test_selector_filter_trace():
     trace_id = str(uuid.uuid4())
 
@@ -113,3 +118,13 @@ def test_mutator_must_be_unique():
     mutate.event(something.__class__)(handle_something)
     with pytest.raises(DefinitionError):
         mutate.event(something.__class__)(handle_something)
+
+def test_mutator_do_nothing_if_not_handle():
+    something = mock.MagicMock()
+    aggregate = mock.MagicMock()
+
+    @mutator
+    def mutate():
+        pass
+
+    mutate(aggregate, something)

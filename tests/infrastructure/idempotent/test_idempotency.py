@@ -1,8 +1,9 @@
+from tests.infrastructure.eventsourced.test_eventstore import record_manager
 import pytest
 from unittest import mock
 
 from domainpy.exceptions import IdempotencyItemError
-from domainpy.infrastructure.idempotent.idempotency import Idempotency
+from domainpy.infrastructure.idempotent.idempotency import Idempotency, idempotent
 
 
 def test_idempotency_sucess():
@@ -33,3 +34,22 @@ def test_idempotency_already_exists():
     
     with Idempotency(record, record_manager) as record:
         assert record is None
+
+def test_idempotency_fails_on_malformed_record():
+    record_manager = mock.MagicMock()
+
+    with pytest.raises(KeyError):
+        Idempotency({}, record_manager)
+
+@mock.patch('domainpy.infrastructure.idempotent.idempotency.Idempotency')
+def test_decorator(Idempotency):
+    record_manager = mock.MagicMock()
+
+    @idempotent(record_manager)
+    def handler(record):
+        pass
+
+    record = { 'trace_id': '', 'topic': '' }
+
+    handler(record)
+    Idempotency.assert_called()

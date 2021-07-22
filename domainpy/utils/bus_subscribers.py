@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import typing
 
-if typing.TYPE_CHECKING:
+if typing.TYPE_CHECKING:  # pragma: no cover
     from domainpy.typing.application import SystemMessage  # type: ignore
     from domainpy.application.service import ApplicationService
     from domainpy.application.projection import Projection

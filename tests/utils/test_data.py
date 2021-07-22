@@ -93,11 +93,19 @@ def test_construct_with_custom_type():
         (SystemData,),
         {
             '__annotations__': {
-                'some_property': CustomData
+                'some_property': CustomData,
+                'some_other_property': typing.Tuple[CustomData, ...]
             }
         }
     )
-    x = ContainerData(some_property=CustomData())
+    x = ContainerData(
+        some_property=CustomData(), 
+        some_other_property=tuple([
+            CustomData()
+        ])
+    )
+    assert isinstance(x.some_property, CustomData)
+    assert isinstance(x.some_other_property[0], CustomData)
 
 def test_do_not_replace_existing_init():
     class Message(SystemData):
@@ -261,3 +269,15 @@ def test_exists_repr():
 def test_exists_str():
     x = SystemData()
     assert hasattr(x, '__str__')
+
+def test_fail_if_str_annotations():
+    with pytest.raises(TypeError):
+        type(
+            'Message',
+            (SystemData,),
+            {
+                '__annotations__': {
+                    'some_property': 'str'
+                }
+            }
+        )

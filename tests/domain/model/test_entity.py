@@ -1,5 +1,4 @@
 
-import pytest
 from unittest import mock
 
 from domainpy.exceptions import DefinitionError
@@ -39,3 +38,27 @@ def test_entity_inequality():
     assert a != b
     assert a != entity_b_id
     assert a != None
+    assert a != {}
+
+def test_entity_route():
+    id = mock.MagicMock()
+    aggregate = mock.MagicMock()
+    event = mock.MagicMock()
+
+    entity = DomainEntity(id, aggregate)
+    entity.mutate = mock.Mock()
+    entity.__route__(event)
+
+    entity.mutate.assert_called_once_with(event)
+
+def test_entity_stamp():
+    id = mock.MagicMock()
+    aggregate = mock.MagicMock()
+    aggregate.__stamp__ = mock.Mock()
+
+    event = mock.MagicMock()
+
+    entity = DomainEntity(id, aggregate)
+    entity.__stamp__(event)
+
+    aggregate.__stamp__.assert_called()

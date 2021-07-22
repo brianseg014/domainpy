@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import typing
 
-if typing.TYPE_CHECKING:
+if typing.TYPE_CHECKING:  # pragma: no cover
     from domainpy.domain.model.aggregate import AggregateRoot
     from domainpy.domain.model.event import DomainEvent
 
@@ -27,20 +27,15 @@ class DomainEntity:
         if not isinstance(other, (self.__class__, self.__id__.__class__)):
             return False
 
-        if other is None:
-            return False
-
         if isinstance(other, self.__class__):
             return self.__id__ == other.__id__
         elif isinstance(other, self.__id__.__class__):
             return self.__id__ == other
-        else:
-            return False
 
-    def __repr__(self) -> str:
+    def __repr__(self) -> str:  # pragma: no cover
         self_name = self.__class__.__name__
         self_id = self.__id__
-        return f"{self_name}(id={self_id})"  # pragma: no cover
+        return f"{self_name}(id={self_id})"
 
     def mutate(self, event: DomainEvent) -> None:
         pass  # pragma: no cover
