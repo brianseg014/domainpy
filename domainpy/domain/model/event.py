@@ -1,9 +1,8 @@
 from domainpy.utils.data import SystemData
 from domainpy.utils.traceable import Traceable
-from domainpy.typing.infrastructure import EventRecordDict  # type: ignore
 
 
-class DomainEvent(SystemData[EventRecordDict], Traceable):
+class DomainEvent(SystemData, Traceable):
     __stream_id__: str
     __number__: int
     __timestamp__: float

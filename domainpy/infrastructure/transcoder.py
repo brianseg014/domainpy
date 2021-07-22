@@ -89,7 +89,7 @@ class CommandTranscoder(
             deserializable = json.loads(deserializable)
         if isinstance(deserializable, dict):
             deserializable = CommandRecord(**deserializable)
-        return deserializable
+        return typing.cast(CommandRecord, deserializable)
 
 
 class BuiltinCommandTranscoder(CommandTranscoder):
@@ -183,7 +183,7 @@ class IntegrationTranscoder(
             deserializable = json.loads(deserializable)
         if isinstance(deserializable, dict):
             deserializable = IntegrationRecord(**deserializable)
-        return deserializable
+        return typing.cast(IntegrationRecord, deserializable)
 
 
 class BuiltinIntegrationTranscoder(IntegrationTranscoder):
@@ -281,7 +281,7 @@ class EventTranscoder(
             deserializable = json.loads(deserializable)
         if isinstance(deserializable, dict):
             deserializable = EventRecord(**deserializable)
-        return deserializable
+        return typing.cast(EventRecord, deserializable)
 
 
 class BuiltinEventTranscoder(EventTranscoder):

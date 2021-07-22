@@ -28,6 +28,7 @@ from .publishers import (
     IPublisher,
     MemoryPublisher,
 )
+from .tracer import TraceStore, TraceRecordManager, DynamoDBTraceRecordManager
 from .records import CommandRecord, EventRecord, IntegrationRecord, TraceRecord
 from .transcoder import (
     BuiltinCommandTranscoder,
@@ -59,6 +60,9 @@ __all__ = [
     "AwsSimpleNotificationServicePublisher",
     "AwsSimpleQueueServicePublisher",
     "sqs_batch_processor",
+    "TraceStore",
+    "TraceRecordManager",
+    "DynamoDBTraceRecordManager",
     "Mapper",
     "MapperSet",
     "ITranscoder",

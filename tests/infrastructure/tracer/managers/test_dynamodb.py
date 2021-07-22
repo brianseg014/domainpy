@@ -6,7 +6,7 @@ import datetime
 import dataclasses
 
 from domainpy.infrastructure.records import CommandRecord, TraceRecord
-from domainpy.infrastructure.tracer.managers.dynamodb import DynamodbTraceRecordManager
+from domainpy.infrastructure.tracer.managers.dynamodb import DynamoDBTraceRecordManager
 from domainpy.utils.dynamodb import client_serialize as serialize
 
 
@@ -95,7 +95,7 @@ def init_example_trace(dynamodb, table_name, example_trace):
 def test_get_trace_contexts(init_example_trace, table_name: str, region_name: str, example_trace: TraceRecord):
     trace_id = example_trace.trace_id
 
-    manager = DynamodbTraceRecordManager(table_name, region_name=region_name)
+    manager = DynamoDBTraceRecordManager(table_name, region_name=region_name)
     contexts_resolutions = manager.get_trace_contexts(trace_id)
     
     for cr1,cr2 in zip(contexts_resolutions, example_trace.contexts_resolutions):
@@ -108,7 +108,7 @@ def test_store_in_progress(dynamodb, table_name: str, region_name: str, example_
 
     contexts = [cr.context for cr in example_trace.contexts_resolutions]
 
-    manager = DynamodbTraceRecordManager(table_name, region_name=region_name)
+    manager = DynamoDBTraceRecordManager(table_name, region_name=region_name)
     manager.store_in_progress(trace_id, command, contexts)
 
     items = dynamodb.scan(TableName=table_name)['Items']
@@ -120,7 +120,7 @@ def test_store_in_progress(dynamodb, table_name: str, region_name: str, example_
 def test_store_resolve_success(init_example_trace, dynamodb, table_name: str, region_name: str, example_trace: TraceRecord):
     trace_id = example_trace.trace_id
 
-    manager = DynamodbTraceRecordManager(table_name, region_name=region_name)
+    manager = DynamoDBTraceRecordManager(table_name, region_name=region_name)
     manager.store_resolve_success(trace_id)
 
     items = dynamodb.scan(TableName=table_name)['Items']
@@ -129,7 +129,7 @@ def test_store_resolve_success(init_example_trace, dynamodb, table_name: str, re
 def test_store_resolve_failure(init_example_trace, dynamodb, table_name: str, region_name: str, example_trace: TraceRecord):
     trace_id = example_trace.trace_id
 
-    manager = DynamodbTraceRecordManager(table_name, region_name=region_name)
+    manager = DynamoDBTraceRecordManager(table_name, region_name=region_name)
     manager.store_resolve_failure(trace_id)
 
     items = dynamodb.scan(TableName=table_name)['Items']
@@ -139,7 +139,7 @@ def test_store_context_resolve_success(init_example_trace, dynamodb, table_name:
     trace_id = example_trace.trace_id
     context = example_trace.contexts_resolutions[0].context
 
-    manager = DynamodbTraceRecordManager(table_name, region_name=region_name)
+    manager = DynamoDBTraceRecordManager(table_name, region_name=region_name)
     manager.store_context_resolve_success(trace_id, context)
 
     items = dynamodb.scan(TableName=table_name)['Items']
@@ -149,7 +149,7 @@ def test_store_context_resolve_failure(init_example_trace, dynamodb, table_name:
     trace_id = example_trace.trace_id
     context = example_trace.contexts_resolutions[0].context
 
-    manager = DynamodbTraceRecordManager(table_name, region_name=region_name)
+    manager = DynamoDBTraceRecordManager(table_name, region_name=region_name)
     manager.store_context_resolve_failure(trace_id, context, 'some error')
 
     items = dynamodb.scan(TableName=table_name)['Items']

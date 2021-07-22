@@ -8,7 +8,7 @@ from domainpy.utils.dynamodb import client_deserialize as deserialize
 from domainpy.utils.dynamodb import client_serialize as serialize
 
 
-class DynamodbTraceRecordManager:
+class DynamoDBTraceRecordManager:
     def __init__(self, table_name: str, **kwargs):
         self.table_name = table_name
 

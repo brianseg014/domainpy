@@ -6,6 +6,7 @@ if typing.TYPE_CHECKING:  # pragma: no cover
     from domainpy.typing.application import SystemMessage  # type: ignore
     from domainpy.application.service import ApplicationService
     from domainpy.application.projection import Projection
+    from domainpy.domain.model.event import DomainEvent
     from domainpy.infrastructure.publishers.base import IPublisher
     from domainpy.utils.bus import Bus
 
@@ -37,7 +38,7 @@ class ProjectionSubscriber(ISubscriber):
     def __init__(self, projection: Projection):
         self.projection = projection
 
-    def __route__(self, message: SystemMessage):
+    def __route__(self, message: DomainEvent):
         self.projection.project(message)
 
 

@@ -381,11 +381,10 @@ class system_data(type):
 
 
 Class = typing.TypeVar("Class")
-Dict = typing.TypeVar("Dict", bound=dict)
 
 
-class SystemData(typing.Generic[Dict], metaclass=system_data):
-    def __to_dict__(self) -> Dict:
+class SystemData(metaclass=system_data):
+    def __to_dict__(self) -> dict:
         return super().__to_dict__()  # type: ignore
 
     @classmethod

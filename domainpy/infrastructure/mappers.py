@@ -4,7 +4,8 @@ import typing
 
 from domainpy.exceptions import MapperNotFoundError
 from domainpy.infrastructure.transcoder import ITranscoder
-from domainpy.typing.infrastructure import JsonStr  # type: ignore
+from domainpy.typing.application import SystemMessage
+from domainpy.typing.infrastructure import RecordDict, JsonStr  # type: ignore
 
 
 TMessage = typing.TypeVar("TMessage")
@@ -54,12 +55,12 @@ class MapperSet:
         self.mappers = mappers
 
     def is_deserializable(
-        self, deserializable: typing.Union[TRecord, TRecordDict, JsonStr]
+        self, deserializable: typing.Union[SystemMessage, RecordDict, JsonStr]
     ) -> bool:
         return any(m.is_deserializable(deserializable) for m in self.mappers)
 
     def deserialize(
-        self, deserializable: typing.Union[TRecord, TRecordDict, JsonStr]
+        self, deserializable: typing.Union[SystemMessage, RecordDict, JsonStr]
     ) -> TMessage:
         for m in self.mappers:
             if m.is_deserializable(deserializable):

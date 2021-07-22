@@ -8,7 +8,7 @@ CommandRecordDict = typing.TypedDict(
         "topic": str,
         "version": int,
         "timestamp": float,
-        "message": float,
+        "message": str,
         "payload": dict,
     },
 )
