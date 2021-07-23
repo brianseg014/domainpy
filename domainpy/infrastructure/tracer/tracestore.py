@@ -28,11 +28,14 @@ class TraceStore:
 
     def store_in_progress(
         self,
+        trace_id: str,
         command: ApplicationCommand,
         contexts_resolutions: typing.Tuple[TraceRecord.ContextResolution],
     ) -> None:
         self.record_manager.store_in_progress(
-            self.command_mapper.serialize_asdict(command), contexts_resolutions
+            trace_id,
+            self.command_mapper.serialize_asdict(command),
+            contexts_resolutions,
         )
 
     def store_context_success(self, trace_id: str, context: str) -> None:

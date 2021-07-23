@@ -1,5 +1,4 @@
 
-from inspect import trace
 import uuid
 from unittest import mock
 
@@ -17,8 +16,10 @@ def test_store_in_progress():
         __timestamp__=0.0
     ))
 
+    trace_id = str(uuid.uuid4())
+
     store = TraceStore(mapper, manager, bus)
-    store.store_in_progress(command, ['some_context'])
+    store.store_in_progress(trace_id, command, ['some_context'])
 
     manager.store_in_progress.assert_called()
 

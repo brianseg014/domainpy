@@ -14,6 +14,7 @@ class TraceRecordManager(abc.ABC):
     @abc.abstractmethod
     def store_in_progress(
         self,
+        trace_id: str,
         command: dict,
         contexts_resolutions: typing.Tuple[TraceRecord.ContextResolution],
     ) -> None:
