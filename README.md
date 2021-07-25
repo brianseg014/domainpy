@@ -1,6 +1,6 @@
 # Domainpy - A library for DDD, ES and CQRS
 
-Domain driver design, event sourcing and command-query reposability segregation
+Domain driven design, event sourcing and command-query responsability segregation
 
 ## Install
 
