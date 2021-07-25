@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import abc
 import typing
 
 if typing.TYPE_CHECKING:  # pragma: no cover
@@ -9,7 +10,7 @@ if typing.TYPE_CHECKING:  # pragma: no cover
 from domainpy.domain.model.value_object import Identity
 
 
-class DomainEntity:
+class DomainEntity(abc.ABC):
     def __init__(self, id: Identity, aggregate: AggregateRoot) -> None:
         self.__id__ = id
         self.__aggregate__ = aggregate
@@ -34,10 +35,14 @@ class DomainEntity:
 
         return False
 
+    def __ne__(self, o: object) -> bool:
+        return not self == o
+
     def __repr__(self) -> str:  # pragma: no cover
         self_name = self.__class__.__name__
         self_id = self.__id__
         return f"{self_name}(id={self_id})"
 
+    @abc.abstractmethod
     def mutate(self, event: DomainEvent) -> None:
         pass  # pragma: no cover

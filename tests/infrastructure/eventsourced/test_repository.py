@@ -1,9 +1,7 @@
-from domainpy.exceptions import IdempotencyItemError
-import types
+
 from unittest import mock
 
 from domainpy.domain.model.aggregate import AggregateRoot
-from domainpy.domain.model.event import DomainEvent
 from domainpy.domain.model.value_object import Identity
 from domainpy.infrastructure.eventsourced.repository import make_adapter
 
@@ -14,7 +12,11 @@ def test_save():
     aggregate = mock.MagicMock()
     aggregate.__changes__ = [event]
 
-    EventSourcedRpository = make_adapter(AggregateRoot, Identity)
+    class Aggregate(AggregateRoot):
+        def mutate(self, event):
+            pass
+
+    EventSourcedRpository = make_adapter(Aggregate, Identity)
     rep = EventSourcedRpository(event_store)
     rep.save(aggregate)
     
@@ -28,9 +30,13 @@ def test_get():
     event_store = mock.MagicMock()
     event_store.get_events = mock.Mock(return_value=[event])
 
-    EventSourcedRpository = make_adapter(AggregateRoot, Identity)
+    class Aggregate(AggregateRoot):
+        def mutate(self, event):
+            pass
+
+    EventSourcedRpository = make_adapter(Aggregate, Identity)
     rep = EventSourcedRpository(event_store)
 
     aggregate = rep.get(id)
-    assert isinstance(aggregate, AggregateRoot)
+    assert isinstance(aggregate, Aggregate)
     

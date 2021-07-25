@@ -4,12 +4,13 @@ import typing
 import datetime
 import functools
 
+from domainpy.domain.model.entity import DomainEntity
 from domainpy.domain.model.event import DomainEvent
 from domainpy.domain.model.value_object import Identity
 from domainpy.exceptions import DefinitionError, VersionError
 
 
-class AggregateRoot:
+class AggregateRoot(DomainEntity):
     def __init__(self, id: Identity):
         self.__id__ = id
 
@@ -44,9 +45,6 @@ class AggregateRoot:
         self.__seen__.append(event)
 
         self.mutate(event)
-
-    def mutate(self, event: DomainEvent):
-        pass  # pragma: no cover
 
 
 TDomainEvent = typing.TypeVar("TDomainEvent", bound=DomainEvent)

@@ -12,7 +12,11 @@ def test_entity_apply_calls_aggregate_apply():
     entity_id = mock.MagicMock()
     event = mock.MagicMock()
 
-    entity = DomainEntity(entity_id, aggregate)
+    class Entity(DomainEntity):
+        def mutate(self, event):
+            pass
+
+    entity = Entity(entity_id, aggregate)
     entity.__apply__(event)
 
     aggregate.__apply__.assert_called_with(event)
@@ -21,8 +25,12 @@ def test_entity_equality():
     aggregate = mock.MagicMock()
     entity_id = mock.MagicMock(spec=Identity.create())
 
-    a = DomainEntity(id=entity_id, aggregate=aggregate)
-    b = DomainEntity(id=entity_id, aggregate=aggregate)
+    class Entity(DomainEntity):
+        def mutate(self, event):
+            pass
+
+    a = Entity(id=entity_id, aggregate=aggregate)
+    b = Entity(id=entity_id, aggregate=aggregate)
 
     assert a == b
     assert a == entity_id
@@ -32,8 +40,12 @@ def test_entity_inequality():
     entity_a_id = mock.MagicMock(spec=Identity.create())
     entity_b_id = mock.MagicMock(spec=Identity.create())
 
-    a = DomainEntity(id=entity_a_id, aggregate=aggregate)
-    b = DomainEntity(id=entity_b_id, aggregate=aggregate)
+    class Entity(DomainEntity):
+        def mutate(self, event):
+            pass
+
+    a = Entity(id=entity_a_id, aggregate=aggregate)
+    b = Entity(id=entity_b_id, aggregate=aggregate)
 
     assert a != b
     assert a != entity_b_id
@@ -45,7 +57,11 @@ def test_entity_route():
     aggregate = mock.MagicMock()
     event = mock.MagicMock()
 
-    entity = DomainEntity(id, aggregate)
+    class Entity(DomainEntity):
+        def mutate(self, event):
+            pass
+
+    entity = Entity(id, aggregate)
     entity.mutate = mock.Mock()
     entity.__route__(event)
 
@@ -58,7 +74,11 @@ def test_entity_stamp():
 
     event = mock.MagicMock()
 
-    entity = DomainEntity(id, aggregate)
+    class Entity(DomainEntity):
+        def mutate(self, event):
+            pass
+
+    entity = Entity(id, aggregate)
     entity.__stamp__(event)
 
     aggregate.__stamp__.assert_called()

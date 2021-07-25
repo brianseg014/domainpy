@@ -13,7 +13,11 @@ def test_aggregate_add_to_changes_and_mutate_when_apply():
     event = mock.MagicMock()
     event.__number__ = 1
 
-    agg = AggregateRoot(id=id)
+    class Aggregate(AggregateRoot):
+        def mutate(self, event):
+            pass
+
+    agg = Aggregate(id=id)
     agg.mutate = mock.Mock()
     agg.__apply__(event)
 
@@ -25,7 +29,11 @@ def test_aggregate_call_mutate_when_route():
     event = mock.MagicMock()
     event.__number__ = 1
 
-    agg = AggregateRoot(id=id)
+    class Aggregate(AggregateRoot):
+        def mutate(self, event):
+            pass
+
+    agg = Aggregate(id=id)
     agg.mutate = mock.Mock()
     agg.__route__(event)
 
@@ -36,7 +44,11 @@ def test_aggregate_route_mismatch_version():
     event = mock.MagicMock()
     event.__number__ = 2
 
-    agg = AggregateRoot(id=id)
+    class Aggregate(AggregateRoot):
+        def mutate(self, event):
+            pass
+
+    agg = Aggregate(id=id)
     agg.mutate = mock.Mock()
 
     with pytest.raises(VersionError):
@@ -44,7 +56,12 @@ def test_aggregate_route_mismatch_version():
 
 def test_aggregate_selector():
     id = mock.MagicMock()
-    agg = AggregateRoot(id=id)
+
+    class Aggregate(AggregateRoot):
+        def mutate(self, event):
+            pass
+
+    agg = Aggregate(id=id)
     assert isinstance(agg.__selector__, Selector)
 
 def test_selector_filter_trace():
