@@ -23,7 +23,7 @@ def test_save():
     event_store.store_events.assert_called_with([event])
 
 def test_get():
-    id = mock.MagicMock()
+    id = mock.MagicMock(spec=Identity.create())
     event = mock.MagicMock()
     event.__number__ = 1
 

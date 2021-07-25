@@ -7,7 +7,7 @@ if typing.TYPE_CHECKING:  # pragma: no cover
     from domainpy.domain.model.aggregate import AggregateRoot
     from domainpy.domain.model.event import DomainEvent
 
-from domainpy.domain.model.value_object import Identity
+from domainpy.domain.model.value_object import Identity, ValueObject
 
 
 class DomainEntity(abc.ABC):
@@ -23,6 +23,17 @@ class DomainEntity(abc.ABC):
 
     def __route__(self, event: DomainEvent) -> None:
         self.mutate(event)
+
+    def __setattr__(self, name: str, value: typing.Any) -> None:
+        is_system = name.startswith("__") or name == "mutate"
+        is_domain_object = isinstance(value, (DomainEntity, ValueObject))
+
+        if not is_system and not is_domain_object:
+            raise TypeError(
+                "should only be composed of entites and value objects"
+            )
+
+        return super().__setattr__(name, value)
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, (self.__class__, self.__id__.__class__)):
