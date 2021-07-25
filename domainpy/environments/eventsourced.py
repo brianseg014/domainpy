@@ -1,4 +1,5 @@
 from __future__ import annotations
+from domainpy.exceptions import ConcurrencyError
 
 import typing
 
@@ -68,9 +69,7 @@ class EventSourcedEnvironment:
         self.integration_publisher_bus = Bus[IntegrationEvent]()
         self.projection_bus = Bus[DomainEvent]()
         self.resolver_bus = Bus[typing.Union[SystemMessage, DomainError]]()
-        self.handler_bus = Bus[typing.Union[SystemMessage, DomainError]](
-            publish_exceptions=DomainError
-        )
+        self.handler_bus = Bus[typing.Union[SystemMessage, DomainError]]()
 
         self.handler_bus.attach(BusSubscriber(self.resolver_bus))
 
@@ -106,8 +105,13 @@ class EventSourcedEnvironment:
         )
 
     def handle(
-        self, message: typing.Union[SystemMessage, RecordDict, JsonStr]
+        self,
+        message: typing.Union[SystemMessage, RecordDict, JsonStr],
+        retries: int = 3,
     ):
+        if not retries > 0:
+            raise ValueError("retries should be positive integer")
+
         if not isinstance(
             message, (ApplicationCommand, IntegrationEvent, DomainEvent)
         ):
@@ -118,7 +122,25 @@ class EventSourcedEnvironment:
 
         Traceable.__trace_id__ = message.__trace_id__
 
-        self.handler_bus.publish(message)
+        # Publish original message, but if a domain error raises publish the
+        # domain error
+        #
+        # If concurrency error raises from the original or the domain error
+        # publishing, retry until exahusted
+        publishable: typing.Union[SystemMessage, DomainError] = message
+
+        done = False
+        while not done:
+            try:
+                try:
+                    self.handler_bus.publish(publishable)
+                    done = True
+                except DomainError as e:
+                    publishable = e
+            except ConcurrencyError as e:
+                retries = retries - 1
+                if retries == 0:
+                    raise ConcurrencyError("exahusted retries") from e
 
     def setup_event_record_manager(
         self, setupargs: dict

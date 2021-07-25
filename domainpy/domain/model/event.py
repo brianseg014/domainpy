@@ -11,7 +11,7 @@ class DomainEvent(SystemData, Traceable):
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, self.__class__):
             return False
-        
+
         return (
             self.__stream_id__ == other.__stream_id__
             and self.__number__ == other.__number__

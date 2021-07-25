@@ -1,4 +1,3 @@
-import collections.abc
 import typing
 
 from domainpy.exceptions import DefinitionError
@@ -22,19 +21,7 @@ class IBus(typing.Generic[T]):
 
 
 class Bus(IBus[T]):
-    def __init__(
-        self,
-        publish_exceptions: typing.Union[
-            typing.Type[Exception],
-            typing.Tuple[typing.Type[Exception], ...],
-            typing.Tuple[()],
-        ] = (),
-    ):
-        if not isinstance(publish_exceptions, collections.abc.Sequence):
-            publish_exceptions = tuple([publish_exceptions])
-
-        self.publish_exceptions = publish_exceptions
-
+    def __init__(self):
         self.subscribers: typing.List[ISubscriber[T]] = []
 
     def attach(self, subscriber: ISubscriber[T]):
@@ -48,18 +35,5 @@ class Bus(IBus[T]):
         self.subscribers.append(subscriber)
 
     def publish(self, message: T):
-        exceptions = []
-
         for s in self.subscribers:
-
-            try:
-                s.__route__(message)
-            except Exception as e:
-                if len(self.publish_exceptions) > 0 and isinstance(
-                    e, self.publish_exceptions
-                ):
-                    exceptions.append(e)
-                else:
-                    raise e
-        for ex in exceptions:
-            self.publish(ex)  # type: ignore
+            s.__route__(message)
