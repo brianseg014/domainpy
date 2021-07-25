@@ -10,11 +10,30 @@ $ pip install domainpy
 
 ## Quickstart
 
-Domainpy is a library to implement the ideas around domain driven design,
-cqrs and event sourcing in python.
+Domainpy is a library to implement the ideas around domain driven design (DDD),
+CQRS and event sourcing in python.
 
 The library follows clean architecture principle with three main layers:
 application, domain and infrastructure.
+
+## What is DDD?
+
+> DDD is primarily about modeling a ubiquitous language in an explicitly
+> bounded context -- <cite>Vaughn Vernon</cite>
+
+Every domain has its own language used by the experts, and you should 
+learn that language and use it in the solution. This is known as 
+`ubiquitous language`. This language is context dependent with shared 
+and single meaning. You should use this language in conversations
+with domain experts, between developers and naming in code, databases
+and tests. It's common that a domain problem has multiple contexts,
+meaning multiple `ubiquitous language`, and these contexts are know as
+`bounded context`. Ideally each `bounded context` is a separate system 
+(a microservice if you will).
+
+Trying to keep loosely coupled systems, `context maps` are used for
+integrations between `bounded contexts`, by logically mapping the
+concepts.
 
 ## Let's see some code
 
@@ -22,12 +41,13 @@ We start by defining some business objects.
 
 ### Value Objecs
 
-`Value Objects` are concepts that belongs to the ubiquitous language of 
-the business. This objects are identified by its own attributes. Examples of
-value objects are identities, names, dates, prices or addresses.  Immutables, 
-if you need to change some attribute, you should generate a new instace. 
-They can only hold primatives or other value objects. And you should try to 
-have semantic constructors.
+`Value Objects` are concepts that belongs to the `ubiquitous language` 
+of the business. This objects are used to measure quantities and 
+describe characteristics. They are identified by its attributes, 
+therefore, equivalent values are interchangable. Immutables, if you 
+need to change some attribute, you should generate a new instance.
+They can only hold primatives or other `value objects`. And you 
+should try to have semantic constructors.
 
 ```python
 from domainpy.domain.model import ValueObject, Identity
@@ -45,11 +65,19 @@ class PetStoreName(ValueObject):
 
 ### Domain events
 
-An event decribe something that already happened as fact.
-We should write event names in past tense. Also, is a concept that belongs to
-the ubiquitous language of the business. An event can only happen once, and if
-the same thing happens again later, then it is a different event. And of course,
-the are immutable as we cannot change the history.
+> Capture the memory of something interesting which affects the
+> domain -- <cite>Martin Fowler</cite>
+
+A `Domain Event` decribe something that already happened as fact. 
+Something which domain experts care abount. They should be significant 
+to the business. We should write event names in past tense. They are 
+concepts that belongs to the `Ubiquitous Language` of the business. 
+An event can only happen once, and if the same thing happens again later, 
+then it is a different event. And of course, the are immutable as we 
+cannot change the history.
+
+Some other side effects can be triggered in the `Application Layer`,
+by reacting to the publishing of a `Domain Event`.
 
 ```python
 from domainpy.domain.model import DomainEvent
@@ -65,10 +93,32 @@ class PetStoreRegistered(DomainEvent):
 
 `Aggregate` is an encapsulation of domain objects (`entities` and
 `value objects`) which should be stored atomically. It's also known as
-transactional boundry (all within should be save or none).
+transactional boundry (all within should be save or none). Eventual
+consistency between aggregates (intances and types).
+
+An `Aggregate` is represented by an `Aggregate Root`, which is a 
+`Domain Entity` that holds the mutating commands for the whole aggregate.
+The identity for this `Aggregate Root` must be unique within the whole
+bounded context, even when other inner `Domain Entities` only should
+be unique within the `Aggregate`. All inter-aggregate references are
+by identity of the `Aggregate Root`, even though it's okay to pass
+any object within the lifetime of a single method if required, but
+make sure only IDs relevant when store.
 
 **Domain Entity** is the absctraction of something that changes in
-time and has its own identity. This example does not contains one.
+time and are distinguishable by its identity. The identity is stable
+along within the lifecycle and unique within an aggregate. Beside 
+identity, all of its attributes are mutable. This domain objects are
+composed by other `entities` or `value objects`.
+
+The identity of a `Domain Entity` should be factless, trying to
+avoid natural IDs.
+
+You should distinguish between creation and instantiation. You 
+should try to have semantic constructors. The construction of this
+domain objects usually happens once.
+
+This example does not contains one.
 
 ```python
 from domainpy.domain.model import AggregateRoot, mutator
@@ -101,14 +151,17 @@ class PetStore(AggregateRoot):
             self.pet_store_name = e.pet_store_name
 ```
 
-An `aggregate` creates `domain events` and apply to itself, which is handled
-by `mutate` method, changing the state of the aggregate. The state of the 
-`aggregate` exists with sole purpose of enforce business invariants (business 
-rules).
+An `Aggregate` creates `Domain Events` and apply to itself, which 
+is handled by `mutate` method, changing the state of the aggregate.
+The state of the `Aggregate` exists with sole purpose of enforce 
+business invariants (business rules).
 
 ### Repository
 
-Repository is an interface to represent the store of an aggregate.
+An abstraction over the persistance mechanism with methods for 
+storing and retreiving aggregates. One repository per `Aggregate`.
+The simpliest method for retreive is by the identity of the `Aggregate`,
+but it can be some more complex and domain specific query.
 IRepository contains the methods get and save.
 
 ```python
@@ -207,6 +260,10 @@ class PetStoreResolver(ApplicationService):
 ```
 
 ### Implmentation of repository in infrastructure
+
+**Event sourcing** is a storage strategy that consists in saving all
+the historic events instead of the current state. Later you can replay
+these events to reach any state in time.
 
 The library provides a function to create an adaptar for a event sourced
 repository, which implements the methods get and save.
