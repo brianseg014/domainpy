@@ -1,4 +1,6 @@
-# Domainpy - A library for DDD, ES, CQRS and microservices
+# Domainpy - A library for DDD, ES and CQRS
+
+Domain driver disign, event sourcing and command-query reposability segregation
 
 ## Install
 
@@ -23,16 +25,16 @@ application, domain and infrastructure.
 
 Every domain has its own language used by the experts, and you should 
 learn that language and use it in the solution. This is known as 
-`ubiquitous language`. This language is context dependent with shared 
+`Ubiquitous Language`. This language is context dependent with shared 
 and single meaning. You should use this language in conversations
 with domain experts, between developers and naming in code, databases
 and tests. It's common that a domain problem has multiple contexts,
-meaning multiple `ubiquitous language`, and these contexts are know as
-`bounded context`. Ideally each `bounded context` is a separate system 
+meaning multiple `Ubiquitous Language`, and these contexts are know as
+`Bounded Context`. Ideally each `Bounded Context` is a separate system 
 (a microservice if you will).
 
-Trying to keep loosely coupled systems, `context maps` are used for
-integrations between `bounded contexts`, by logically mapping the
+Trying to keep loosely coupled systems, `Context Maps` are used for
+integrations between `Bounded Bontexts`, by logically mapping the
 concepts.
 
 ## Let's see some code
@@ -41,12 +43,12 @@ We start by defining some business objects.
 
 ### Value Objecs
 
-`Value Objects` are concepts that belongs to the `ubiquitous language` 
+`Value Objects` are concepts that belongs to the `Ubiquitous Language` 
 of the business. This objects are used to measure quantities and 
 describe characteristics. They are identified by its attributes, 
 therefore, equivalent values are interchangable. Immutables, if you 
 need to change some attribute, you should generate a new instance.
-They can only hold primatives or other `value objects`. And you 
+They can only hold primatives or other `Value Objects`. And you 
 should try to have semantic constructors.
 
 ```python
@@ -69,7 +71,7 @@ class PetStoreName(ValueObject):
 > domain -- <cite>Martin Fowler</cite>
 
 A `Domain Event` decribe something that already happened as fact. 
-Something which domain experts care abount. They should be significant 
+Something which domain experts care about. They should be significant 
 to the business. We should write event names in past tense. They are 
 concepts that belongs to the `Ubiquitous Language` of the business. 
 An event can only happen once, and if the same thing happens again later, 
@@ -89,36 +91,36 @@ class PetStoreRegistered(DomainEvent):
     pet_store_name: PetStoreName
 ```
 
-### Aggregate
+### Domain Entity
 
-`Aggregate` is an encapsulation of domain objects (`entities` and
-`value objects`) which should be stored atomically. It's also known as
-transactional boundry (all within should be save or none). Eventual
-consistency between aggregates (intances and types).
 
-An `Aggregate` is represented by an `Aggregate Root`, which is a 
-`Domain Entity` that holds the mutating commands for the whole aggregate.
-The identity for this `Aggregate Root` must be unique within the whole
-bounded context, even when other inner `Domain Entities` only should
-be unique within the `Aggregate`. All inter-aggregate references are
-by identity of the `Aggregate Root`, even though it's okay to pass
-any object within the lifetime of a single method if required, but
-make sure only IDs relevant when store.
-
-**Domain Entity** is the absctraction of something that changes in
+`Domain Entity` is the absctraction of something that changes in
 time and are distinguishable by its identity. The identity is stable
 along within the lifecycle and unique within an aggregate. Beside 
 identity, all of its attributes are mutable. This domain objects are
-composed by other `entities` or `value objects`.
+composed by other `domain entities` or `value objects`.
 
 The identity of a `Domain Entity` should be factless, trying to
-avoid natural IDs.
+avoid natural IDs. Also, a `Domain Entity`is a concept that belongs
+to the `Ubiquitous Language`.
 
 You should distinguish between creation and instantiation. You 
 should try to have semantic constructors. The construction of this
 domain objects usually happens once.
 
-This example does not contains one.
+`Aggregate` is an encapsulation of domain objects (`domain entities` and
+`value objects`) which should be stored atomically. It's also known as
+transactional boundry (all within should be save or none). Eventual
+consistency between aggregates (intances and types).
+
+An `Aggregate` is represented by an `Aggregate Root`, which is a 
+`Domain Entity` that holds the mutating commands for the whole `Aggregate`.
+The identity for this `Aggregate Root` must be unique within the whole
+bounded context, even when other inner `Domain Entities` only should
+be unique within the `Aggregate`. All inter-aggregate references are
+by identity of the `Aggregate Root`, even though it's okay to pass
+any object within the lifetime of a single method if required, but
+make sure only IDs are relevant when storing.
 
 ```python
 from domainpy.domain.model import AggregateRoot, mutator
@@ -171,8 +173,8 @@ class PetStoreRepository(IRepository[PetStore, PetStoreId]):
         pass
 ```
 
-Every time a repository creates an aggregate, all events are loaded and
-replayed in the aggregate, handled by aggregate mutate method.
+Every time a `Repository` creates an aggregate, all events are loaded and
+replayed in the `Aggregate`, handled by aggregate's mutate method.
 
 ### Application Command
 
