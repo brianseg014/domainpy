@@ -1,6 +1,6 @@
 # Domainpy - A library for DDD, ES and CQRS
 
-Domain driver disign, event sourcing and command-query reposability segregation
+Domain driver design, event sourcing and command-query reposability segregation
 
 ## Install
 
@@ -92,7 +92,6 @@ class PetStoreRegistered(DomainEvent):
 ```
 
 ### Domain Entity
-
 
 `Domain Entity` is the absctraction of something that changes in
 time and are distinguishable by its identity. The identity is stable
