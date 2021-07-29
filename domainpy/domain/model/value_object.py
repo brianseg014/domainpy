@@ -1,4 +1,3 @@
-import json
 import uuid
 
 from domainpy.exceptions import DefinitionError
@@ -6,22 +5,7 @@ from domainpy.utils.data import SystemData, system_data
 
 
 class ValueObject(SystemData):
-    def __hash__(self) -> int:
-        return hash(json.dumps(self.__to_dict__(), sort_keys=True))
-
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, self.__class__):
-            return False
-
-        if other is None:
-            return False
-
-        return self.__hash__() == other.__hash__()
-
-    def __repr__(self):
-        self_name = self.__class__.__name__
-        self_json = json.dumps(self.__to_dict__())
-        return f"{self_name}({self_json})"  # pragma: no cover
+    pass
 
 
 class identity(system_data):

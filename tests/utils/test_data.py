@@ -2,7 +2,7 @@ import sys
 import pytest
 import typing
 
-from domainpy.utils.data import SystemData
+from domainpy.utils.data import SystemData, ImmutableError, UnsupportedAnnotationInStrError
 
 
 def test_constructor():
@@ -117,161 +117,23 @@ def test_do_not_replace_existing_init():
     with pytest.raises(TypeError):
         x = Message(some_property='y')
 
-def test_from_dict():
-    Data = type(
-        'Data', 
-        (SystemData,), 
-        {
-            '__annotations__': {
-                'some_property': typing.Optional[str],
-            }
-        }
-    )
-
-    dct = {
-        'some_property': 'x'
-    }
-
-    x = Data.__from_dict__(dct)
-    assert x.some_property == 'x'
-
-    dct = {
-        'some_property': None
-    }
-
-    x = Data.__from_dict__(dct)
-    assert x.some_property == None
-
-def test_from_dict_nested():
-    Data = type(
-        'Data',
-        (SystemData,),
-        {
-            '__annotations__': {
-                'some_property': str
-            }
-        }
-    )
-    ContainerData = type(
-        'ContainerData',
-        (SystemData,),
-        {
-            '__annotations__': {
-                'some_property': Data
-            }
-        }
-    )
-    dct = {
-        'some_property': {
-            'some_property': 'x'
-        }
-    }
-    x = ContainerData.__from_dict__(dct)
-    assert x.some_property.some_property == 'x'
-
-@pytest.mark.skipif(sys.version_info < (3,9), reason="requires python3.9 or higher")
-def test_from_dict_sequence():
-    Data = type(
-        'Data',
-        (SystemData,),
-        {
-            '__annotations__': {
-                'some_property': str
-            }
-        }
-    )
-    ContainerData = type(
-        'ContainerMessage',
-        (SystemData,),
-        {
-            '__annotations__': {
-                'some_property': tuple[str, ...],
-                'some_other_property': tuple[Data, ...]
-            }
-        }
-    )
-
-    dct = {
-        'some_property': ['x', 'y'],
-        'some_other_property': [
-            { 'some_property': 'x' }
-        ]
-    }
-
-    x = ContainerData.__from_dict__(dct)
-    assert x.some_property == ('x', 'y')
-    assert x.some_other_property[0].some_property == 'x'
-
-def test_from_dict_sequence_using_typing():
-    Data = type(
-        'Data',
-        (SystemData,),
-        {
-            '__annotations__': {
-                'some_property': str
-            }
-        }
-    )
-    ContainerData = type(
-        'ContainerMessage',
-        (SystemData,),
-        {
-            '__annotations__': {
-                'some_property': typing.Tuple[str, ...],
-                'some_other_property': typing.Tuple[Data, ...]
-            }
-        }
-    )
-
-    dct = {
-        'some_property': ['x', 'y'],
-        'some_other_property': [
-            { 'some_property': 'x' }
-        ]
-    }
-
-    x = ContainerData.__from_dict__(dct)
-    assert x.some_property == ('x', 'y')
-    assert x.some_other_property[0].some_property == 'x'
-
-def test_from_dict_fails():
-    with pytest.raises(TypeError):
-        type(
-            'Message',
-            (SystemData,),
-            {
-                '__annotations__': {
-                    'some_property': typing.Union[str, int]
-                }
-            }
-        )
-    with pytest.raises(TypeError):
-        type(
-            'Message',
-            (SystemData,),
-            {
-                '__annotations__': {
-                    'some_property': tuple[str, str]
-                }
-            }
-        )
-
 def test_immutable():
     x = SystemData()
 
-    with pytest.raises(AttributeError):
+    with pytest.raises(ImmutableError):
         x.some_property = 'x'
     
-def test_exists_repr():
-    x = SystemData()
-    assert hasattr(x, '__repr__')
+def test_equality_based_on_data():
+    a = SystemData(some_property='x')
+    b = SystemData(some_property='x')
+    assert a == b
 
-def test_exists_str():
-    x = SystemData()
-    assert hasattr(x, '__str__')
+    a = SystemData(some_property='x')
+    b = SystemData(some_property='y')
+    assert a != b
 
 def test_fail_if_str_annotations():
-    with pytest.raises(TypeError):
+    with pytest.raises(UnsupportedAnnotationInStrError):
         type(
             'Message',
             (SystemData,),
