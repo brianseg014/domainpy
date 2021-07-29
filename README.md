@@ -441,7 +441,7 @@ env.when(
         pet_store_name='ark'
     )
 )
-env.then.domain_events.assert_has_event_n(PetStoreRegistered, n=2)
+env.then.domain_events.assert_has_event_n_times(PetStoreRegistered, times=2)
 env.then.integration_events.assert_has_integration(CreatePetStoreSucceeded)
 ```
 
