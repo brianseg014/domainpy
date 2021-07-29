@@ -1,5 +1,13 @@
 import domainpy.compat_typing as typing
 
+from domainpy.infrastructure.records import (
+    CommandRecord,
+    IntegrationRecord,
+    EventRecord,
+)
+
+SystemRecord = typing.Union[CommandRecord, IntegrationRecord, EventRecord]
+
 JsonStr = str
 CommandRecordDict = typing.TypedDict(
     "CommandRecordDict",
@@ -40,6 +48,6 @@ EventRecordDict = typing.TypedDict(
         "payload": dict,
     },
 )
-RecordDict = typing.Union[
+SystemRecordDict = typing.Union[
     CommandRecordDict, IntegrationRecordDict, EventRecordDict
 ]

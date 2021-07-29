@@ -1,344 +1,369 @@
-import abc
-import json
-import typing
+from __future__ import annotations
 
-from domainpy.application.command import ApplicationCommand
+import abc
+import typing
+import functools
+import dataclasses
+
 from domainpy.application.integration import IntegrationEvent
+from domainpy.application.command import ApplicationCommand
 from domainpy.domain.model.event import DomainEvent
+from domainpy.domain.model.value_object import ValueObject
 from domainpy.infrastructure.records import (
     CommandRecord,
     EventRecord,
     IntegrationRecord,
 )
-from domainpy.typing.infrastructure import (  # type: ignore
-    JsonStr,
-    CommandRecordDict,
-    IntegrationRecordDict,
-    EventRecordDict,
-)
+from domainpy.typing.application import SystemMessage
+from domainpy.typing.infrastructure import SystemRecord
+from domainpy.utils.data import get_fields, Field, MISSING
 
 
-TMessage = typing.TypeVar("TMessage")
-TRecord = typing.TypeVar("TRecord")
-TRecordDict = typing.TypeVar("TRecordDict")
+def isgenerictype(objtype) -> bool:
+    return typing.get_origin(objtype) is not None
 
 
-class ITranscoder(typing.Generic[TMessage, TRecord, TRecordDict], abc.ABC):
-    @abc.abstractmethod
-    def is_deserializable(
-        self,
-        deserializable: typing.Union[TRecord, TRecordDict, JsonStr],
-        message_type: typing.Union[
-            typing.Type[TMessage], typing.Dict[str, typing.Type[TMessage]]
-        ],
-    ) -> bool:
-        pass
+class MissingCodecError(Exception):
+    pass
 
-    @abc.abstractmethod
-    def serialize(self, message: TMessage) -> TRecord:
-        pass
 
-    @abc.abstractmethod
+class MissingFieldValueError(Exception):
+    pass
+
+
+TSystemMessage = typing.TypeVar("TSystemMessage", bound=SystemMessage)
+TSystemRecord = typing.TypeVar("TSystemRecord", bound=SystemRecord)
+
+
+class Transcoder(abc.ABC):
+    def __init__(self):
+        self.codecs: typing.List[ICodec] = [
+            _PrimitiveCodec(self),
+            _DictCodec(self),
+            _SingleTypeInfiteSequenceCodec(self),
+            _OptionalCodec(self),
+            _ApplicationCommandCodec(self),
+            _IntegrationEventCodec(self),
+            _DomainEventCodec(self),
+            _ValueObjectCodec(self),
+        ]
+
+    def add_codec(self, codec: ICodec) -> None:
+        self.codecs.append(codec)
+
+    def serialize(self, message: SystemMessage) -> SystemRecord:
+        return typing.cast(SystemRecord, self.encode(message, type(message)))
+
     def deserialize(
-        self,
-        deserializable: typing.Union[TRecord, TRecordDict, JsonStr],
-        message_type: typing.Union[
-            typing.Type[TMessage], typing.Dict[str, typing.Type[TMessage]]
-        ],
-    ) -> TMessage:
+        self, record: TSystemRecord, message_type: typing.Type[TSystemMessage]
+    ) -> TSystemMessage:
+        return self.decode(dataclasses.asdict(record), message_type)
+
+    def encode(self, obj, objtype):
+        codec = self._get_codec(objtype)
+        return codec.encode(obj, objtype)
+
+    def decode(self, data, objtype):
+        codec = self._get_codec(objtype)
+        return codec.decode(data, objtype)
+
+    @functools.cache
+    def _get_codec(self, objtype: typing.Type) -> ICodec:
+        try:
+            return next(c for c in self.codecs if c.can_handle(objtype))
+        except StopIteration:
+            raise MissingCodecError(f"unknown codec for {objtype}")
+
+
+class ICodec(abc.ABC):
+    @abc.abstractmethod
+    def can_handle(self, field_type: typing.Type) -> bool:
+        pass
+
+    @abc.abstractmethod
+    def encode(self, obj: typing.Any, field_type: typing.Type) -> typing.Any:
+        pass
+
+    @abc.abstractmethod
+    def decode(self, data: dict, field_type: typing.Type) -> typing.Any:
         pass
 
 
-class TranscoderContexted(ITranscoder[TMessage, TRecord, TRecordDict]):
-    def __init__(self, context: str) -> None:
-        self.context = context
+class _PrimitiveCodec(ICodec):
+    def __init__(self, transcoder: Transcoder) -> None:
+        self.trancoder = transcoder
+
+    def can_handle(self, field_type: typing.Type) -> bool:
+        return field_type in (str, int, float, bool)
+
+    def encode(self, obj: typing.Any, field_type: typing.Type) -> typing.Any:
+        return field_type(obj)
+
+    def decode(self, data: dict, field_type: typing.Type) -> typing.Any:
+        return field_type(data)
 
 
-class CommandTranscoder(
-    ITranscoder[ApplicationCommand, CommandRecord, CommandRecordDict]
-):
-    message = "command"
+class _SingleTypeInfiteSequenceCodec(ICodec):
+    def __init__(self, transcoder: Transcoder) -> None:
+        self.trancoder = transcoder
 
-    def is_deserializable(
-        self,
-        deserializable: typing.Union[
-            CommandRecord, CommandRecordDict, JsonStr
-        ],
-        message_type: typing.Union[
-            typing.Type[ApplicationCommand],
-            typing.Dict[str, typing.Type[ApplicationCommand]],
-        ],
-    ) -> bool:
-        deserializable = self.get_as_record(deserializable)
-
-        if isinstance(message_type, dict):
-            message_type = message_type[deserializable.topic]
+    def can_handle(self, field_type: typing.Type) -> bool:
+        origin = typing.get_origin(field_type) or field_type
+        origin_args = typing.get_args(field_type)
 
         return (
-            deserializable.message == self.message
-            and deserializable.topic == message_type.__name__
+            origin in (list, tuple)
+            and len(origin_args) == 2
+            and origin_args[1] == Ellipsis
         )
 
-    def get_as_record(
-        self,
-        deserializable: typing.Union[
-            CommandRecord, CommandRecordDict, JsonStr
-        ],
-    ) -> CommandRecord:
-        if isinstance(deserializable, JsonStr):
-            deserializable = json.loads(deserializable)
-        if isinstance(deserializable, dict):
-            deserializable = CommandRecord(**deserializable)
-        return typing.cast(CommandRecord, deserializable)
+    def encode(self, obj: typing.Any, field_type: typing.Type) -> typing.Any:
+        origin_args = typing.get_args(field_type)
+
+        return [self.trancoder.encode(o, origin_args[0]) for o in obj]
+
+    def decode(self, data: dict, field_type: typing.Type) -> typing.Any:
+        origin = typing.get_origin(field_type) or field_type
+        origin_args = typing.get_args(field_type)
+
+        return origin(self.trancoder.decode(o, origin_args[0]) for o in data)
 
 
-class BuiltinCommandTranscoder(CommandTranscoder):
-    def serialize(self, message: ApplicationCommand) -> CommandRecord:
-        if message.__trace_id__ is None:
-            raise TypeError("message.__trace_id__ should not be None")
+class _OptionalCodec(ICodec):
+    def __init__(self, transcoder: Transcoder) -> None:
+        self.transcoder = transcoder
+
+    def can_handle(self, field_type: typing.Type) -> bool:
+        origin = typing.get_origin(field_type)
+        origin_args = typing.get_args(field_type)
+
+        if (
+            origin is typing.Union
+            and len(origin_args) == 2
+            and origin_args[1] is type(None)  # noqa: E721
+        ):
+            return True
+        else:
+            return False
+
+    def encode(self, obj: typing.Any, field_type: typing.Type) -> typing.Any:
+        origin_args = typing.get_args(field_type)
+
+        if obj is None:
+            return None
+        else:
+            return self.transcoder.encode(obj, origin_args[1])
+
+    def decode(self, data: dict, field_type: typing.Type) -> typing.Any:
+        origin_args = typing.get_args(field_type)
+
+        if data is None:
+            return None
+        else:
+            return self.transcoder.decode(data, origin_args[1])
+
+
+class _DictCodec(ICodec):
+    def __init__(self, transcoder: Transcoder) -> None:
+        self.trancoder = transcoder
+
+    def can_handle(self, field_type: typing.Type) -> bool:
+        origin = typing.get_origin(field_type) or field_type
+        return origin is dict
+
+    def encode(self, obj: typing.Any, field_type: typing.Type) -> typing.Any:
+        origin_args = typing.get_args(field_type)
+
+        return {
+            k: self.trancoder.encode(v, origin_args[1]) for k, v in obj.items()
+        }
+
+    def decode(self, data: dict, field_type: typing.Type) -> typing.Any:
+        origin = typing.get_origin(field_type) or field_type
+        origin_args = typing.get_args(field_type)
+
+        return origin(
+            **{
+                k: self.trancoder.decode(v, origin_args[1])
+                for k, v in data.items()
+            }
+        )
+
+
+class _SystemMessageCodec(ICodec):
+    def __init__(self, transcoder: Transcoder) -> None:
+        self.trancoder = transcoder
+
+    def _encode(self, obj: typing.Any, field_type: typing.Type) -> dict:
+        fields = get_fields(field_type)
+
+        dct: dict[str, typing.Any] = {"payload": {}}
+        for f in fields:
+            field_value = getattr(obj, f.name, MISSING)
+            if field_value == MISSING:
+                raise MissingFieldValueError(f"missing field: {f.name}")
+
+            encoded_value = self.trancoder.encode(field_value, f.type)
+            if self._is_meta_field(f):
+                dct[f.name] = encoded_value
+            else:
+                dct["payload"][f.name] = encoded_value
+
+        return dct
+
+    def _decode(self, data: dict, field_type: typing.Type) -> typing.Any:
+        fields = get_fields(field_type)
+
+        dct = {}
+        for f in fields:
+            if self._is_meta_field(f):
+                field_data = data.get(self._get_record_field_name(f), MISSING)
+            else:
+                payload = data.get("payload", MISSING)
+                if payload is MISSING:
+                    raise MissingFieldValueError("missing field: payload")
+                field_data = payload.get(f.name, MISSING)
+
+            if field_data == MISSING:
+                raise MissingFieldValueError(f"missing field: {f.name}")
+
+            dct[f.name] = self.trancoder.decode(field_data, f.type)
+
+        return field_type(**dct)
+
+    def _is_meta_field(self, field: Field) -> bool:
+        return field.name.startswith("__") and field.name.endswith("__")
+
+    def _get_record_field_name(self, field: Field) -> str:
+        # Remove dunder
+        # Ex. __stream_id__ to stream_id
+        return field.name[2:-2]
+
+
+class _ApplicationCommandCodec(_SystemMessageCodec):
+    def can_handle(self, field_type: typing.Type) -> bool:
+        if isgenerictype(field_type):
+            return False
+        return issubclass(field_type, ApplicationCommand)
+
+    def encode(self, obj: typing.Any, field_type: typing.Type) -> typing.Any:
+        dct = self._encode(obj, field_type)
+
+        msg: ApplicationCommand = obj
+        if msg.__trace_id__ is None:
+            raise TypeError("__trace_id__ should not be None")
 
         record = CommandRecord(
-            trace_id=message.__trace_id__,
-            topic=message.__class__.__name__,
-            version=message.__version__,
-            timestamp=message.__timestamp__,
-            message=self.message,
-            payload=message.__to_dict__(),
+            trace_id=msg.__trace_id__,
+            topic=field_type.__name__,
+            version=msg.__version__,
+            timestamp=msg.__timestamp__,
+            message="command",
+            payload=dct["payload"],
         )
         return record
 
-    def deserialize(
-        self,
-        deserializable: typing.Union[
-            CommandRecord, CommandRecordDict, JsonStr
-        ],
-        message_type: typing.Union[
-            typing.Type[ApplicationCommand],
-            typing.Dict[str, typing.Type[ApplicationCommand]],
-        ],
-    ) -> ApplicationCommand:
-        deserializable = self.get_as_record(deserializable)
-
-        if isinstance(message_type, dict):
-            message_type = message_type[deserializable.topic]
-
-        if deserializable.message != self.message:
-            raise TypeError(
-                f"message is not {self.message}: "
-                f"found {deserializable.message}"
-            )
-
-        if deserializable.topic != message_type.__name__:
-            raise TypeError(
-                "topic and message_type mismatch: "
-                f"{deserializable.topic}, {message_type.__name__}"
-            )
-
-        dct = {
-            "__trace_id__": deserializable.trace_id,
-            "__version__": deserializable.version,
-            "__timestamp__": deserializable.timestamp,
-            "__message__": deserializable.message,
-        }
-        dct.update(deserializable.payload)
-
-        return message_type.__from_dict__(dct)
+    def decode(self, data: dict, field_type: typing.Type) -> typing.Any:
+        return self._decode(data, field_type)
 
 
-class IntegrationTranscoder(
-    TranscoderContexted[
-        IntegrationEvent, IntegrationRecord, IntegrationRecordDict
-    ]
-):
-    message = "integration_event"
+class _IntegrationEventCodec(_SystemMessageCodec):
+    def can_handle(self, field_type: typing.Type) -> bool:
+        if isgenerictype(field_type):
+            return False
+        return issubclass(field_type, IntegrationEvent)
 
-    def is_deserializable(
-        self,
-        deserializable: typing.Union[
-            IntegrationRecord, IntegrationRecordDict, JsonStr
-        ],
-        message_type: typing.Union[
-            typing.Type[IntegrationEvent],
-            typing.Dict[str, typing.Type[IntegrationEvent]],
-        ],
-    ) -> bool:
-        deserializable = self.get_as_record(deserializable)
+    def encode(self, obj: typing.Any, field_type: typing.Type) -> typing.Any:
+        dct = self._encode(obj, field_type)
 
-        if isinstance(message_type, dict):
-            message_type = message_type[deserializable.topic]
+        msg: IntegrationEvent = obj
+        if msg.__trace_id__ is None:
+            raise TypeError("__trace_id__ should not be None")
 
-        return (
-            deserializable.message == self.message
-            and deserializable.context == self.context
-            and deserializable.topic == message_type.__name__
+        if msg.__context__ is None:
+            raise TypeError("__context__ should not be None")
+
+        return IntegrationRecord(
+            trace_id=msg.__trace_id__,
+            context=msg.__context__,
+            topic=field_type.__name__,
+            resolve=msg.__resolve__,
+            error=msg.__error__,
+            version=msg.__version__,
+            timestamp=msg.__timestamp__,
+            message="integration_event",
+            payload=dct["payload"],
         )
 
-    def get_as_record(
-        self,
-        deserializable: typing.Union[
-            IntegrationRecord, IntegrationRecordDict, JsonStr
-        ],
-    ) -> IntegrationRecord:
-        if isinstance(deserializable, JsonStr):
-            deserializable = json.loads(deserializable)
-        if isinstance(deserializable, dict):
-            deserializable = IntegrationRecord(**deserializable)
-        return typing.cast(IntegrationRecord, deserializable)
+    def decode(self, data: dict, field_type: typing.Type) -> typing.Any:
+        return self._decode(data, field_type)
 
 
-class BuiltinIntegrationTranscoder(IntegrationTranscoder):
-    def serialize(self, message: IntegrationEvent) -> IntegrationRecord:
-        if message.__trace_id__ is None:
-            raise TypeError("message.__trace_id__ should not be None")
+class _DomainEventCodec(_SystemMessageCodec):
+    def can_handle(self, field_type: typing.Type) -> bool:
+        if isgenerictype(field_type):
+            return False
+        return issubclass(field_type, DomainEvent)
 
-        record = IntegrationRecord(
-            trace_id=message.__trace_id__,
-            context=self.context,
-            topic=message.__class__.__name__,
-            resolve=message.__resolve__,
-            version=message.__version__,
-            timestamp=message.__timestamp__,
-            message=self.message,
-            error=message.__error__,
-            payload=message.__to_dict__(),
-        )
-        return record
+    def encode(self, obj: typing.Any, field_type: typing.Type) -> typing.Any:
+        dct = self._encode(obj, field_type)
 
-    def deserialize(
-        self,
-        deserializable: typing.Union[
-            IntegrationRecord, IntegrationRecordDict, JsonStr
-        ],
-        message_type: typing.Union[
-            typing.Type[IntegrationEvent],
-            typing.Dict[str, typing.Type[IntegrationEvent]],
-        ],
-    ) -> IntegrationEvent:
-        deserializable = self.get_as_record(deserializable)
+        msg: DomainEvent = obj
+        if msg.__trace_id__ is None:
+            raise TypeError("__trace_id__ should not be None")
 
-        if isinstance(message_type, dict):
-            message_type = message_type[deserializable.topic]
+        if msg.__context__ is None:
+            raise TypeError("__context__ should not be None")
 
-        if deserializable.message != self.message:
-            raise TypeError(
-                f"message is not {self.message}: "
-                f"found {deserializable.message}"
-            )
-
-        if deserializable.topic != message_type.__name__:
-            raise TypeError(
-                "topic and message_type mismatch: "
-                f"{deserializable.topic}, {message_type.__name__}"
-            )
-
-        if deserializable.context != self.context:
-            raise TypeError(
-                f"context mismatch: {deserializable.context}, {self.context}"
-            )
-
-        dct = {
-            "__trace_id__": deserializable.trace_id,
-            "__resolve__": deserializable.resolve,
-            "__error__": deserializable.error,
-            "__version__": deserializable.version,
-            "__timestamp__": deserializable.timestamp,
-            "__message__": deserializable.message,
-        }
-        dct.update(deserializable.payload)
-
-        return message_type.__from_dict__(dct)
-
-
-class EventTranscoder(
-    TranscoderContexted[DomainEvent, EventRecord, EventRecordDict]
-):
-    message = "domain_event"
-
-    def is_deserializable(
-        self,
-        deserializable: typing.Union[EventRecord, EventRecordDict, JsonStr],
-        message_type: typing.Union[
-            typing.Type[DomainEvent],
-            typing.Dict[str, typing.Type[DomainEvent]],
-        ],
-    ) -> bool:
-        deserializable = self.get_as_record(deserializable)
-
-        if isinstance(message_type, dict):
-            message_type = message_type[deserializable.topic]
-
-        return (
-            deserializable.message == self.message
-            and deserializable.context == self.context
-            and deserializable.topic == message_type.__name__
+        return EventRecord(
+            stream_id=msg.__stream_id__,
+            number=msg.__number__,
+            topic=field_type.__name__,
+            version=msg.__version__,
+            timestamp=msg.__timestamp__,
+            trace_id=msg.__trace_id__,
+            message="domain_event",
+            context=msg.__context__,
+            payload=dct["payload"],
         )
 
-    def get_as_record(
-        self,
-        deserializable: typing.Union[EventRecord, EventRecordDict, JsonStr],
-    ) -> EventRecord:
-        if isinstance(deserializable, JsonStr):
-            deserializable = json.loads(deserializable)
-        if isinstance(deserializable, dict):
-            deserializable = EventRecord(**deserializable)
-        return typing.cast(EventRecord, deserializable)
+    def decode(self, data: dict, field_type: typing.Type) -> typing.Any:
+        return self._decode(data, field_type)
 
 
-class BuiltinEventTranscoder(EventTranscoder):
-    def serialize(self, message: DomainEvent) -> EventRecord:
-        if message.__trace_id__ is None:
-            raise TypeError("message.__trace_id__ should not be None")
+class _ValueObjectCodec(ICodec):
+    def __init__(self, transocder: Transcoder) -> None:
+        self.transcoder = transocder
 
-        record = EventRecord(
-            stream_id=message.__stream_id__,
-            number=message.__number__,
-            topic=message.__class__.__name__,
-            version=message.__version__,
-            timestamp=message.__timestamp__,
-            trace_id=message.__trace_id__,
-            message=self.message,
-            context=self.context,
-            payload=message.__to_dict__(),
-        )
-        return record
+    def can_handle(self, field_type: typing.Type) -> bool:
+        if isgenerictype(field_type):
+            return False
+        return issubclass(field_type, ValueObject)
 
-    def deserialize(
-        self,
-        deserializable: typing.Union[EventRecord, EventRecordDict, JsonStr],
-        message_type: typing.Union[
-            typing.Type[DomainEvent],
-            typing.Dict[str, typing.Type[DomainEvent]],
-        ],
-    ) -> DomainEvent:
-        deserializable = self.get_as_record(deserializable)
+    def encode(self, obj: typing.Any, field_type: typing.Type) -> typing.Any:
+        fields = get_fields(field_type)
 
-        if isinstance(message_type, dict):
-            message_type = message_type[deserializable.topic]
+        dct = {}
+        for f in fields:
+            field_value = getattr(obj, f.name, MISSING)
 
-        if deserializable.message != self.message:
-            raise TypeError(
-                f"message is not {self.message}: "
-                f"found {deserializable.message}"
-            )
+            if field_value == MISSING:
+                raise MissingFieldValueError(f"missing field: {f.name}")
 
-        if deserializable.topic != message_type.__name__:
-            raise TypeError(
-                "topic and message_type misatch: "
-                f"{deserializable.topic}, {message_type.__name__}"
-            )
+            dct[f.name] = self.transcoder.encode(field_value, f.type)
 
-        if deserializable.context != self.context:
-            raise TypeError(
-                f"context mismatch: {deserializable.context}, {self.context}"
-            )
+        return dct
 
-        dct = {
-            "__stream_id__": deserializable.stream_id,
-            "__number__": deserializable.number,
-            "__version__": deserializable.version,
-            "__timestamp__": deserializable.timestamp,
-            "__trace_id__": deserializable.trace_id,
-        }
-        dct.update(deserializable.payload)
+    def decode(self, data: dict, field_type: typing.Type) -> typing.Any:
+        fields = get_fields(field_type)
 
-        return message_type.__from_dict__(dct)
+        dct = {}
+        for f in fields:
+            field_data = data.get(f.name, MISSING)
+
+            if field_data == MISSING:
+                raise MissingFieldValueError(f"missing field: {f.name}")
+
+            dct[f.name] = self.transcoder.decode(field_data, f.type)
+
+        return field_type(**dct)

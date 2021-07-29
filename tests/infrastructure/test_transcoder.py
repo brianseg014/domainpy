@@ -1,305 +1,239 @@
-from domainpy.infrastructure.records import CommandRecord, EventRecord, IntegrationRecord
-from domainpy.domain.model.event import DomainEvent
+import sys
 import pytest
+import typing
+import dataclasses
 from unittest import mock
 
-from domainpy.application.command import ApplicationCommand
-from domainpy.application.integration import IntegrationEvent
-from domainpy.infrastructure.transcoder import (
-    BuiltinCommandTranscoder,
-    BuiltinIntegrationTranscoder,
-    BuiltinEventTranscoder
-)
+from domainpy.infrastructure.transcoder import Transcoder
+from domainpy.infrastructure.records import CommandRecord, IntegrationRecord, EventRecord
 
 
-def test_command_serialize():
-    command = ApplicationCommand(
+class ApplicationCommand:
+    __version__: int
+    def __init__(self, **kwargs):
+        self.__version__ = 1
+        self.__dict__.update(kwargs)
+
+
+class IntegrationEvent:
+    __version__: int
+    def __init__(self, **kwargs):
+        self.__version__ = 1
+        self.__dict__.update(kwargs)
+
+
+class DomainEvent:
+    __version__: int
+    def __init__(self, **kwargs):
+        self.__version__ = 1
+        self.__dict__.update(kwargs)
+
+
+class ValueObject:
+    def __init__(self, **kwargs):
+        self.__dict__.update(kwargs)
+
+
+@mock.patch('domainpy.infrastructure.transcoder.ApplicationCommand', new=ApplicationCommand)
+def test_serialize_command():
+    class Command(ApplicationCommand):
+        __trace_id__: str
+        __version__: int
+        __timestamp__: float
+        some_property: str
+
+    m = Command(
+        __trace_id__='tid',
+        __version__=1,
         __timestamp__=0.0,
         some_property='x'
     )
-    ct = BuiltinCommandTranscoder()
-    record = ct.serialize(command)
-    assert type(record) == CommandRecord
-    assert record.timestamp == 0.0
-    assert record.payload['some_property'] == 'x'
+    
+    t = Transcoder()
+    r = t.serialize(m)
+    assert r.payload['some_property'] == 'x'
 
-def test_command_deserialize():
-    SomeCommand = type(
-        'SomeCommand', 
-        (ApplicationCommand,),
-        {
-            '__annotations__': {
-                'some_property': str
-            }
-        }
+@mock.patch('domainpy.infrastructure.transcoder.ApplicationCommand', new=ApplicationCommand)
+def test_deserialize_command():
+    class Command(ApplicationCommand):
+        __trace_id__: str
+        __version__: int
+        __timestamp__: float
+        some_property: str
+
+    r = CommandRecord(
+        trace_id='tid',
+        topic='Command',
+        version=1,
+        timestamp=0.0,
+        message='command',
+        payload={ 'some_property': 'x' }
     )
 
-    record = """
-    {
-        "trace_id": "tid",
-        "topic": "SomeCommand",
-        "version": 1,
-        "message": "command",
-        "timestamp": 0.0,
-        "payload": {
-            "some_property": "x"
-        }
-    }
-    """
-    ct = BuiltinCommandTranscoder()
-    command = ct.deserialize(record, SomeCommand)
+    t = Transcoder()
+    m = t.deserialize(r, Command)
+    assert m.some_property == 'x'
 
-    assert type(command) == SomeCommand
-    assert command.__version__ == 1
-    assert command.__message__ == 'command'
-    assert command.__timestamp__ == 0.0
-    assert command.some_property == 'x'
+@mock.patch('domainpy.infrastructure.transcoder.IntegrationEvent', new=IntegrationEvent)
+def test_serialize_integration():
+    class Integration(IntegrationEvent):
+        __trace_id__: str
+        __context__: str
+        __resolve__: str
+        __error__: typing.Optional[str]
+        __version__:int
+        __timestamp__: float
+        some_property: str
 
-def test_command_deserialize_fail_on_mismatch_topic_type():
-    record = """
-    {
-        "trace_id": "tid",
-        "topic": "SomeCommand",
-        "version": 1,
-        "message": "command",
-        "timestamp": 0.0,
-        "payload": { }
-    }
-    """
-    ct = BuiltinCommandTranscoder()
-    with pytest.raises(TypeError):
-        ct.deserialize(record, ApplicationCommand)
-
-def test_command_deserialize_fail_on_mistmatch_message():
-    record = """
-    {
-        "trace_id": "tid",
-        "topic": "ApplicationCommand",
-        "version": 1,
-        "message": "some_bad_message",
-        "timestamp": 0.0,
-        "payload": { }
-    }
-    """
-    ct = BuiltinCommandTranscoder()
-    with pytest.raises(TypeError):
-        ct.deserialize(record, ApplicationCommand)
-
-def test_integration_serialize():
-    command = IntegrationEvent(
-        __resolve__=IntegrationEvent.Resolution.success,
+    m = Integration(
+        __trace_id__='tid',
+        __context__='some_context',
+        __resolve__='success',
         __error__=None,
-        __timestamp__=0.0,
         __version__=1,
+        __timestamp__=0.0,
         some_property='x'
     )
-    ct = BuiltinIntegrationTranscoder(context='some_context')
-    record = ct.serialize(command)
-    assert type(record) == IntegrationRecord
-    assert record.resolve == 'success'
-    assert record.error == None
-    assert record.timestamp == 0.0
-    assert record.version == 1
-    assert record.payload['some_property'] == 'x'
 
-def test_integration_deserialize():
-    SomeIntegration = type(
-        'SomeIntegration',
-        (IntegrationEvent,),
-        {
-            '__annotations__': {
-                'some_property': str
-            }
-        }
+    t = Transcoder()
+    r = t.serialize(m)
+    assert r.payload['some_property'] == 'x'
+
+@mock.patch('domainpy.infrastructure.transcoder.IntegrationEvent', new=IntegrationEvent)
+def test_deserialize_integration():
+    class Integration(IntegrationEvent):
+        some_property: str
+
+    r = IntegrationRecord(
+        trace_id='tid',
+        context='some_context',
+        topic='Integration',
+        resolve='success',
+        error=None,
+        version=1,
+        timestamp=0.0,
+        message='integration_event',
+        payload={ 'some_property': 'x' }
     )
 
-    record = """
-    {
-        "trace_id": "tid",
-        "topic": "SomeIntegration",
-        "resolve": "success",
-        "error": null,
-        "context": "some_context",
-        "message": "integration_event",
-        "timestamp": 0.0,
-        "version": 1,
-        "payload": {
-            "some_property": "x"
-        }
-    }
-    """
+    t = Transcoder()
+    m = t.deserialize(r, Integration)
+    assert m.some_property == 'x'
 
-    ct = BuiltinIntegrationTranscoder(context='some_context')
-    integration = ct.deserialize(record, SomeIntegration)
+@mock.patch('domainpy.infrastructure.transcoder.DomainEvent', new=DomainEvent)
+@mock.patch('domainpy.infrastructure.transcoder.ValueObject', new=ValueObject)
+def test_serialize_event():
+    class Attribute(ValueObject):
+        some_property: str
 
-    assert type(integration) == SomeIntegration
-    assert integration.__resolve__ == 'success'
-    assert integration.__error__ == None
-    assert integration.__timestamp__ == 0.0
-    assert integration.__version__ == 1
-    assert integration.some_property == 'x'
+    class Event(DomainEvent):
+        __stream_id__: str
+        __number__: int
+        __version__: int
+        __timestamp__: float
+        __trace_id__: str
+        __context__: str
+        some_property: Attribute
 
-def test_integration_deserialize_fail_on_mismatch_topic_type():
-    record = """
-    {
-        "trace_id": "tid",
-        "topic": "SomeIntegration",
-        "resolve": "success",
-        "error": null,
-        "context": "some_context",
-        "message": "integration_event",
-        "timestamp": 0.0,
-        "version": 1,
-        "payload": { }
-    }
-    """
-    ct = BuiltinIntegrationTranscoder(context='some_context')
-    with pytest.raises(TypeError):
-        ct.deserialize(record, IntegrationEvent)
-
-def test_integration_deserialize_fail_on_mismatch_message():
-    record = """
-    {
-        "trace_id": "tid",
-        "topic": "IntegrationEvent",
-        "resolve": "success",
-        "error": null,
-        "context": "some_context",
-        "message": "some_bad_message",
-        "timestamp": 0.0,
-        "version": 1,
-        "payload": { }
-    }
-    """
-    ct = BuiltinIntegrationTranscoder(context='some_context')
-    with pytest.raises(TypeError):
-        ct.deserialize(record, IntegrationEvent)
-
-def test_integration_deserialize_fail_on_mismatch_context():
-    record = """
-    {
-        "trace_id": "tid",
-        "topic": "IntegrationEvent",
-        "resolve": "success",
-        "error": null,
-        "context": "some_other_context",
-        "message": "integration_event",
-        "timestamp": 0.0,
-        "version": 1,
-        "payload": { }
-    }
-    """
-    ct = BuiltinIntegrationTranscoder(context='some_context')
-    with pytest.raises(TypeError):
-        ct.deserialize(record, IntegrationEvent)
-
-def test_event_serialize():
-    event = DomainEvent(
-        __stream_id__ = 'sid',
+    m = Event(
+        __stream_id__='sid',
         __number__=1,
-        __timestamp__=0.0,
         __version__=1,
-        some_property='x'
-    )
-    ct = BuiltinEventTranscoder('some_context')
-    record = ct.serialize(event)
-
-    assert type(record) == EventRecord
-    assert record.stream_id == 'sid'
-    assert record.number == 1
-    assert record.timestamp == 0.0
-    assert record.payload['some_property'] == 'x'
-
-def test_event_deserialize():
-    SomeEvent = type(
-        'SomeEvent',
-        (DomainEvent,),
-        {
-            '__annotations__': {
-                'some_property': str
-            }
-        }
+        __timestamp__=0.0,
+        __trace_id__='tid',
+        __context__='some_context',
+        some_property=Attribute(some_property='x')
     )
 
-    record = """
-    {
-        "trace_id": "tid",
-        "stream_id": "sid",
-        "number": 1,
-        "topic": "SomeEvent",
-        "context": "some_context",
-        "version": 1,
-        "timestamp": 0.0,
-        "message": "domain_event",
-        "payload": {
-            "some_property": "x"
-        }
-    }
-    """
+    t = Transcoder()
+    r = t.serialize(m)
+    assert r.payload['some_property']['some_property'] == 'x'
 
-    ct = BuiltinEventTranscoder('some_context')
-    event = ct.deserialize(record, SomeEvent)
+@mock.patch('domainpy.infrastructure.transcoder.DomainEvent', new=DomainEvent)
+@mock.patch('domainpy.infrastructure.transcoder.ValueObject', new=ValueObject)
+def test_deserialize_event():
+    class Attribute(ValueObject):
+        some_property: str
 
-    assert event.__stream_id__ == 'sid'
-    assert event.__number__ == 1
-    assert type(event) == SomeEvent
-    assert event.__version__ == 1
-    assert event.__timestamp__ == 0.0
-    assert event.some_property == 'x'
+    class Event(DomainEvent):
+        some_property: Attribute
 
-def test_event_deserialize_fail_on_mismatch_topic_type():
-    record = """
-    {
-        "trace_id": "tid",
-        "stream_id": "sid",
-        "number": 1,
-        "topic": "SomeEvent",
-        "context": "some_context",
-        "version": 1,
-        "timestamp": 0.0,
-        "message": "domain_event",
-        "payload": { }
-    }
-    """
+    r = EventRecord(
+        stream_id='sid',
+        number=1,
+        topic='Event',
+        version=1,
+        timestamp=0.0,
+        trace_id='tid',
+        message='domain_event',
+        context='some_context',
+        payload={ 'some_property': { 'some_property': 'x' } }
+    )
 
-    ct = BuiltinEventTranscoder('some_context')
-    with pytest.raises(TypeError):
-        ct.deserialize(record, DomainEvent)
+    t = Transcoder()
+    m = t.deserialize(r, Event)
+    assert m.some_property.some_property == 'x'
 
-def test_event_deserialize_fail_on_mismatch_message():
-    record = """
-    {
-        "trace_id": "tid",
-        "stream_id": "sid",
-        "number": 1,
-        "topic": "DomainEvent",
-        "context": "some_context",
-        "version": 1,
-        "timestamp": 0.0,
-        "message": "some_bad_message",
-        "payload": { }
-    }
-    """
+def test_encode_single_type_sequence():
+    t = Transcoder()
+    r = t.encode(tuple([ 'x' ]), typing.Tuple[str, ...])
+    assert r == ['x',]
 
-    ct = BuiltinEventTranscoder('some_context')
-    with pytest.raises(TypeError):
-        event = ct.deserialize(record, DomainEvent)
+def test_decode_single_type_sequence():
+    t = Transcoder()
+    m = t.decode(tuple([ 'x' ]), typing.Tuple[str, ...])
+    assert m == ('x',)
 
-def test_event_deserialize_fail_on_mismatch_context():
-    record = """
-    {
-        "trace_id": "tid",
-        "stream_id": "sid",
-        "number": 1,
-        "topic": "DomainEvent",
-        "context": "some_other_context",
-        "version": 1,
-        "timestamp": 0.0,
-        "message": "domain_event",
-        "payload": { }
-    }
-    """
+def test_encode_primitive():
+    t = Transcoder()
+    
+    m = t.decode('x', str)
+    assert m == 'x'
 
-    ct = BuiltinEventTranscoder('some_context')
-    with pytest.raises(TypeError):
-        ct.deserialize(record, DomainEvent)
+    m = t.decode(1, int)
+    assert m == 1
+
+    m = t.decode(1.0, int)
+    assert m == 1
+
+    m = t.decode(1.1, float)
+    assert m == 1.1
+
+    m = t.decode(1, float)
+    assert m == 1.0
+
+    m = t.decode(True, bool)
+    assert m == True
+
+def test_decode_primitive():
+    t = Transcoder()
+    
+    m = t.encode('x', str)
+    assert m == 'x'
+
+    m = t.encode(1, int)
+    assert m == 1
+
+    m = t.encode(1.0, int)
+    assert m == 1
+
+    m = t.encode(1.1, float)
+    assert m == 1.1
+
+    m = t.encode(1, float)
+    assert m == 1.0
+
+    m = t.encode(True, bool)
+    assert m == True
+
+@pytest.mark.skipif(sys.version_info < (3,9), reason='requires python 3.9 or higher')
+def test_encode_single_type_sequence_builtin():
+    t = Transcoder()
+    r = t.encode(tuple([ 'x' ]), tuple[str, ...])
+    assert r == ['x',]
+
+@pytest.mark.skipif(sys.version_info < (3,9), reason='requires python 3.9 or higher')
+def test_decode_single_type_sequence():
+    t = Transcoder()
+    m = t.decode(tuple([ 'x' ]), tuple[str, ...])
+    assert m == ('x',)

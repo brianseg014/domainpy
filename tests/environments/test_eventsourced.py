@@ -29,6 +29,7 @@ def test_bus_sequence():
     event = mock.MagicMock()
     
     env = EventSourcedEnvironment(
+        context='some_context',
         command_mapper=command_mapper,
         integration_mapper=integration_mapper,
         event_mapper=event_mapper
@@ -45,18 +46,15 @@ def test_bus_sequence():
 
     assert story == ['domain', 'projection', 'resolver', 'handler']
 
-@mock.patch('domainpy.environments.eventsourced.MapperSet')
-def test_bus_handle(MapperSet):
+def test_bus_handle():
     command_mapper = mock.MagicMock()
     integration_mapper = mock.MagicMock()
     event_mapper = mock.MagicMock()
     command = mock.MagicMock()
     command.__trace_id__ = 'tid'
-
-    mapper_set_instance = MapperSet.return_value
-    mapper_set_instance.deserialize = mock.Mock(return_value=command)
     
     env = EventSourcedEnvironment(
+        context='some_context',
         command_mapper=command_mapper,
         integration_mapper=integration_mapper,
         event_mapper=event_mapper,
@@ -70,8 +68,7 @@ def test_bus_handle(MapperSet):
 
     assert story == ['resolver', 'handler']
 
-@mock.patch('domainpy.environments.eventsourced.MapperSet')
-def test_publish_domain_error(MapperSet):
+def test_publish_domain_error():
     command_mapper = mock.MagicMock()
     integration_mapper = mock.MagicMock()
     event_mapper = mock.MagicMock()
@@ -85,11 +82,9 @@ def test_publish_domain_error(MapperSet):
 
     handler = mock.MagicMock()
     handler.__route__ = mock.Mock(side_effect=router)
-
-    mapper_set_instance = MapperSet.return_value
-    mapper_set_instance.deserialize = mock.Mock(return_value=command)
     
     env = EventSourcedEnvironment(
+        context='some_context',
         command_mapper=command_mapper,
         integration_mapper=integration_mapper,
         event_mapper=event_mapper,
@@ -101,8 +96,7 @@ def test_publish_domain_error(MapperSet):
 
     handler.__route__.assert_called_with(error)
 
-@mock.patch('domainpy.environments.eventsourced.MapperSet')
-def test_publish_retry_on_concurrency_error(MapperSet):
+def test_publish_retry_on_concurrency_error():
     command_mapper = mock.MagicMock()
     integration_mapper = mock.MagicMock()
     event_mapper = mock.MagicMock()
@@ -117,11 +111,9 @@ def test_publish_retry_on_concurrency_error(MapperSet):
 
     handler = mock.MagicMock()
     handler.__route__ = mock.Mock(side_effect=functools.partial(router, story))
-
-    mapper_set_instance = MapperSet.return_value
-    mapper_set_instance.deserialize = mock.Mock(return_value=command)
     
     env = EventSourcedEnvironment(
+        context='some_context',
         command_mapper=command_mapper,
         integration_mapper=integration_mapper,
         event_mapper=event_mapper,
@@ -133,8 +125,7 @@ def test_publish_retry_on_concurrency_error(MapperSet):
 
     assert story == ['raised', 'raised']
 
-@mock.patch('domainpy.environments.eventsourced.MapperSet')
-def test_publish_raise_concurrency_error_if_exahusted(MapperSet):
+def test_publish_raise_concurrency_error_if_exahusted():
     command_mapper = mock.MagicMock()
     integration_mapper = mock.MagicMock()
     event_mapper = mock.MagicMock()
@@ -149,11 +140,9 @@ def test_publish_raise_concurrency_error_if_exahusted(MapperSet):
 
     handler = mock.MagicMock()
     handler.__route__ = mock.Mock(side_effect=functools.partial(router, story))
-
-    mapper_set_instance = MapperSet.return_value
-    mapper_set_instance.deserialize = mock.Mock(return_value=command)
     
     env = EventSourcedEnvironment(
+        context='some_context',
         command_mapper=command_mapper,
         integration_mapper=integration_mapper,
         event_mapper=event_mapper,
@@ -164,18 +153,15 @@ def test_publish_raise_concurrency_error_if_exahusted(MapperSet):
     with pytest.raises(ConcurrencyError):
         env.handle(command)
 
-@mock.patch('domainpy.environments.eventsourced.MapperSet')
-def test_bus_handle_fails_if_trace_id_is_None(MapperSet):
+def test_bus_handle_fails_if_trace_id_is_None():
     command_mapper = mock.MagicMock()
     integration_mapper = mock.MagicMock()
     event_mapper = mock.MagicMock()
     command = mock.MagicMock()
     command.__trace_id__ = None
-
-    mapper_set_instance = MapperSet.return_value
-    mapper_set_instance.deserialize = mock.Mock(return_value=command)
     
     env = EventSourcedEnvironment(
+        context='some_context',
         command_mapper=command_mapper,
         integration_mapper=integration_mapper,
         event_mapper=event_mapper,

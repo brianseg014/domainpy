@@ -21,11 +21,9 @@ from domainpy.domain import (
 )
 from domainpy.infrastructure import (
     Mapper,
-    BuiltinCommandTranscoder, 
-    BuiltinIntegrationTranscoder,
-    BuiltinEventTranscoder,
     EventStore,
-    make_eventsourced_repository_adapter as make_repo_adapter
+    make_eventsourced_repository_adapter as make_repo_adapter,
+    Transcoder
 )
 from domainpy.utils import (
     Registry,
@@ -40,13 +38,13 @@ def test_all_system():
     ################################## Infrastructure Utils ##################################
 
     command_mapper = Mapper(
-        transcoder=BuiltinCommandTranscoder()
+        transcoder=Transcoder()
     )
     integration_mapper = Mapper(
-        transcoder=BuiltinIntegrationTranscoder('context')
+        transcoder=Transcoder()
     )
     event_mapper = Mapper(
-        transcoder=BuiltinEventTranscoder('context')
+        transcoder=Transcoder()
     )
 
 
@@ -196,6 +194,7 @@ def test_all_system():
     ################################## Some tests ######################################
 
     env = Environment(
+        context='some_context',
         command_mapper=command_mapper,
         integration_mapper=integration_mapper,
         event_mapper=event_mapper

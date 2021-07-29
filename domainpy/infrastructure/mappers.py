@@ -1,22 +1,22 @@
 import dataclasses
 import typing
 
-
-from domainpy.exceptions import MapperNotFoundError
-from domainpy.infrastructure.transcoder import ITranscoder
+from domainpy.infrastructure.transcoder import Transcoder
 from domainpy.typing.application import SystemMessage
-from domainpy.typing.infrastructure import RecordDict, JsonStr  # type: ignore
+from domainpy.typing.infrastructure import SystemRecord, SystemRecordDict
 
 
-TMessage = typing.TypeVar("TMessage")
-TRecord = typing.TypeVar("TRecord")
-TRecordDict = typing.TypeVar("TRecordDict")
+class MessageTypeNotFoundError(Exception):
+    pass
 
 
-class Mapper(typing.Generic[TMessage, TRecord, TRecordDict]):
-    def __init__(
-        self, transcoder: ITranscoder[TMessage, TRecord, TRecordDict]
-    ):
+TSystemMessage = typing.TypeVar("TSystemMessage", bound=SystemMessage)
+TSystemRecord = typing.TypeVar("TSystemRecord", bound=SystemRecord)
+TSystemRecordDict = typing.TypeVar("TSystemRecordDict", bound=SystemRecordDict)
+
+
+class Mapper(typing.Generic[TSystemMessage, TSystemRecord, TSystemRecordDict]):
+    def __init__(self, transcoder: Transcoder) -> None:
         self.transcoder = transcoder
 
         self.map: typing.Dict[str, typing.Any] = {}
@@ -25,46 +25,20 @@ class Mapper(typing.Generic[TMessage, TRecord, TRecordDict]):
         self.map[cls.__name__] = cls
         return cls
 
-    def is_deserializable(
-        self, deserializable: typing.Union[TRecord, TRecordDict, JsonStr]
-    ) -> bool:
-        return self.transcoder.is_deserializable(deserializable, self.map)
-
-    def serialize(self, message: TMessage) -> TRecord:
-        return self.transcoder.serialize(message)
-
-    def deserialize(
-        self, deserializable: typing.Union[TRecord, TRecordDict, JsonStr]
-    ) -> TMessage:
-        return self.transcoder.deserialize(deserializable, self.map)
-
-    def serialize_asdict(
-        self, message: TMessage, optimized: bool = False
-    ) -> TRecordDict:
-        return self.asdict(self.serialize(message), optimized)
-
-    def asdict(self, record: TRecord, optimized: bool = False) -> TRecordDict:
-        if optimized:
-            return typing.cast(TRecordDict, record.__dict__)
-        else:
-            return typing.cast(TRecordDict, dataclasses.asdict(record))
-
-
-class MapperSet:
-    def __init__(self, mappers: typing.Tuple[Mapper, ...]):
-        self.mappers = mappers
-
-    def is_deserializable(
-        self, deserializable: typing.Union[SystemMessage, RecordDict, JsonStr]
-    ) -> bool:
-        return any(m.is_deserializable(deserializable) for m in self.mappers)
-
-    def deserialize(
-        self, deserializable: typing.Union[SystemMessage, RecordDict, JsonStr]
-    ) -> TMessage:
-        for m in self.mappers:
-            if m.is_deserializable(deserializable):
-                return m.deserialize(deserializable)
-        raise MapperNotFoundError(
-            f"Unable to locate a mapper for {deserializable}"
+    def serialize_asdict(self, message: TSystemMessage) -> TSystemRecordDict:
+        return typing.cast(
+            TSystemRecordDict, dataclasses.asdict(self.serialize(message))
         )
+
+    def serialize(self, message: TSystemMessage) -> TSystemRecord:
+        return typing.cast(TSystemRecord, self.transcoder.serialize(message))
+
+    def deserialize(self, record: TSystemRecord) -> TSystemMessage:
+        try:
+            message_type = self.map[record.topic]
+        except KeyError:
+            raise MessageTypeNotFoundError(
+                f"unable to find type {record.topic}"
+            )
+
+        return self.transcoder.deserialize(record, message_type)

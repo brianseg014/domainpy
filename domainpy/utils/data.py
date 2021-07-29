@@ -9,7 +9,7 @@ class Field:
 
     __slots__ = ["name", "type", "default"]
 
-    def __init__(self, name, type, default):
+    def __init__(self, name: str, type: typing.Type, default: typing.Any):
         self.name = name
         self.type = type
         self.default = default

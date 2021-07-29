@@ -13,10 +13,6 @@ class VersionError(Exception):
     pass
 
 
-class MapperNotFoundError(Exception):
-    pass
-
-
 class ConcurrencyError(Exception):
     pass
 

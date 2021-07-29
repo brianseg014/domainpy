@@ -24,6 +24,7 @@ def test_event_store_given_has_event():
     )
 
     env = EventSourcedEnvironmentTestAdapter(
+        context='some_context',
         command_mapper=command_mapper,
         integration_mapper=integration_mapper,
         event_mapper=event_mapper
@@ -54,6 +55,7 @@ def test_event_store_has_event_fails():
     )
 
     env = EventSourcedEnvironmentTestAdapter(
+        context='some_context',
         command_mapper=command_mapper,
         integration_mapper=integration_mapper,
         event_mapper=event_mapper
@@ -83,6 +85,7 @@ def test_event_store_has_not_event():
     )
 
     env = EventSourcedEnvironmentTestAdapter(
+        context='some_context',
         command_mapper=command_mapper,
         integration_mapper=integration_mapper,
         event_mapper=event_mapper
@@ -101,6 +104,7 @@ def test_integrations_has_integration():
     )
 
     env = EventSourcedEnvironmentTestAdapter(
+        context='some_context',
         command_mapper=command_mapper,
         integration_mapper=integration_mapper,
         event_mapper=event_mapper
@@ -124,6 +128,7 @@ def test_integrations_has_not_integration():
     )
 
     env = EventSourcedEnvironmentTestAdapter(
+        context='some_context',
         command_mapper=command_mapper,
         integration_mapper=integration_mapper,
         event_mapper=event_mapper
@@ -131,8 +136,7 @@ def test_integrations_has_not_integration():
 
     env.then.integration_events.assert_has_not_integration(IntegrationEvent)
 
-@mock.patch('domainpy.environments.eventsourced.MapperSet')
-def test_when(MapperSet):
+def test_when():
     command_mapper = mock.MagicMock()
     integration_mapper = mock.MagicMock()
     event_mapper = mock.MagicMock()
@@ -146,10 +150,8 @@ def test_when(MapperSet):
     command = ApplicationCommand()
     command.__trace_id__ = 'tid'
 
-    mapper_set_instance = MapperSet.return_value
-    mapper_set_instance.deserialize = mock.Mock(return_value=command)
-
     env = EventSourcedEnvironmentTestAdapter(
+        context='some_context',
         command_mapper=command_mapper,
         integration_mapper=integration_mapper,
         event_mapper=event_mapper

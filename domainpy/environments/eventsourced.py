@@ -1,34 +1,35 @@
 from __future__ import annotations
-from domainpy.exceptions import ConcurrencyError
 
 import typing
 
-from domainpy.application.command import ApplicationCommand
 from domainpy.application import IntegrationEvent
 from domainpy.domain.model import DomainEvent, DomainError
-from domainpy.infrastructure import (
+from domainpy.infrastructure.eventsourced.eventstore import EventStore
+from domainpy.infrastructure.eventsourced.recordmanager import (
     EventRecordManager,
-    EventStore,
-    Mapper,
-    MapperSet,
+)
+from domainpy.infrastructure.eventsourced.managers.memory import (
     MemoryEventRecordManager,
 )
-from domainpy.utils import (
+from domainpy.infrastructure.mappers import Mapper
+from domainpy.utils.bus import Bus
+from domainpy.utils.bus_adapters import (
     ApplicationBusAdapter,
-    Bus,
-    BusSubscriber,
     ProjectionBusAdapter,
     PublisherBusAdapter,
-    Registry,
 )
+from domainpy.utils.bus_subscribers import BusSubscriber
+from domainpy.utils.registry import Registry
 from domainpy.utils.traceable import Traceable
+from domainpy.utils.contextualized import Contextualized
+from domainpy.exceptions import ConcurrencyError
 from domainpy.typing.application import SystemMessage  # type: ignore
-from domainpy.typing.infrastructure import JsonStr, RecordDict  # type: ignore
 
 
 class EventSourcedEnvironment:
     def __init__(
         self,
+        context: str,
         command_mapper: Mapper,
         integration_mapper: Mapper,
         event_mapper: Mapper,
@@ -36,21 +37,14 @@ class EventSourcedEnvironment:
         setupargs: dict = {}
     ) -> None:
 
+        self.context = context
+        Contextualized.__context__ = self.context
+
         self.command_mapper = command_mapper
         self.integration_mapper = integration_mapper
         self.event_mapper = event_mapper
 
         self.setupargs = setupargs
-
-        self.mapper_set = MapperSet(
-            tuple(
-                [
-                    self.command_mapper,
-                    self.integration_mapper,
-                    self.event_mapper,
-                ]
-            )
-        )
 
         self.event_record_manager = self.setup_event_record_manager(setupargs)
         if self.event_record_manager is None:
@@ -106,16 +100,11 @@ class EventSourcedEnvironment:
 
     def handle(
         self,
-        message: typing.Union[SystemMessage, RecordDict, JsonStr],
+        message: SystemMessage,
         retries: int = 3,
     ):
         if not retries > 0:
             raise ValueError("retries should be positive integer")
-
-        if not isinstance(
-            message, (ApplicationCommand, IntegrationEvent, DomainEvent)
-        ):
-            message = self.mapper_set.deserialize(message)
 
         if message.__trace_id__ is None:
             raise TypeError("__trace_id__ cannot be None")
