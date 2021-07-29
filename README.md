@@ -345,20 +345,18 @@ built-in system.
 
 ```python
 from domainpy.infrastructure import (
-    Mapper
-    BuiltinCommandTranscoder, 
-    BuiltinIntegrationTranscoder,
-    BuiltinEventTranscoder
+    Mapper,
+    Transcoder
 )
 
 command_mapper = Mapper(
-    transcoder=BuiltinCommandTranscoder()
+    transcoder=Transcoder()
 )
 integration_mapper = Mapper(
-    transcoder=BuiltinIntegrationTranscoder('context')
+    transcoder=Transcoder()
 )
 event_mapper = Mapper(
-    transcoder=BuiltinEventTranscoder('context')
+    transcoder=Transcoder()
 )
 ...
 ```
