@@ -361,10 +361,6 @@ event_mapper = Mapper(
 ...
 ```
 
-Context referes to a name that identifies the current bounded context 
-(microservice) that will be added to all events on its way to the
-infrastructure.
-
 Now, you just need to add a decorator to add a auto-serializer-deserializer
 support.
 
