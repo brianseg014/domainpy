@@ -339,7 +339,7 @@ class Environment(
 
 ### One last thing, an utility (Mapper)
 
-As you me guess, all system messages (command, integration event and domain
+As you may guess, all system messages (command, integration event and domain
 event) will need to be serialized in exposed in the infrastructure. There is a 
 built-in system.
 
