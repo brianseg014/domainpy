@@ -36,9 +36,9 @@ class Mapper(typing.Generic[TSystemMessage, TSystemRecord, TSystemRecordDict]):
     def deserialize(self, record: TSystemRecord) -> TSystemMessage:
         try:
             message_type = self.map[record.topic]
-        except KeyError:
+        except KeyError as error:
             raise MessageTypeNotFoundError(
                 f"unable to find type {record.topic}"
-            )
+            ) from error
 
         return self.transcoder.deserialize(record, message_type)

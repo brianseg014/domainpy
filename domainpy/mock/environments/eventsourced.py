@@ -8,21 +8,26 @@ import datetime
 import functools
 import dataclasses
 
+
+from domainpy.application.command import ApplicationCommand
+from domainpy.application.integration import IntegrationEvent
+from domainpy.domain.model.aggregate import AggregateRoot
+from domainpy.domain.model.event import DomainEvent
+from domainpy.environments.eventsourced import EventSourcedEnvironment
+from domainpy.infrastructure.eventsourced.eventstream import EventStream
+from domainpy.infrastructure.eventsourced.recordmanager import (
+    EventRecordManager,
+)
+from domainpy.infrastructure.eventsourced.managers.memory import (
+    MemoryEventRecordManager,
+)
+from domainpy.infrastructure.publishers.memory import MemoryPublisher
+from domainpy.infrastructure.mappers import Mapper
+from domainpy.utils.bus_adapters import PublisherBusAdapter
+from domainpy.utils.traceable import Traceable
+
 if typing.TYPE_CHECKING:
     from domainpy.typing.application import SystemMessage  # type: ignore
-
-from domainpy.application import ApplicationCommand, IntegrationEvent
-from domainpy.domain.model import AggregateRoot, DomainEvent
-from domainpy.environments import EventSourcedEnvironment
-from domainpy.infrastructure import (
-    EventStream,
-    EventRecordManager,
-    Mapper,
-    MemoryEventRecordManager,
-    MemoryPublisher,
-)
-from domainpy.utils import PublisherBusAdapter
-from domainpy.utils.traceable import Traceable
 
 
 @dataclasses.dataclass(frozen=True)
@@ -33,6 +38,8 @@ class Then:
 
 class EventSourcedEnvironmentTestAdapter(EventSourcedEnvironment):
     def __init__(self, *args, **kwargs) -> None:
+        self.domain_events = MemoryPublisher()
+        self.integration_events = MemoryPublisher()
         super().__init__(*args, **kwargs)
 
     def setup_event_record_manager(
@@ -46,7 +53,6 @@ class EventSourcedEnvironmentTestAdapter(EventSourcedEnvironment):
         event_mapper: Mapper,
         setupargs: dict,
     ) -> None:
-        self.domain_events = MemoryPublisher()
         domain_publisher_bus.attach(self.domain_events)
 
     def setup_integration_publisher_bus(
@@ -55,11 +61,11 @@ class EventSourcedEnvironmentTestAdapter(EventSourcedEnvironment):
         integration_mapper: Mapper,
         setupargs: dict,
     ) -> None:
-        self.integration_events = MemoryPublisher()
         integration_publisher_bus.attach(self.integration_events)
 
+    @classmethod
     def stamp_command(
-        self,
+        cls,
         command_type: typing.Type[ApplicationCommand],
         *,
         trace_id: str = None,
@@ -73,8 +79,9 @@ class EventSourcedEnvironmentTestAdapter(EventSourcedEnvironment):
             __timestamp__=datetime.datetime.timestamp(datetime.datetime.now()),
         )
 
+    @classmethod
     def stamp_integration(
-        self,
+        cls,
         integration_type: typing.Type[IntegrationEvent],
         *,
         trace_id: str = None,
@@ -138,8 +145,9 @@ class DomeinEventsTestExpression:
     def __init__(self, domain_events: typing.List[DomainEvent]):
         self.domain_events = domain_events
 
+    @classmethod
     def get_stream_id(
-        self, aggregate_type: typing.Type[AggregateRoot], aggregate_id: str
+        cls, aggregate_type: typing.Type[AggregateRoot], aggregate_id: str
     ) -> str:
         return f"{aggregate_id}:{aggregate_type.__name__}"
 
@@ -148,10 +156,8 @@ class DomeinEventsTestExpression:
         event_type: typing.Type[TDomainEvent],
         aggregate_type: typing.Type[AggregateRoot] = None,
         aggregate_id: str = None,
-    ) -> typing.Tuple[TDomainEvent, ...]:
-        events: typing.Tuple[TDomainEvent, ...] = tuple(
-            [e for e in self.domain_events if isinstance(e, event_type)]
-        )
+    ) -> typing.Generator[TDomainEvent, None, None]:
+        events = (e for e in self.domain_events if isinstance(e, event_type))
         if aggregate_type is not None or aggregate_id is not None:
             if aggregate_type is None or aggregate_id is None:
                 raise AttributeError(
@@ -159,7 +165,11 @@ class DomeinEventsTestExpression:
                 )
 
             stream_id = self.get_stream_id(aggregate_type, aggregate_id)
-            events = tuple([e for e in events if e.__stream_id__ == stream_id])
+            events = (  # type: ignore
+                e
+                for e in events
+                if e.__stream_id__ == stream_id  # type: ignore
+            )
         return events
 
     def has_not_event(
@@ -169,7 +179,7 @@ class DomeinEventsTestExpression:
         aggregate_id: str = None,
     ) -> bool:
         events = self.get_events(event_type, aggregate_type, aggregate_id)
-        return len(events) == 0
+        return len(list(events)) == 0
 
     def has_event(
         self,
@@ -178,17 +188,17 @@ class DomeinEventsTestExpression:
         aggregate_id: str = None,
     ) -> bool:
         events = self.get_events(event_type, aggregate_type, aggregate_id)
-        return len(events) > 0
+        return len(list(events)) > 0
 
-    def has_event_n(
+    def has_event_n_times(
         self,
         event_type: typing.Type[DomainEvent],
-        n: int,
+        times: int,
         aggregate_type: typing.Type[AggregateRoot] = None,
         aggregate_id: str = None,
     ) -> bool:
         events = self.get_events(event_type, aggregate_type, aggregate_id)
-        return len(events) == n
+        return len(list(events)) == times
 
     def has_event_once(
         self,
@@ -196,7 +206,9 @@ class DomeinEventsTestExpression:
         aggregate_type: typing.Type[AggregateRoot] = None,
         aggregate_id: str = None,
     ) -> bool:
-        return self.has_event_n(event_type, 1, aggregate_type, aggregate_id)
+        return self.has_event_n_times(
+            event_type, 1, aggregate_type, aggregate_id
+        )
 
     def has_event_with(
         self,
@@ -245,19 +257,19 @@ class DomeinEventsTestExpression:
         except AssertionError:
             self.raise_error("event not found")
 
-    def assert_has_event_n(
+    def assert_has_event_n_times(
         self,
         event_type: typing.Type[DomainEvent],
-        n: int,
+        times: int,
         aggregate_type: typing.Type[AggregateRoot] = None,
         aggregate_id: str = None,
     ) -> None:
         try:
-            assert self.has_event_n(
-                event_type, n, aggregate_type, aggregate_id
+            assert self.has_event_n_times(
+                event_type, times, aggregate_type, aggregate_id
             )
         except AssertionError:
-            self.raise_error(f"event not found {n} time(s)")
+            self.raise_error(f"event not found {times} time(s)")
 
     def assert_has_event_once(
         self,
@@ -304,23 +316,27 @@ class DomeinEventsTestExpression:
             self.raise_error("event found")
 
     def raise_error(self, message):
-        tb = None
+        traceback = None
         depth = 2
 
         while True:
             try:
-                frame = sys._getframe(depth)
+                frame = sys._getframe(  # pylint: disable=protected-access
+                    depth
+                )
             except ValueError:
                 break
 
-            tb = types.TracebackType(tb, frame, frame.f_lasti, frame.f_lineno)
+            traceback = types.TracebackType(
+                traceback, frame, frame.f_lasti, frame.f_lineno
+            )
             depth += 1
 
         events = "\n" + "\n".join(str(e) for e in self.domain_events)
 
         raise AssertionError(
             f"{message}\n\nAll events: {str(events)}"
-        ).with_traceback(tb)
+        ).with_traceback(traceback)
 
 
 class IntegrationEventsTestExpression:
@@ -331,13 +347,11 @@ class IntegrationEventsTestExpression:
 
     def get_integrations(
         self, integration_type: typing.Type[IntegrationEvent]
-    ) -> typing.Tuple[IntegrationEvent, ...]:
-        integrations = tuple(
-            [
-                i
-                for i in self.integration_events
-                if isinstance(i, integration_type)
-            ]
+    ) -> typing.Generator[IntegrationEvent, None, None]:
+        integrations = (
+            i
+            for i in self.integration_events
+            if isinstance(i, integration_type)
         )
         return integrations
 
@@ -345,13 +359,13 @@ class IntegrationEventsTestExpression:
         self, integration_type: typing.Type[IntegrationEvent]
     ) -> bool:
         integrations = self.get_integrations(integration_type)
-        return len(integrations) == 0
+        return len(list(integrations)) == 0
 
     def has_integration(
         self, integration_type: typing.Type[IntegrationEvent]
     ) -> bool:
         integrations = self.get_integrations(integration_type)
-        return len(integrations) >= 1
+        return len(list(integrations)) >= 1
 
     def has_integration_with(
         self, integration_type: typing.Type[IntegrationEvent], **kwargs
@@ -401,16 +415,20 @@ class IntegrationEventsTestExpression:
             self.raise_error("integration found")
 
     def raise_error(self, message):
-        tb = None
+        traceback = None
         depth = 2
 
         while True:
             try:
-                frame = sys._getframe(depth)
+                frame = sys._getframe(  # pylint: disable=protected-access
+                    depth
+                )
             except ValueError:
                 break
 
-            tb = types.TracebackType(tb, frame, frame.f_lasti, frame.f_lineno)
+            traceback = types.TracebackType(
+                traceback, frame, frame.f_lasti, frame.f_lineno
+            )
             depth += 1
 
         integrations = "\n" + "\n".join(
@@ -419,4 +437,4 @@ class IntegrationEventsTestExpression:
 
         raise AssertionError(
             f"{message}\n\nAll records: {str(integrations)}"
-        ).with_traceback(tb)
+        ).with_traceback(traceback)

@@ -11,35 +11,30 @@ type_deserializer = TypeDeserializer()
 
 def serialize(obj):
     if isinstance(obj, list):
-        for i in range(len(obj)):
-            obj[i] = serialize(obj[i])
-        return obj
-    elif isinstance(obj, dict):
-        for k in obj.keys():
-            obj[k] = serialize(obj[k])
-        return obj
-    elif isinstance(obj, float):
+        return [serialize(i) for i in obj]
+
+    if isinstance(obj, dict):
+        return {k: serialize(v) for k, v in obj.items()}
+
+    if isinstance(obj, float):
         return decimal.Decimal(str(obj))
-    else:
-        return obj
+
+    return obj
 
 
 def deserialize(obj):
     if isinstance(obj, list):
-        for i in range(len(obj)):
-            obj[i] = deserialize(obj[i])
-        return obj
-    elif isinstance(obj, dict):
-        for k in obj.keys():
-            obj[k] = deserialize(obj[k])
-        return obj
-    elif isinstance(obj, decimal.Decimal):
+        return [deserialize(i) for i in obj]
+
+    if isinstance(obj, dict):
+        return {k: deserialize(v) for k, v in obj.items()}
+
+    if isinstance(obj, decimal.Decimal):
         if obj % 1 == 0:
             return int(obj)
-        else:
-            return float(obj)
-    else:
-        return obj
+        return float(obj)
+
+    return obj
 
 
 def client_serialize(obj):

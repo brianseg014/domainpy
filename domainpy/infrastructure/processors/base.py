@@ -1,12 +1,16 @@
-class Processor:
-    def __init__(self, **kwargs):
-        self.success_messages: list = []
-        self.fail_messages: list = []
+import abc
+import typing
 
-    def __call__(self, raw_message: dict, record_handler):
+
+class Processor(abc.ABC):
+    def __init__(
+        self, raw_message: dict, record_handler: typing.Callable[[dict], None]
+    ):
         self.raw_message = raw_message
         self.record_handler = record_handler
-        return self
+
+        self.success_messages: list = []
+        self.fail_messages: list = []
 
     def __enter__(self):
         self.process()
@@ -24,8 +28,8 @@ class Processor:
         try:
             self.record_handler(record)
             self.success_handler(record)
-        except Exception as e:
-            self.fail_handler(record, e)
+        except Exception as error:  # pylint: disable=broad-except
+            self.fail_handler(record, error)
 
     def success_handler(self, record):
         self.success_messages.append(record)
@@ -33,13 +37,10 @@ class Processor:
     def fail_handler(self, record, error):
         self.fail_messages.append((record, error))
 
-    def get_records(self):
+    @abc.abstractmethod
+    def get_records(self) -> typing.List[dict]:
         pass
 
+    @abc.abstractmethod
     def cleanup(self):
         pass
-
-
-class BasicProcessor(Processor):
-    def get_records(self):
-        return [self.raw_message]

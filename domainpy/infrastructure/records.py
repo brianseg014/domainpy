@@ -13,7 +13,7 @@ class CommandRecord:
 
 
 @dataclasses.dataclass(frozen=True)
-class IntegrationRecord:
+class IntegrationRecord:  # pylint: disable=too-many-instance-attributes
     trace_id: str
     context: str
     topic: str
@@ -26,7 +26,7 @@ class IntegrationRecord:
 
 
 @dataclasses.dataclass(frozen=True)
-class EventRecord:
+class EventRecord:  # pylint: disable=too-many-instance-attributes
     stream_id: str
     number: int
     topic: str
@@ -39,7 +39,7 @@ class EventRecord:
 
 
 @dataclasses.dataclass
-class TraceRecord:
+class TraceRecord:  # pylint: disable=too-many-instance-attributes
     class StatusCode:
         CODE_200 = 200
 

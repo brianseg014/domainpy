@@ -8,7 +8,7 @@ class TraceRecordManager(abc.ABC):
     @abc.abstractmethod
     def get_trace_contexts(
         self, trace_id: str
-    ) -> typing.Tuple[TraceRecord.ContextResolution]:
+    ) -> typing.Generator[TraceRecord.ContextResolution, None, None]:
         pass  # pragma: no cover
 
     @abc.abstractmethod
@@ -16,7 +16,7 @@ class TraceRecordManager(abc.ABC):
         self,
         trace_id: str,
         command: dict,
-        contexts_resolutions: typing.Tuple[TraceRecord.ContextResolution],
+        contexts_resolutions: typing.Tuple[TraceRecord.ContextResolution, ...],
     ) -> None:
         pass  # pragma: no cover
 

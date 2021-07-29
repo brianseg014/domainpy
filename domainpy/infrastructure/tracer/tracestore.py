@@ -51,7 +51,9 @@ class TraceStore:
         self.trace_resolution(trace_id)
 
     def trace_resolution(self, trace_id: str) -> None:
-        trace_contexts = self.record_manager.get_trace_contexts(trace_id)
+        trace_contexts = tuple(
+            self.record_manager.get_trace_contexts(trace_id)
+        )
 
         if self.is_all_trace_context_resolved(trace_contexts):
             if self.is_all_trace_context_resolved_success(trace_contexts):
@@ -68,34 +70,35 @@ class TraceStore:
                     TraceResolution(
                         trace_id,
                         TraceRecord.Resolution.failure,
-                        errors=self.get_trace_errors(trace_contexts),
+                        errors=tuple(self.get_trace_errors(trace_contexts)),
                     )
                 )
 
+    @classmethod
     def is_all_trace_context_resolved(
-        self, trace_contexts: typing.Tuple[TraceRecord.ContextResolution]
+        cls, trace_contexts: typing.Tuple[TraceRecord.ContextResolution, ...]
     ) -> bool:
         return all(
             tc.resolution != TraceRecord.Resolution.pending
             for tc in trace_contexts
         )
 
+    @classmethod
     def is_all_trace_context_resolved_success(
-        self, trace_contexts: typing.Tuple[TraceRecord.ContextResolution]
+        cls, trace_contexts: typing.Tuple[TraceRecord.ContextResolution, ...]
     ) -> bool:
         return all(
             tc.resolution == TraceRecord.Resolution.success
             for tc in trace_contexts
         )
 
+    @classmethod
     def get_trace_errors(
-        self, trace_contexts: typing.Tuple[TraceRecord.ContextResolution]
-    ) -> typing.Tuple[str, ...]:
-        return tuple(
-            [
-                tc.error
-                for tc in trace_contexts
-                if tc.resolution == TraceRecord.Resolution.failure
-                and tc.error is not None
-            ]
+        cls, trace_contexts: typing.Tuple[TraceRecord.ContextResolution, ...]
+    ) -> typing.Generator[str, None, None]:
+        return (
+            tc.error
+            for tc in trace_contexts
+            if tc.resolution == TraceRecord.Resolution.failure
+            and tc.error is not None
         )

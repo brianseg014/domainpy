@@ -1,5 +1,5 @@
-import boto3  # type: ignore
 import typing
+import boto3  # type: ignore
 
 from domainpy.exceptions import IdempotencyItemError
 from domainpy.infrastructure.idempotent.recordmanager import (
@@ -33,8 +33,8 @@ class DynamoDBIdempotencyRecordManager(IdempotencyRecordManager):
 
         try:
             self.client.put_item(**item)
-        except self.client.exceptions.ConditionalCheckFailedException as e:
-            raise IdempotencyItemError() from e
+        except self.client.exceptions.ConditionalCheckFailedException as error:
+            raise IdempotencyItemError() from error
 
     def store_success(self, record: dict):
         item = {

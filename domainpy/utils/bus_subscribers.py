@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import typing
 
+from domainpy.utils.bus import ISubscriber
+
 if typing.TYPE_CHECKING:  # pragma: no cover
     from domainpy.typing.application import SystemMessage  # type: ignore
     from domainpy.application.service import ApplicationService
@@ -9,8 +11,6 @@ if typing.TYPE_CHECKING:  # pragma: no cover
     from domainpy.domain.model.event import DomainEvent
     from domainpy.infrastructure.publishers.base import IPublisher
     from domainpy.utils.bus import Bus
-
-from domainpy.utils.bus import ISubscriber
 
 
 class BasicSubscriber(ISubscriber, list):

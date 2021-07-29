@@ -11,8 +11,8 @@ from domainpy.exceptions import DefinitionError, VersionError
 
 
 class AggregateRoot(DomainEntity):
-    def __init__(self, id: Identity):
-        self.__id__ = id
+    def __init__(self, identity: Identity):
+        super().__init__(identity, self)
 
         self.__version__: int = 0
         self.__changes__: typing.List[DomainEvent] = []  # New events
@@ -23,9 +23,12 @@ class AggregateRoot(DomainEntity):
         return Selector(e for e in self.__seen__)
 
     def __stamp__(self, event_type: typing.Type[DomainEvent]):
+        identity = self.__identity__.identity  # type: ignore
+        aggregate_name = self.__class__.__name__
+
         return functools.partial(
             event_type,
-            __stream_id__=f"{self.__id__.id}:{self.__class__.__name__}",  # type: ignore # noqa: E501
+            __stream_id__=f"{identity}:{aggregate_name}",
             __number__=self.__version__ + 1,
             __timestamp__=datetime.datetime.timestamp(datetime.datetime.now()),
         )
@@ -83,11 +86,11 @@ class Selector(tuple):
 
         if compensated:
             return ()
-        else:
-            return self.filter_trace(trace_id).filter_event_type(return_event)
+
+        return self.filter_trace(trace_id).filter_event_type(return_event)
 
 
-class mutator:
+class mutator:  # pylint: disable=invalid-name
     def __init__(self, func):
         functools.update_wrapper(self, func)
 
@@ -102,8 +105,8 @@ class mutator:
         if event.__class__ not in self.mutators:
             return
 
-        mutator = self.mutators[event.__class__]
-        mutator(aggregate, event)
+        m = self.mutators[event.__class__]
+        m(aggregate, event)
 
     def event(self, event_type: typing.Type[DomainEvent]):
         def inner_function(func):

@@ -1,7 +1,7 @@
-import boto3  # type: ignore
 import typing
 import datetime
 import dataclasses
+import boto3  # type: ignore
 
 from domainpy.infrastructure.records import TraceRecord
 from domainpy.utils.dynamodb import client_deserialize as deserialize
@@ -16,7 +16,7 @@ class DynamoDBTraceRecordManager:
 
     def get_trace_contexts(
         self, trace_id: str
-    ) -> typing.Tuple[TraceRecord.ContextResolution, ...]:
+    ) -> typing.Generator[TraceRecord.ContextResolution, None, None]:
         item = {
             "TableName": self.table_name,
             "Key": {"trace_id": serialize(trace_id)},
@@ -27,16 +27,14 @@ class DynamoDBTraceRecordManager:
         contexts_resolutions = deserialize(
             dynamodb_item["Item"]["contexts_resolutions"]
         )
-        return tuple(
-            [
-                TraceRecord.ContextResolution(
-                    context=cr["context"],
-                    resolution=cr["resolution"],
-                    timestamp_resolution=cr["timestamp_resolution"],
-                    error=cr["error"],
-                )
-                for cr in contexts_resolutions.values()
-            ]
+        return (
+            TraceRecord.ContextResolution(
+                context=cr["context"],
+                resolution=cr["resolution"],
+                timestamp_resolution=cr["timestamp_resolution"],
+                error=cr["error"],
+            )
+            for cr in contexts_resolutions.values()
         )
 
     def store_in_progress(
@@ -100,7 +98,7 @@ class DynamoDBTraceRecordManager:
         item = {
             "TableName": self.table_name,
             "Key": {"trace_id": serialize(trace_id)},
-            "UpdateExpression": f"SET contexts_resolutions.{context}.resolution = :resolution",  # noqa: E501
+            "UpdateExpression": f"SET contexts_resolutions.{context}.resolution = :resolution",  # noqa: E501 # pylint: disable=line-too-long
             "ExpressionAttributeValues": {
                 ":resolution": serialize(TraceRecord.Resolution.success)
             },
@@ -113,9 +111,14 @@ class DynamoDBTraceRecordManager:
         item = {
             "TableName": self.table_name,
             "Key": {"trace_id": serialize(trace_id)},
-            "UpdateExpression": f"SET contexts_resolutions.{context}.resolution = :resolution",  # noqa: E501
+            "UpdateExpression": (
+                f"SET contexts_resolutions.{context}.resolution = :resolution,"
+                f"contexts_resolutions.{context}.#error = :error"
+            ),
             "ExpressionAttributeValues": {
-                ":resolution": serialize(TraceRecord.Resolution.failure)
+                ":resolution": serialize(TraceRecord.Resolution.failure),
+                ":error": serialize(error),
             },
+            "ExpressionAttributeNames": {"#error": "error"},
         }
         self.client.update_item(**item)

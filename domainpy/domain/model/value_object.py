@@ -1,14 +1,14 @@
 import uuid
 
 from domainpy.exceptions import DefinitionError
-from domainpy.utils.data import SystemData, system_data
+from domainpy.utils.data import SystemData, MetaSystemData
 
 
 class ValueObject(SystemData):
     pass
 
 
-class identity(system_data):
+class MetaIdentity(MetaSystemData):
     def __new__(cls, name, bases, dct):
         new_cls = super().__new__(cls, name, bases, dct)
 
@@ -19,31 +19,31 @@ class identity(system_data):
             raise DefinitionError(
                 f"{cls.__name__} must include id: str annotation"
             )
-        else:
-            new_cls_annotations = new_cls.__annotations__
-            if "id" in new_cls_annotations:
-                if new_cls_annotations["id"] != str:
-                    raise DefinitionError(
-                        f"{new_cls.__name__}.id must be type of str"
-                    )
-            else:
-                raise DefinitionError(
-                    f"{new_cls.__name__} must include id: str annotation"
-                )
 
-            if len(new_cls_annotations) > 1:
+        new_cls_annotations = new_cls.__annotations__
+        if "identity" in new_cls_annotations:
+            if new_cls_annotations["identity"] != str:
                 raise DefinitionError(
-                    f"{new_cls.__name__} must include only id: str annotation,"
-                    "some other annotations found"
+                    f"{new_cls.__name__}.identity must be type of str"
                 )
+        else:
+            raise DefinitionError(
+                f"{new_cls.__name__} must include identity: str annotation"
+            )
+
+        if len(new_cls_annotations) > 1:
+            raise DefinitionError(
+                f"{new_cls.__name__} must include only identity: "
+                "str annotation, some other annotations found"
+            )
 
         return new_cls
 
 
-class Identity(ValueObject, metaclass=identity):
+class Identity(ValueObject, metaclass=MetaIdentity):
     @classmethod
-    def from_text(cls, id: str):
-        return cls(id=id)  # type: ignore
+    def from_text(cls, identity: str):
+        return cls(identity=identity)  # type: ignore
 
     @classmethod
     def create(cls):

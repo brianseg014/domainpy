@@ -13,8 +13,9 @@ if typing.TYPE_CHECKING:  # pragma: no cover
 
 
 class ApplicationService(abc.ABC):
+    @classmethod
     def stamp_integration(
-        self, integration_type: typing.Type[IntegrationEvent]
+        cls, integration_type: typing.Type[IntegrationEvent]
     ):
         return functools.partial(
             integration_type,
@@ -26,7 +27,7 @@ class ApplicationService(abc.ABC):
         pass  # pragma: no cover
 
 
-class handler:
+class handler:  # pylint: disable=invalid-name
     def __init__(self, func):
         functools.update_wrapper(self, func)
 
@@ -44,7 +45,9 @@ class handler:
                 h(service, message)
 
         if hasattr(service, "__partials__"):
-            partials = service.__partials__.get(message.__class__, None)  # type: ignore # noqa: E501
+            partials = service.__partials__.get(  # type: ignore
+                message.__class__, None
+            )
             if partials:
                 for p in set(partials):
                     p(service, message)
@@ -101,8 +104,9 @@ class handler:
                             __leadings__=leadings[1:],
                         )
                     )
-                else:
-                    return func(service, *trace, *args[1:], **kwargs)
+                    return None
+
+                return func(service, *trace, *args[1:], **kwargs)
 
             trace_handlers = self.handlers.setdefault(messages[0], set())
             trace_handlers.add(

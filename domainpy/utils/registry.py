@@ -19,7 +19,7 @@ class Registry:
     def get(self, key):
         try:
             return typing.cast(key, self.components[key])
-        except KeyError as e:
+        except KeyError as error:
             raise RegistryComponentNotFound(
                 f"instance for {key} not registered"
-            ) from e
+            ) from error

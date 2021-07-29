@@ -10,7 +10,7 @@ from domainpy.infrastructure.records import EventRecord
 
 
 class MemoryEventRecordManager(EventRecordManager):
-    def __init__(self, *args, **kwargs):
+    def __init__(self):
         self.heap: typing.List[EventRecord] = []
 
     def session(self):
@@ -25,8 +25,7 @@ class MemoryEventRecordManager(EventRecordManager):
         to_timestamp: datetime = None,
         from_number: int = None,
         to_number: int = None,
-    ) -> typing.Tuple[EventRecord, ...]:
-
+    ) -> typing.Generator[EventRecord, None, None]:
         filters = [lambda er: er.stream_id == stream_id]
 
         if topic is not None:
@@ -44,28 +43,19 @@ class MemoryEventRecordManager(EventRecordManager):
         if to_number is not None:
             filters.append(lambda er: er.number <= to_number)
 
-        return tuple([er for er in self.heap if all(f(er) for f in filters)])
+        return (er for er in self.heap if all(f(er) for f in filters))
 
     def clear(self):
         self.heap = []
 
 
 class MemorySession(Session):
-    def __init__(self, record_manager):
+    def __init__(self, record_manager):  # pylint: disable=all
         self.record_manager = record_manager
 
         self.heap = []
 
-    def __enter__(self):
-        return self
-
-    def __exit__(self, *args, **kwargs):
-        self.rollback()
-
     def append(self, event_record: EventRecord):
-        if event_record is None:
-            raise TypeError("event_record cannot be none")
-
         self.heap.append(event_record)
 
     def commit(self):
@@ -74,8 +64,8 @@ class MemorySession(Session):
 
             self.record_manager.heap.extend(self.heap)
 
-        except UniqueEventRecordBroken as e:
-            raise excs.ConcurrencyError() from e
+        except UniqueEventRecordBroken as error:
+            raise excs.ConcurrencyError() from error
         finally:
             self.heap = []
 
@@ -83,8 +73,8 @@ class MemorySession(Session):
         self.heap = []
 
     def _check_heap_merge(self):
-        for e in self.heap:
-            if self._check_if_event_exists_in_rm(e):
+        for record in self.heap:
+            if self._check_if_event_exists_in_rm(record):
                 raise UniqueEventRecordBroken()
 
     def _check_if_event_exists_in_rm(self, event: EventRecord) -> bool:

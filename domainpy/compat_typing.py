@@ -1,3 +1,4 @@
+# pylint: disable=wildcard-import,unused-wildcard-import
 import sys
 
 if sys.version_info >= (3, 8):  # pragma: no cover

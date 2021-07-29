@@ -3,15 +3,15 @@ from __future__ import annotations
 import datetime
 import typing
 
+from domainpy.domain.model.event import DomainEvent
+from domainpy.infrastructure.eventsourced.eventstream import EventStream
+from domainpy.infrastructure.mappers import Mapper
+
 if typing.TYPE_CHECKING:
     from domainpy.infrastructure.eventsourced.recordmanager import (
         EventRecordManager,
     )
     from domainpy.utils.bus import Bus
-
-from domainpy.domain.model.event import DomainEvent
-from domainpy.infrastructure.eventsourced.eventstream import EventStream
-from domainpy.infrastructure.mappers import Mapper
 
 
 class EventStore:
@@ -27,13 +27,13 @@ class EventStore:
 
     def store_events(self, stream: EventStream) -> None:
         with self.record_manager.session() as session:
-            for e in stream:
-                session.append(self.event_mapper.serialize(e))
+            for event in stream:
+                session.append(self.event_mapper.serialize(event))
 
             session.commit()
 
-            for e in stream:
-                self.bus.publish(e)
+            for event in stream:
+                self.bus.publish(event)
 
     def get_events(
         self,
@@ -52,7 +52,7 @@ class EventStore:
         else:
             topic = None
 
-        events = self.record_manager.get_records(
+        records = self.record_manager.get_records(
             stream_id=stream_id,
             topic=topic,
             from_timestamp=from_timestamp,
@@ -62,7 +62,7 @@ class EventStore:
         )
 
         stream = EventStream()
-        for e in events:
-            stream.append(self.event_mapper.deserialize(e))
+        for record in records:
+            stream.append(self.event_mapper.deserialize(record))
 
         return stream

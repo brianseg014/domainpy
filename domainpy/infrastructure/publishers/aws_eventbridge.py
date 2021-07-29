@@ -1,17 +1,15 @@
 from __future__ import annotations
 
 import json
-import boto3  # type: ignore
 import typing
-import collections.abc
+import boto3  # type: ignore
 
+from domainpy.exceptions import PublisherError
+from domainpy.infrastructure.publishers.base import IPublisher
 
 if typing.TYPE_CHECKING:
     from domainpy.typing.application import SystemMessage  # type: ignore
     from domainpy.infrastructure.mappers import Mapper
-
-from domainpy.exceptions import PublisherError
-from domainpy.infrastructure.publishers.base import IPublisher
 
 
 class AwsEventBridgePublisher(IPublisher):
@@ -22,13 +20,10 @@ class AwsEventBridgePublisher(IPublisher):
 
         self.client = boto3.client("events", **kwargs)
 
-    def publish(
+    def _publish(
         self,
-        messages: typing.Union[SystemMessage, typing.Sequence[SystemMessage]],
+        messages: typing.Sequence[SystemMessage],
     ):
-        if not isinstance(messages, collections.abc.Sequence):
-            messages = tuple([messages])
-
         entries = [
             {
                 "Source": self.context,

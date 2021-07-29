@@ -1,17 +1,15 @@
 from __future__ import annotations
 
-import boto3  # type: ignore
 import json
 import typing
-import collections.abc
+import boto3  # type: ignore
 
+from domainpy.exceptions import PublisherError
+from domainpy.infrastructure.publishers.base import IPublisher
 
 if typing.TYPE_CHECKING:
     from domainpy.typing.application import SystemMessage  # type: ignore
     from domainpy.infrastructure.mappers import Mapper
-
-from domainpy.exceptions import PublisherError
-from domainpy.infrastructure.publishers.base import IPublisher
 
 
 class AwsSimpleQueueServicePublisher(IPublisher):
@@ -25,13 +23,10 @@ class AwsSimpleQueueServicePublisher(IPublisher):
             "QueueUrl"
         ]
 
-    def publish(
+    def _publish(
         self,
-        messages: typing.Union[SystemMessage, typing.Sequence[SystemMessage]],
+        messages: typing.Sequence[SystemMessage],
     ):
-        if not isinstance(messages, collections.abc.Sequence):
-            messages = tuple([messages])
-
         entries = [
             {
                 "QueueUrl": self.queue_url,
@@ -41,10 +36,12 @@ class AwsSimpleQueueServicePublisher(IPublisher):
         ]
 
         errors = []
-        for i, e in enumerate(entries):
+        for i, entry in enumerate(entries):
             try:
-                self.client.send_message(**e)
-            except self.client.exceptions.InvalidMessageContents as e:
-                errors.append(PublisherError.EntryError(messages[i], str(e)))
+                self.client.send_message(**entry)
+            except self.client.exceptions.InvalidMessageContents as error:
+                errors.append(
+                    PublisherError.EntryError(messages[i], str(error))
+                )
         if len(errors) > 0:
             raise PublisherError(f"Queue name: {self.queue_name}", errors)

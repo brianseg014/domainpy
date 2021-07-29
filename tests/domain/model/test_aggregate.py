@@ -9,7 +9,7 @@ from domainpy.domain.model.aggregate import AggregateRoot, mutator, Selector
 
 
 def test_aggregate_add_to_changes_and_mutate_when_apply():
-    id = mock.MagicMock()
+    identity = mock.MagicMock()
     event = mock.MagicMock()
     event.__number__ = 1
 
@@ -17,7 +17,7 @@ def test_aggregate_add_to_changes_and_mutate_when_apply():
         def mutate(self, event):
             pass
 
-    agg = Aggregate(id=id)
+    agg = Aggregate(identity=identity)
     agg.mutate = mock.Mock()
     agg.__apply__(event)
 
@@ -25,7 +25,7 @@ def test_aggregate_add_to_changes_and_mutate_when_apply():
     agg.mutate.assert_called_once_with(event)
 
 def test_aggregate_call_mutate_when_route():
-    id = mock.MagicMock()
+    identity = mock.MagicMock()
     event = mock.MagicMock()
     event.__number__ = 1
 
@@ -33,14 +33,14 @@ def test_aggregate_call_mutate_when_route():
         def mutate(self, event):
             pass
 
-    agg = Aggregate(id=id)
+    agg = Aggregate(identity=identity)
     agg.mutate = mock.Mock()
     agg.__route__(event)
 
     agg.mutate.assert_called_once_with(event)
 
 def test_aggregate_route_mismatch_version():
-    id = mock.MagicMock()
+    identity = mock.MagicMock()
     event = mock.MagicMock()
     event.__number__ = 2
 
@@ -48,20 +48,20 @@ def test_aggregate_route_mismatch_version():
         def mutate(self, event):
             pass
 
-    agg = Aggregate(id=id)
+    agg = Aggregate(identity=identity)
     agg.mutate = mock.Mock()
 
     with pytest.raises(VersionError):
         agg.__route__(event)
 
 def test_aggregate_selector():
-    id = mock.MagicMock()
+    identity = mock.MagicMock()
 
     class Aggregate(AggregateRoot):
         def mutate(self, event):
             pass
 
-    agg = Aggregate(id=id)
+    agg = Aggregate(identity=identity)
     assert isinstance(agg.__selector__, Selector)
 
 def test_selector_filter_trace():

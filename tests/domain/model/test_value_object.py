@@ -24,17 +24,17 @@ def test_value_object_immutability():
 
 def test_identity_definition():
     class BasicIdentity(Identity):
-        id: str
+        identity: str
 
-    x = BasicIdentity(id='id')
-    assert x.id == 'id'
+    x = BasicIdentity(identity='id')
+    assert x.identity == 'id'
 
 def test_identity_bad_definition():
     with pytest.raises(DefinitionError):
-        type('BasicIdentity', (Identity,), { '__annotations__': { 'id2': str } })
+        type('BasicIdentity', (Identity,), { '__annotations__': { 'identity2': str } })
 
     with pytest.raises(DefinitionError):
-        type('BasicIdentity', (Identity,), { '__annotations__': { 'id': int } })
+        type('BasicIdentity', (Identity,), { '__annotations__': { 'identity': int } })
 
     with pytest.raises(DefinitionError):
-        type('BasicIdentity', (Identity,), { '__annotations__': { 'id': str, 'id2': str } })
+        type('BasicIdentity', (Identity,), { '__annotations__': { 'identity': str, 'identity2': str } })

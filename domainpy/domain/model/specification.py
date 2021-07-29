@@ -6,7 +6,7 @@ import typing
 
 class Specification(abc.ABC):
     @abc.abstractmethod
-    def is_satisfied_by(self, candidate: typing.Any):
+    def is_satisfied_by(self, candidate: typing.Any) -> bool:
         pass  # pragma: no cover
 
     def and_(self, other: Specification) -> ConjunctionSpecification:
@@ -19,16 +19,19 @@ class Specification(abc.ABC):
         return NegationSpecification(self)
 
     def is_special_case_of(self, other: Specification) -> bool:
-        return False  # pragma: no cover
+        return other.is_generalization_of(self)
 
+    @abc.abstractmethod
     def is_generalization_of(self, other: Specification) -> bool:
-        return False  # pragma: no cover
+        pass
 
-    def remainder_unsatisfied_by(self, candidate: typing.Any):
+    def remainder_unsatisfied_by(
+        self, candidate: typing.Any
+    ) -> typing.Optional[Specification]:
         if not self.is_satisfied_by(candidate):
-            return [self]
-        else:
-            return []
+            return self
+
+        return None
 
     def __call__(self, candiate: typing.Any):
         return self.is_satisfied_by(candiate)
@@ -44,44 +47,66 @@ class Specification(abc.ABC):
 
 
 class CompositeSpecification(Specification):
-    def __init__(self, a: Specification, b: Specification):
-        self.a = a
-        self.b = b
-
-    def remainder_unsatisfied_by(self, candidate: typing.Any):
-        remainder = []
-
-        a_remainder = self.a.remainder_unsatisfied_by(candidate)
-        remainder.extend(a_remainder)
-
-        b_remainder = self.b.remainder_unsatisfied_by(candidate)
-        remainder.extend(b_remainder)
-
-        return remainder
+    def __init__(self, left: Specification, right: Specification):
+        self.left = left
+        self.right = right
 
 
 class ConjunctionSpecification(CompositeSpecification):
-    def is_satisfied_by(self, candidate):
-        return self.a.is_satisfied_by(candidate) and self.b.is_satisfied_by(
+    def is_satisfied_by(self, candidate: typing.Any) -> bool:
+        return self.left.is_satisfied_by(
             candidate
-        )
+        ) and self.right.is_satisfied_by(candidate)
 
-    def is_special_case_of(self, other: Specification):
-        return self.a.is_special_case_of(other) or self.b.is_special_case_of(
-            other
-        )
+    def remainder_unsatisfied_by(
+        self, candidate: typing.Any
+    ) -> typing.Optional[Specification]:
+        left_remainder = self.left.remainder_unsatisfied_by(candidate)
+        right_remainder = self.right.remainder_unsatisfied_by(candidate)
+
+        if left_remainder is not None and right_remainder is not None:
+            return self
+
+        if left_remainder is not None:
+            return left_remainder
+
+        if right_remainder is not None:
+            return right_remainder
+
+        return None
+
+    def is_special_case_of(self, other: Specification) -> bool:
+        return other in (self.left, self.right)
+
+    def is_generalization_of(self, other: Specification) -> bool:
+        return False
 
 
 class DisjunctionSpecification(CompositeSpecification):
-    def is_satisfied_by(self, candidate):
-        return self.a.is_satisfied_by(candidate) or self.b.is_satisfied_by(
+    def is_satisfied_by(self, candidate: typing.Any) -> bool:
+        return self.left.is_satisfied_by(
             candidate
-        )
+        ) or self.right.is_satisfied_by(candidate)
 
-    def is_generalization_of(self, other: Specification):
-        return self.a.is_generalization_of(
-            other
-        ) or self.b.is_generalization_of(other)
+    def remainder_unsatisfied_by(
+        self, candidate: typing.Any
+    ) -> typing.Optional[Specification]:
+        left_remainder = self.left.remainder_unsatisfied_by(candidate)
+        right_remainder = self.right.remainder_unsatisfied_by(candidate)
+
+        if left_remainder is None:
+            return None
+
+        if right_remainder is None:
+            return None
+
+        return self
+
+    def is_special_case_of(self, other: Specification) -> bool:
+        return False
+
+    def is_generalization_of(self, other: Specification) -> bool:
+        return other in (self.left, self.right)
 
 
 class NegationSpecification(Specification):
@@ -90,6 +115,9 @@ class NegationSpecification(Specification):
 
     def is_satisfied_by(self, candidate):
         return not self.spec.is_satisfied_by(candidate)
+
+    def is_generalization_of(self, other: Specification) -> bool:
+        return False
 
     def __repr__(self):
         return object.__repr__(self) + " of " + repr(self.spec)

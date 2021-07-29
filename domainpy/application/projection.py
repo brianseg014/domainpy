@@ -1,20 +1,22 @@
 from __future__ import annotations
 
-import functools
+import abc
 import typing
+import functools
+
+from domainpy.exceptions import DefinitionError
 
 if typing.TYPE_CHECKING:
     from domainpy.domain.model.event import DomainEvent
 
-from domainpy.exceptions import DefinitionError
 
-
-class Projection:
-    def project(self, e: DomainEvent):
+class Projection(abc.ABC):
+    @abc.abstractmethod
+    def project(self, event: DomainEvent):
         pass  # pragma: no cover
 
 
-class projector:
+class projector:  # pylint: disable=invalid-name
     def __init__(self, func):
         functools.update_wrapper(self, func)
 
@@ -29,8 +31,8 @@ class projector:
         if event.__class__ not in self.projectors:
             return
 
-        projector = self.projectors[event.__class__]
-        projector(projection, event)
+        p = self.projectors[event.__class__]
+        p(projection, event)
 
     def event(self, event_type: typing.Type[DomainEvent]):
         def inner_function(func):

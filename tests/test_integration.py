@@ -28,7 +28,9 @@ from domainpy.infrastructure import (
 from domainpy.utils import (
     Registry,
     Bus,
-    ApplicationBusAdapter
+    ApplicationBusAdapter,
+    ProjectionBusAdapter, 
+    PublisherBusAdapter
 )
 from domainpy.mock import EventSourcedEnvironmentTestAdapter
 from domainpy.typing.application import SystemMessage
@@ -54,7 +56,7 @@ def test_all_system():
 
     ### Value Objects
     class PetStoreId(Identity):
-        id: str
+        identity: str
 
     class PetStoreName(ValueObject):
         name: str
@@ -170,6 +172,14 @@ def test_all_system():
             setupargs: dict
         ) -> None:
             registry.put(PetStoreRepository, EventSourcedPetStoreRepository(event_store))
+
+        def setup_projection_bus(
+            self, 
+            projection_bus: ProjectionBusAdapter, 
+            registry: Registry, 
+            setupargs: dict
+        ) -> None:
+            pass
         
         def setup_resolver_bus(
             self, 
@@ -211,5 +221,5 @@ def test_all_system():
             pet_store_name='ark'
         )
     )
-    env.then.domain_events.assert_has_event_n(PetStoreRegistered, n=2)
+    env.then.domain_events.assert_has_event_n_times(PetStoreRegistered, times=2)
     env.then.integration_events.assert_has_integration(CreatePetStoreSucceeded)

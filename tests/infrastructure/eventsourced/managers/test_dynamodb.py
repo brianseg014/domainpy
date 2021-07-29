@@ -132,7 +132,7 @@ def test_get_records(dynamodb, table_name, region_name, stream_id, event_record)
     rm = DynamoDBEventRecordManager(table_name, region_name)
 
     events = rm.get_records(stream_id)
-    assert len(events) == 1
+    assert len(list(events)) == 1
 
 def test_get_records_filtering_number(dynamodb, table_name, region_name, stream_id, event_record):
     event_record_2 = dataclasses.replace(event_record, number=1)
@@ -142,4 +142,4 @@ def test_get_records_filtering_number(dynamodb, table_name, region_name, stream_
     rm = DynamoDBEventRecordManager(table_name, region_name)
 
     events = rm.get_records(stream_id, from_number=0, to_number=0)
-    assert len(events) == 1
+    assert len(list(events)) == 1

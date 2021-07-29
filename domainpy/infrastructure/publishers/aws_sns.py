@@ -1,17 +1,15 @@
 from __future__ import annotations
 
-import boto3  # type: ignore
 import json
 import typing
-import collections.abc
+import boto3  # type: ignore
 
+from domainpy.exceptions import PublisherError
+from domainpy.infrastructure.publishers.base import IPublisher
 
 if typing.TYPE_CHECKING:
     from domainpy.typing.application import SystemMessage  # type: ignore
     from domainpy.infrastructure.mappers import Mapper
-
-from domainpy.exceptions import PublisherError
-from domainpy.infrastructure.publishers.base import IPublisher
 
 
 class AwsSimpleNotificationServicePublisher(IPublisher):
@@ -21,13 +19,10 @@ class AwsSimpleNotificationServicePublisher(IPublisher):
 
         self.client = boto3.client("sns", **kwargs)
 
-    def publish(
+    def _publish(
         self,
-        messages: typing.Union[SystemMessage, typing.Sequence[SystemMessage]],
+        messages: typing.Sequence[SystemMessage],
     ):
-        if not isinstance(messages, collections.abc.Sequence):
-            messages = tuple([messages])
-
         entries = [
             {
                 "TopicArn": self.topic_arn,
@@ -37,10 +32,12 @@ class AwsSimpleNotificationServicePublisher(IPublisher):
         ]
 
         errors = []
-        for i, e in enumerate(entries):
+        for i, entry in enumerate(entries):
             try:
-                self.client.publish(**e)
-            except self.client.InternalErrorException as e:
-                errors.append(PublisherError.EntryError(messages[i], str(e)))
+                self.client.publish(**entry)
+            except self.client.InternalErrorException as error:
+                errors.append(
+                    PublisherError.EntryError(messages[i], str(error))
+                )
         if len(errors) > 0:
             raise PublisherError(f"Topic Arn: {self.topic_arn}", errors)

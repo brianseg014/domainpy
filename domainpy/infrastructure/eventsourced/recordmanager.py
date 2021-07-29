@@ -23,11 +23,25 @@ class EventRecordManager(abc.ABC):
         to_timestamp: datetime.datetime = None,
         from_number: int = None,
         to_number: int = None,
-    ) -> typing.Tuple[EventRecord, ...]:
+    ) -> typing.Generator[EventRecord, None, None]:
         pass
 
 
 class Session(contextlib.AbstractContextManager):
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args, **kwargs):
+        self.rollback()
+
     @abc.abstractmethod
     def append(self, event_record: EventRecord) -> None:
+        pass
+
+    @abc.abstractmethod
+    def commit(self) -> None:
+        pass
+
+    @abc.abstractmethod
+    def rollback(self) -> None:
         pass

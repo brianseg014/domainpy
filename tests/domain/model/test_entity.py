@@ -29,8 +29,8 @@ def test_entity_equality():
         def mutate(self, event):
             pass
 
-    a = Entity(id=entity_id, aggregate=aggregate)
-    b = Entity(id=entity_id, aggregate=aggregate)
+    a = Entity(identity=entity_id, aggregate=aggregate)
+    b = Entity(identity=entity_id, aggregate=aggregate)
 
     assert a == b
     assert a == entity_id
@@ -44,8 +44,8 @@ def test_entity_inequality():
         def mutate(self, event):
             pass
 
-    a = Entity(id=entity_a_id, aggregate=aggregate)
-    b = Entity(id=entity_b_id, aggregate=aggregate)
+    a = Entity(identity=entity_a_id, aggregate=aggregate)
+    b = Entity(identity=entity_b_id, aggregate=aggregate)
 
     assert a != b
     assert a != entity_b_id
@@ -53,7 +53,7 @@ def test_entity_inequality():
     assert a != {}
 
 def test_entity_route():
-    id = mock.MagicMock()
+    identity = mock.MagicMock()
     aggregate = mock.MagicMock()
     event = mock.MagicMock()
 
@@ -61,14 +61,14 @@ def test_entity_route():
         def mutate(self, event):
             pass
 
-    entity = Entity(id, aggregate)
+    entity = Entity(identity, aggregate)
     entity.mutate = mock.Mock()
     entity.__route__(event)
 
     entity.mutate.assert_called_once_with(event)
 
 def test_entity_stamp():
-    id = mock.MagicMock()
+    identity = mock.MagicMock()
     aggregate = mock.MagicMock()
     aggregate.__stamp__ = mock.Mock()
 
@@ -78,7 +78,7 @@ def test_entity_stamp():
         def mutate(self, event):
             pass
 
-    entity = Entity(id, aggregate)
+    entity = Entity(identity, aggregate)
     entity.__stamp__(event)
 
     aggregate.__stamp__.assert_called()

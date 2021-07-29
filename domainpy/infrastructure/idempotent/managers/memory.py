@@ -7,7 +7,7 @@ from domainpy.infrastructure.idempotent.recordmanager import (
 
 
 class MemoryIdempotencyRecordManager(IdempotencyRecordManager):
-    def __init__(self, *args, **kwargs):
+    def __init__(self):
         self.heap = []
 
     def store_in_progress(self, record: dict):

@@ -1,12 +1,10 @@
-from .eventsourced import (
-    DynamoDBEventRecordManager,
-    EventRecordManager,
-    EventStore,
-    EventStream,
-    MemoryEventRecordManager,
-)
-from .eventsourced import (
-    make_repository_adapter as make_eventsourced_repository_adapter,
+from .eventsourced.eventstore import EventStore
+from .eventsourced.recordmanager import EventRecordManager
+from .eventsourced.eventstream import EventStream
+from .eventsourced.managers.dynamodb import DynamoDBEventRecordManager
+from .eventsourced.managers.memory import MemoryEventRecordManager
+from .eventsourced.repository import (
+    make_adapter as make_eventsourced_repository_adapter,
 )
 from .idempotent import (
     Idempotency,
@@ -15,25 +13,19 @@ from .idempotent import (
     MemoryIdempotencyRecordManager,
 )
 from .mappers import Mapper
-from .processors import (
-    Processor,
-    BasicProcessor,
+from .processors.base import Processor
+from .processors.aws_sqs import (
     AwsSimpleQueueServiceBatchProcessor,
     sqs_batch_processor,
 )
-from .publishers import (
-    AwsEventBridgePublisher,
-    AwsSimpleNotificationServicePublisher,
-    AwsSimpleQueueServicePublisher,
-    IPublisher,
-    MemoryPublisher,
-)
-from .tracer import (
-    TraceStore,
-    TraceResolution,
-    TraceRecordManager,
-    DynamoDBTraceRecordManager,
-)
+from .publishers.base import IPublisher
+from .publishers.memory import MemoryPublisher
+from .publishers.aws_eventbridge import AwsEventBridgePublisher
+from .publishers.aws_sns import AwsSimpleNotificationServicePublisher
+from .publishers.aws_sqs import AwsSimpleQueueServicePublisher
+from .tracer.tracestore import TraceStore, TraceResolution
+from .tracer.recordmanager import TraceRecordManager
+from .tracer.managers.dynamodb import DynamoDBTraceRecordManager
 from .records import CommandRecord, EventRecord, IntegrationRecord, TraceRecord
 from .transcoder import Transcoder, ICodec
 
@@ -49,7 +41,6 @@ __all__ = [
     "MemoryIdempotencyRecordManager",
     "DynamoDBIdempotencyRecordManager",
     "Processor",
-    "BasicProcessor",
     "AwsSimpleQueueServiceBatchProcessor",
     "IPublisher",
     "MemoryPublisher",

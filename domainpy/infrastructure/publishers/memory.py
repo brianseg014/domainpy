@@ -1,20 +1,16 @@
 from __future__ import annotations
 
-import collections.abc
 import typing
+
+from domainpy.infrastructure.publishers.base import IPublisher
 
 if typing.TYPE_CHECKING:
     from domainpy.typing.application import SystemMessage  # type: ignore
 
-from domainpy.infrastructure.publishers.base import IPublisher
-
 
 class MemoryPublisher(IPublisher, list):
-    def publish(
+    def _publish(
         self,
-        messages: typing.Union[SystemMessage, typing.Sequence[SystemMessage]],
+        messages: typing.Sequence[SystemMessage],
     ):
-        if not isinstance(messages, collections.abc.Sequence):
-            messages = tuple([messages])
-
         self.extend(messages)

@@ -1,6 +1,6 @@
-import boto3  # type: ignore
 import typing
 import datetime
+import boto3  # type: ignore
 
 from domainpy.exceptions import ConcurrencyError
 from domainpy.infrastructure.eventsourced.recordmanager import (
@@ -30,8 +30,7 @@ class DynamoDBEventRecordManager(EventRecordManager):
         to_timestamp: datetime.datetime = None,
         from_number: int = None,
         to_number: int = None,
-    ) -> typing.Tuple[EventRecord, ...]:
-
+    ) -> typing.Generator[EventRecord, None, None]:
         key_conditions_expressions = []
         filter_expressions = []
         expression_attribute_values = {}
@@ -80,7 +79,7 @@ class DynamoDBEventRecordManager(EventRecordManager):
 
         query_result = self.client.query(**query_params)
 
-        return tuple([self.deserialize(i) for i in query_result["Items"]])
+        return (self.deserialize(i) for i in query_result["Items"])
 
     @classmethod
     def serialize(cls, event_record: EventRecord) -> dict:
@@ -114,21 +113,12 @@ class DynamoDBEventRecordManager(EventRecordManager):
 
 
 class DynamoSession(Session):
-    def __init__(self, record_manager):
+    def __init__(self, record_manager):  # pylint: disable=all
         self.record_manager = record_manager
 
         self.heap = []
 
-    def __enter__(self):
-        return self
-
-    def __exit__(self, *args, **kwargs):
-        self.rollback()
-
     def append(self, event_record: EventRecord):
-        if event_record is None:
-            raise TypeError("event_record cannot be None")
-
         self.heap.append(event_record)
 
     def commit(self):
@@ -156,13 +146,13 @@ class DynamoSession(Session):
             )
         except (
             self.record_manager.client.exceptions.TransactionCanceledException
-        ) as e:
+        ) as error:
             if (
-                e.response["Error"]["Message"]
+                error.response["Error"]["Message"]
                 == "Transaction cancelled, please refer "
                 "cancellation reasons for specific reasons "
                 "[ConditionalCheckFailed]"
             ):
-                raise ConcurrencyError() from e
-            else:
-                raise e
+                raise ConcurrencyError() from error
+
+            raise error

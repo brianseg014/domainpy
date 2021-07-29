@@ -31,9 +31,9 @@ class Idempotency:
 def idempotent(record_manager: IdempotencyRecordManager):
     def inner_function(func):
         def wrapper(record):
-            with Idempotency(record, record_manager) as record:
-                if record is not None:
-                    func(record)
+            with Idempotency(record, record_manager) as idempotent_record:
+                if idempotent_record is not None:
+                    func(idempotent_record)
 
         return wrapper
 

@@ -8,12 +8,3 @@ class DomainEvent(SystemData, Traceable, Contextualized):
     __number__: int
     __timestamp__: float
     __version__: int = 1
-
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, self.__class__):
-            return False
-
-        return (
-            self.__stream_id__ == other.__stream_id__
-            and self.__number__ == other.__number__
-        )

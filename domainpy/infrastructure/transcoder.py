@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import abc
-import typing
 import functools
 import dataclasses
+
+import domainpy.compat_typing as typing
 
 from domainpy.application.integration import IntegrationEvent
 from domainpy.application.command import ApplicationCommand
@@ -67,12 +68,12 @@ class Transcoder(abc.ABC):
         codec = self._get_codec(objtype)
         return codec.decode(data, objtype)
 
-    @functools.cache
+    @functools.lru_cache(maxsize=None)
     def _get_codec(self, objtype: typing.Type) -> ICodec:
         try:
             return next(c for c in self.codecs if c.can_handle(objtype))
-        except StopIteration:
-            raise MissingCodecError(f"unknown codec for {objtype}")
+        except StopIteration as error:
+            raise MissingCodecError(f"unknown codec for {objtype}") from error
 
 
 class ICodec(abc.ABC):
@@ -137,30 +138,27 @@ class _OptionalCodec(ICodec):
         origin = typing.get_origin(field_type)
         origin_args = typing.get_args(field_type)
 
-        if (
+        return (  # typing.Optional[some_type]
             origin is typing.Union
             and len(origin_args) == 2
             and origin_args[1] is type(None)  # noqa: E721
-        ):
-            return True
-        else:
-            return False
+        )
 
     def encode(self, obj: typing.Any, field_type: typing.Type) -> typing.Any:
         origin_args = typing.get_args(field_type)
 
         if obj is None:
             return None
-        else:
-            return self.transcoder.encode(obj, origin_args[1])
+
+        return self.transcoder.encode(obj, origin_args[1])
 
     def decode(self, data: dict, field_type: typing.Type) -> typing.Any:
         origin_args = typing.get_args(field_type)
 
         if data is None:
             return None
-        else:
-            return self.transcoder.decode(data, origin_args[1])
+
+        return self.transcoder.decode(data, origin_args[1])
 
 
 class _DictCodec(ICodec):
@@ -198,16 +196,16 @@ class _SystemMessageCodec(ICodec):
         fields = get_fields(field_type)
 
         dct: dict[str, typing.Any] = {"payload": {}}
-        for f in fields:
-            field_value = getattr(obj, f.name, MISSING)
+        for field in fields:
+            field_value = getattr(obj, field.name, MISSING)
             if field_value == MISSING:
-                raise MissingFieldValueError(f"missing field: {f.name}")
+                raise MissingFieldValueError(f"missing field: {field.name}")
 
-            encoded_value = self.trancoder.encode(field_value, f.type)
-            if self._is_meta_field(f):
-                dct[f.name] = encoded_value
+            encoded_value = self.trancoder.encode(field_value, field.type)
+            if self._is_meta_field(field):
+                dct[field.name] = encoded_value
             else:
-                dct["payload"][f.name] = encoded_value
+                dct["payload"][field.name] = encoded_value
 
         return dct
 
@@ -215,26 +213,30 @@ class _SystemMessageCodec(ICodec):
         fields = get_fields(field_type)
 
         dct = {}
-        for f in fields:
-            if self._is_meta_field(f):
-                field_data = data.get(self._get_record_field_name(f), MISSING)
+        for field in fields:
+            if self._is_meta_field(field):
+                field_data = data.get(
+                    self._get_record_field_name(field), MISSING
+                )
             else:
                 payload = data.get("payload", MISSING)
                 if payload is MISSING:
                     raise MissingFieldValueError("missing field: payload")
-                field_data = payload.get(f.name, MISSING)
+                field_data = payload.get(field.name, MISSING)
 
             if field_data == MISSING:
-                raise MissingFieldValueError(f"missing field: {f.name}")
+                raise MissingFieldValueError(f"missing field: {field.name}")
 
-            dct[f.name] = self.trancoder.decode(field_data, f.type)
+            dct[field.name] = self.trancoder.decode(field_data, field.type)
 
         return field_type(**dct)
 
-    def _is_meta_field(self, field: Field) -> bool:
+    @classmethod
+    def _is_meta_field(cls, field: Field) -> bool:
         return field.name.startswith("__") and field.name.endswith("__")
 
-    def _get_record_field_name(self, field: Field) -> str:
+    @classmethod
+    def _get_record_field_name(cls, field: Field) -> str:
         # Remove dunder
         # Ex. __stream_id__ to stream_id
         return field.name[2:-2]
@@ -344,13 +346,13 @@ class _ValueObjectCodec(ICodec):
         fields = get_fields(field_type)
 
         dct = {}
-        for f in fields:
-            field_value = getattr(obj, f.name, MISSING)
+        for field in fields:
+            field_value = getattr(obj, field.name, MISSING)
 
             if field_value == MISSING:
-                raise MissingFieldValueError(f"missing field: {f.name}")
+                raise MissingFieldValueError(f"missing field: {field.name}")
 
-            dct[f.name] = self.transcoder.encode(field_value, f.type)
+            dct[field.name] = self.transcoder.encode(field_value, field.type)
 
         return dct
 
@@ -358,12 +360,12 @@ class _ValueObjectCodec(ICodec):
         fields = get_fields(field_type)
 
         dct = {}
-        for f in fields:
-            field_data = data.get(f.name, MISSING)
+        for field in fields:
+            field_data = data.get(field.name, MISSING)
 
             if field_data == MISSING:
-                raise MissingFieldValueError(f"missing field: {f.name}")
+                raise MissingFieldValueError(f"missing field: {field.name}")
 
-            dct[f.name] = self.transcoder.decode(field_data, f.type)
+            dct[field.name] = self.transcoder.decode(field_data, field.type)
 
         return field_type(**dct)

@@ -1,7 +1,14 @@
 from __future__ import annotations
-from domainpy.domain.model.exceptions import DomainError
 
 import typing
+
+from domainpy.domain.model.exceptions import DomainError
+from domainpy.utils.bus import Bus
+from domainpy.utils.bus_subscribers import (
+    ApplicationServiceSubscriber,
+    ProjectionSubscriber,
+    PublisherSubciber,
+)
 
 if typing.TYPE_CHECKING:  # pragma: no cover
     from domainpy.typing.application import SystemMessage  # type: ignore
@@ -10,13 +17,6 @@ if typing.TYPE_CHECKING:  # pragma: no cover
     from domainpy.application.integration import IntegrationEvent
     from domainpy.domain.model.event import DomainEvent
     from domainpy.infrastructure.publishers.base import IPublisher
-
-from domainpy.utils.bus import Bus
-from domainpy.utils.bus_subscribers import (
-    ApplicationServiceSubscriber,
-    ProjectionSubscriber,
-    PublisherSubciber,
-)
 
 
 class ApplicationBusAdapter:

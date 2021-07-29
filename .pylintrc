@@ -1,0 +1,9 @@
+[SIMILARITIES]
+ignore-imports=yes
+
+[MESSAGES CONTROL]
+disable=
+      missing-module-docstring,
+      missing-class-docstring,
+      missing-function-docstring,
+      too-few-public-methods

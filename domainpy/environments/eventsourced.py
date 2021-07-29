@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import abc
 import typing
 
 from domainpy.application import IntegrationEvent
@@ -26,7 +27,7 @@ from domainpy.exceptions import ConcurrencyError
 from domainpy.typing.application import SystemMessage  # type: ignore
 
 
-class EventSourcedEnvironment:
+class EventSourcedEnvironment(abc.ABC):
     def __init__(
         self,
         context: str,
@@ -34,8 +35,10 @@ class EventSourcedEnvironment:
         integration_mapper: Mapper,
         event_mapper: Mapper,
         *,
-        setupargs: dict = {}
+        setupargs: dict = None
     ) -> None:
+        if setupargs is None:
+            setupargs = {}
 
         self.context = context
         Contextualized.__context__ = self.context
@@ -103,7 +106,7 @@ class EventSourcedEnvironment:
         message: SystemMessage,
         retries: int = 3,
     ):
-        if not retries > 0:
+        if retries <= 0:
             raise ValueError("retries should be positive integer")
 
         if message.__trace_id__ is None:
@@ -124,23 +127,26 @@ class EventSourcedEnvironment:
                 try:
                     self.handler_bus.publish(publishable)
                     done = True
-                except DomainError as e:
-                    publishable = e
-            except ConcurrencyError as e:
+                except DomainError as error:
+                    publishable = error
+            except ConcurrencyError as error:
                 retries = retries - 1
                 if retries == 0:
-                    raise ConcurrencyError("exahusted retries") from e
+                    raise ConcurrencyError("exahusted retries") from error
 
+    @abc.abstractmethod
     def setup_event_record_manager(
         self, setupargs: dict
     ) -> EventRecordManager:
         pass
 
+    @abc.abstractmethod
     def setup_registry(
         self, registry: Registry, event_store: EventStore, setupargs: dict
     ) -> None:
         pass
 
+    @abc.abstractmethod
     def setup_domain_publisher_bus(
         self,
         domain_publisher_bus: PublisherBusAdapter[DomainEvent],
@@ -149,6 +155,7 @@ class EventSourcedEnvironment:
     ) -> None:
         pass
 
+    @abc.abstractmethod
     def setup_integration_publisher_bus(
         self,
         integration_publisher_bus: PublisherBusAdapter[IntegrationEvent],
@@ -157,6 +164,7 @@ class EventSourcedEnvironment:
     ) -> None:
         pass
 
+    @abc.abstractmethod
     def setup_projection_bus(
         self,
         projection_bus: ProjectionBusAdapter,
@@ -165,6 +173,7 @@ class EventSourcedEnvironment:
     ) -> None:
         pass
 
+    @abc.abstractmethod
     def setup_resolver_bus(
         self,
         resolver_bus: ApplicationBusAdapter,
@@ -173,6 +182,7 @@ class EventSourcedEnvironment:
     ) -> None:
         pass
 
+    @abc.abstractmethod
     def setup_handler_bus(
         self,
         handler_bus: ApplicationBusAdapter,

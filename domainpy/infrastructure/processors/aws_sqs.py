@@ -1,3 +1,4 @@
+import typing
 import boto3  # type: ignore
 
 from domainpy.exceptions import PartialBatchError
@@ -5,8 +6,13 @@ from domainpy.infrastructure.processors.base import Processor
 
 
 class AwsSimpleQueueServiceBatchProcessor(Processor):
-    def __init__(self, **kwargs):
-        super().__init__()
+    def __init__(
+        self,
+        raw_message: dict,
+        record_handler: typing.Callable[[dict], None],
+        **kwargs,
+    ):
+        super().__init__(raw_message, record_handler)
         self.client = boto3.client("sqs", **kwargs)
 
     def get_records(self):
@@ -18,7 +24,7 @@ class AwsSimpleQueueServiceBatchProcessor(Processor):
     def get_queue_url(self):
         records = self.get_records()
         *_, account_id, queue_name = records[0]["eventSourceARN"].split(":")
-        return f"{self.client._endpoint.host}/{account_id}/{queue_name}"
+        return f"{self.client._endpoint.host}/{account_id}/{queue_name}"  # noqa: E501 # pylint: disable=protected-access
 
     def get_entries_succeeded(self):
         return [
@@ -48,8 +54,9 @@ class AwsSimpleQueueServiceBatchProcessor(Processor):
 def sqs_batch_processor(record_handler):
     def inner_function(func):
         def wrapper(queue_message, *args, **kwargs):
-            processor = AwsSimpleQueueServiceBatchProcessor()
-            with processor(queue_message, record_handler) as (
+            with AwsSimpleQueueServiceBatchProcessor(
+                queue_message, record_handler
+            ) as (
                 success_messages,
                 fail_messages,
             ):
