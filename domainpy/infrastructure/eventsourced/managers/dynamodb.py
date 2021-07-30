@@ -13,10 +13,10 @@ from domainpy.utils.dynamodb import client_serialize as serialize
 
 
 class DynamoDBEventRecordManager(EventRecordManager):
-    def __init__(self, table_name, region_name=None):
+    def __init__(self, table_name, **kwargs):
         self.table_name = table_name
 
-        self.client = boto3.client("dynamodb", region_name=region_name)
+        self.client = boto3.client("dynamodb", **kwargs)
 
     def session(self):
         return DynamoSession(self)

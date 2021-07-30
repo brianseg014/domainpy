@@ -92,7 +92,7 @@ def put_event_record(dynamodb, table_name, event_record):
     )
 
 def test_append_commit(dynamodb, table_name, region_name, event_record):
-    rm = DynamoDBEventRecordManager(table_name, region_name)
+    rm = DynamoDBEventRecordManager(table_name, region_name=region_name)
 
     with rm.session() as session:
         session.append(
@@ -106,7 +106,7 @@ def test_append_commit(dynamodb, table_name, region_name, event_record):
 def test_append_fail_on_concurrency(dynamodb, table_name, region_name, event_record):
     put_event_record(dynamodb, table_name, event_record)
 
-    rm = DynamoDBEventRecordManager(table_name, region_name)
+    rm = DynamoDBEventRecordManager(table_name, region_name=region_name)
 
     with pytest.raises(excs.ConcurrencyError):
         with rm.session() as session:
@@ -116,7 +116,7 @@ def test_append_fail_on_concurrency(dynamodb, table_name, region_name, event_rec
             session.commit()
 
 def test_append_rollback(dynamodb, table_name, region_name, event_record):
-    rm = DynamoDBEventRecordManager(table_name, region_name)
+    rm = DynamoDBEventRecordManager(table_name, region_name=region_name)
 
     with rm.session() as session:
         session.append(
@@ -129,7 +129,7 @@ def test_append_rollback(dynamodb, table_name, region_name, event_record):
 def test_get_records(dynamodb, table_name, region_name, stream_id, event_record):
     put_event_record(dynamodb, table_name, event_record)
 
-    rm = DynamoDBEventRecordManager(table_name, region_name)
+    rm = DynamoDBEventRecordManager(table_name, region_name=region_name)
 
     events = rm.get_records(stream_id)
     assert len(list(events)) == 1
@@ -139,7 +139,7 @@ def test_get_records_filtering_number(dynamodb, table_name, region_name, stream_
     put_event_record(dynamodb, table_name, event_record)
     put_event_record(dynamodb, table_name, event_record_2)
 
-    rm = DynamoDBEventRecordManager(table_name, region_name)
+    rm = DynamoDBEventRecordManager(table_name, region_name=region_name)
 
     events = rm.get_records(stream_id, from_number=0, to_number=0)
     assert len(list(events)) == 1
