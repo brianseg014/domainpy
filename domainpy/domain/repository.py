@@ -1,17 +1,20 @@
 import abc
 import typing
 
-TAggregateRoot = typing.TypeVar("TAggregateRoot")
-TIdentity = typing.TypeVar("TIdentity")
+from domainpy.domain.model.aggregate import AggregateRoot
+from domainpy.domain.model.value_object import Identity
+
+TAggregateRoot = typing.TypeVar("TAggregateRoot", bound=AggregateRoot)
+TIdentity = typing.TypeVar("TIdentity", bound=Identity)
 
 
 class IRepository(typing.Generic[TAggregateRoot, TIdentity], abc.ABC):
     @abc.abstractmethod
-    def save(self, aggregate: TAggregateRoot):  # pragma: no cover
+    def save(self, aggregate: TAggregateRoot) -> None:  # pragma: no cover
         pass
 
     @abc.abstractmethod
     def get(
         self, identity: typing.Union[TIdentity, str]
-    ) -> TAggregateRoot:  # pragma: no cover
+    ) -> typing.Optional[TAggregateRoot]:  # pragma: no cover
         pass

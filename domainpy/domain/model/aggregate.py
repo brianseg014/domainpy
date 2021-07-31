@@ -7,7 +7,10 @@ import functools
 from domainpy.domain.model.entity import DomainEntity
 from domainpy.domain.model.event import DomainEvent
 from domainpy.domain.model.value_object import Identity
-from domainpy.exceptions import DefinitionError, VersionError
+from domainpy.exceptions import (
+    DefinitionError,
+    VersionError,
+)
 
 
 class AggregateRoot(DomainEntity):
@@ -23,12 +26,9 @@ class AggregateRoot(DomainEntity):
         return Selector(e for e in self.__seen__)
 
     def __stamp__(self, event_type: typing.Type[DomainEvent]):
-        identity = self.__identity__.identity  # type: ignore
-        aggregate_name = self.__class__.__name__
-
         return functools.partial(
             event_type,
-            __stream_id__=f"{identity}:{aggregate_name}",
+            __stream_id__=self.create_stream_id(self.__identity__),
             __number__=self.__version__ + 1,
             __timestamp__=datetime.datetime.timestamp(datetime.datetime.now()),
         )
@@ -38,7 +38,10 @@ class AggregateRoot(DomainEntity):
 
         self.__changes__.append(event)
 
-    def __route__(self, event: DomainEvent):
+    def __route__(self, event: DomainEvent, **kwargs):
+        if kwargs.pop("is_snapshot", False):
+            self.__version__ = event.__number__ - 1
+
         next_version = self.__version__ + 1
 
         if event.__number__ != next_version:
@@ -48,6 +51,24 @@ class AggregateRoot(DomainEntity):
         self.__seen__.append(event)
 
         self.mutate(event)
+
+    def take_snapshot(self) -> DomainEvent:
+        raise NotImplementedError()
+
+    @classmethod
+    def create_stream_id(cls, identity: typing.Union[Identity, str]) -> str:
+        if isinstance(identity, Identity):
+            identity = getattr(identity, "identity")
+
+        aggregate_name = cls.__name__
+        return f"{identity}:{aggregate_name}"
+
+    @classmethod
+    def create_snapshot_stream_id(
+        cls, identity: typing.Union[Identity, str]
+    ) -> str:
+        stream_id = cls.create_stream_id(identity)
+        return f"{stream_id}:Snapshot"
 
 
 TDomainEvent = typing.TypeVar("TDomainEvent", bound=DomainEvent)

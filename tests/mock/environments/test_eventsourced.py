@@ -31,12 +31,15 @@ def test_event_store_given_has_event():
     integration_mapper = mock.MagicMock()
     event_mapper = mock.MagicMock()
 
+    aggreagte_id = str(uuid.uuid4())
+
     Aggregate = type(
         'Aggregate',
         (mock.MagicMock,),
         {}
     )
     Aggregate.__name__ = 'Aggregate'
+    Aggregate.create_stream_id = mock.Mock(return_value=f'{aggreagte_id}:Aggregate')
 
     DomainEvent = type(
         'DomainEvent', 
@@ -50,8 +53,6 @@ def test_event_store_given_has_event():
         integration_mapper=integration_mapper,
         event_mapper=event_mapper
     )
-    
-    aggreagte_id = str(uuid.uuid4())
     
     event = DomainEvent()
     event.__trace_id__='tid'

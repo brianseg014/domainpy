@@ -55,7 +55,7 @@ class EventSourcedEnvironmentTestAdapter(EventSourcedEnvironment):
     ) -> None:
         domain_publisher_bus.attach(self.domain_events)
 
-    def setup_integration_publisher_bus(
+    def setup_integration_publisher_bus(  # pylint: disable=all
         self,
         integration_publisher_bus: PublisherBusAdapter[IntegrationEvent],
         integration_mapper: Mapper,
@@ -145,12 +145,6 @@ class DomeinEventsTestExpression:
     def __init__(self, domain_events: typing.List[DomainEvent]):
         self.domain_events = domain_events
 
-    @classmethod
-    def get_stream_id(
-        cls, aggregate_type: typing.Type[AggregateRoot], aggregate_id: str
-    ) -> str:
-        return f"{aggregate_id}:{aggregate_type.__name__}"
-
     def get_events(
         self,
         event_type: typing.Type[TDomainEvent],
@@ -164,7 +158,7 @@ class DomeinEventsTestExpression:
                     "both aggregate_type and aggregate_id should be set"
                 )
 
-            stream_id = self.get_stream_id(aggregate_type, aggregate_id)
+            stream_id = aggregate_type.create_stream_id(aggregate_id)
             events = (  # type: ignore
                 e
                 for e in events

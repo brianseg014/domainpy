@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import datetime
+import itertools
 import typing
 
 from domainpy.domain.model.event import DomainEvent
@@ -36,3 +37,6 @@ class EventStream(typing.List[DomainEvent]):
         filtered = EventStream([e for e in self if all(f(e) for f in filters)])
 
         return filtered
+
+    def chain(self, stream: EventStream) -> EventStream:
+        return typing.cast(EventStream, itertools.chain(self, stream))

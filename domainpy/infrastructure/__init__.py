@@ -4,6 +4,7 @@ from .eventsourced.eventstream import EventStream
 from .eventsourced.managers.dynamodb import DynamoDBEventRecordManager
 from .eventsourced.managers.memory import MemoryEventRecordManager
 from .eventsourced.repository import (
+    SnapshotConfiguration,
     make_adapter as make_eventsourced_repository_adapter,
 )
 from .idempotent import (
@@ -35,6 +36,7 @@ __all__ = [
     "EventRecordManager",
     "MemoryEventRecordManager",
     "DynamoDBEventRecordManager",
+    "SnapshotConfiguration",
     "make_eventsourced_repository_adapter",
     "Idempotency",
     "IdempotencyRecordManager",

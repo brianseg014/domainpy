@@ -22,6 +22,7 @@ from domainpy.domain import (
 from domainpy.infrastructure import (
     Mapper,
     EventStore,
+    SnapshotConfiguration,
     make_eventsourced_repository_adapter as make_repo_adapter,
     Transcoder
 )
@@ -158,7 +159,6 @@ def test_all_system():
     Adapter = make_repo_adapter(PetStore, PetStoreId)
     class EventSourcedPetStoreRepository(PetStoreRepository, Adapter):
         pass
-
 
     ################################## Environment ######################################
 
