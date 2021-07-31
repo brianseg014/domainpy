@@ -183,7 +183,7 @@ def create_eq_fn(cls):
 
 
 def create_str_fn(cls):
-    fnname = '__str__'
+    fnname = "__str__"
 
     cls_globals = sys.modules[cls.__module__].__dict__
 
@@ -197,7 +197,7 @@ def create_str_fn(cls):
 
 
 def create_repr_fn(cls):
-    fnname = '__repr__'
+    fnname = "__repr__"
 
     cls_globals = sys.modules[cls.__module__].__dict__
 
