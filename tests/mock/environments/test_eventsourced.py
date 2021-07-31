@@ -1,9 +1,14 @@
 import pytest
 import uuid
-from unittest import mock
 
+from domainpy.application.command import ApplicationCommand
 from domainpy.application.integration import IntegrationEvent
+from domainpy.domain.model.aggregate import AggregateRoot
+from domainpy.domain.model.event import DomainEvent
+from domainpy.domain.model.value_object import Identity
 from domainpy.infrastructure.eventsourced.eventstore import EventStore
+from domainpy.infrastructure.transcoder import Transcoder
+from domainpy.infrastructure.mappers import Mapper
 from domainpy.utils.bus import Bus
 from domainpy.utils.bus_subscribers import BasicSubscriber
 from domainpy.utils.registry import Registry
@@ -26,56 +31,74 @@ class Environment(EventSourcedEnvironmentTestAdapter):
         pass
 
 
-def test_event_store_given_has_event():
-    command_mapper = mock.MagicMock()
-    integration_mapper = mock.MagicMock()
-    event_mapper = mock.MagicMock()
+class Aggregate(AggregateRoot):
+    def mutate(self, event: DomainEvent) -> None:
+        pass
 
-    aggreagte_id = str(uuid.uuid4())
 
-    Aggregate = type(
-        'Aggregate',
-        (mock.MagicMock,),
-        {}
-    )
-    Aggregate.__name__ = 'Aggregate'
-    Aggregate.create_stream_id = mock.Mock(return_value=f'{aggreagte_id}:Aggregate')
-
-    DomainEvent = type(
-        'DomainEvent', 
-        (mock.MagicMock,),
-        {}
+@pytest.fixture
+def command_mapper():
+    return Mapper(
+        transcoder=Transcoder()
     )
 
+@pytest.fixture
+def integration_mapper():
+    return Mapper(
+        transcoder=Transcoder()
+    )
+
+@pytest.fixture
+def event_mapper():
+    return Mapper(
+        transcoder=Transcoder()
+    )
+
+@pytest.fixture
+def aggregate_id():
+    return str(uuid.uuid4())
+
+@pytest.fixture
+def aggregate(aggregate_id):
+    return Aggregate(Identity.from_text(aggregate_id))
+
+@pytest.fixture
+def event(aggregate):
+    return aggregate.__stamp__(DomainEvent)(
+        __trace_id__ = 'tid', some_property='x'
+    )
+
+@pytest.fixture
+def integration():
+    return IntegrationEvent(
+        __resolve__ = 'success',
+        __error__ = None,
+        __timestamp__ = 0.0,
+        some_property = 'x'
+    )
+
+@pytest.fixture
+def command():
+    return ApplicationCommand(
+        __timestamp__ = 0.0,
+        __trace_id__ = 'tid'
+    )
+
+def test_event_store_given_has_event(command_mapper, integration_mapper, event_mapper, aggregate_id, event):
     env = Environment(
         context='some_context',
         command_mapper=command_mapper,
         integration_mapper=integration_mapper,
         event_mapper=event_mapper
     )
-    
-    event = DomainEvent()
-    event.__trace_id__='tid'
-    event.__stream_id__=f'{aggreagte_id}:{Aggregate.__name__}'
-    event.some_property='x'
 
     env.given(event)
-    env.then.domain_events.assert_has_event(event.__class__, aggregate_type=Aggregate, aggregate_id=aggreagte_id)
+    env.then.domain_events.assert_has_event(event.__class__, aggregate_type=Aggregate, aggregate_id=aggregate_id)
     env.then.domain_events.assert_has_event_once(event.__class__)
     env.then.domain_events.assert_has_event_n_times(event.__class__, times=1)
     env.then.domain_events.assert_has_event_with(event.__class__, some_property='x')
 
-def test_event_store_has_event_fails():
-    command_mapper = mock.MagicMock()
-    integration_mapper = mock.MagicMock()
-    event_mapper = mock.MagicMock()
-
-    DomainEvent = type(
-        'DomainEvent', 
-        (mock.MagicMock,),
-        {}
-    )
-
+def test_event_store_has_event_fails(command_mapper, integration_mapper, event_mapper):
     env = Environment(
         context='some_context',
         command_mapper=command_mapper,
@@ -95,17 +118,7 @@ def test_event_store_has_event_fails():
     with pytest.raises(AssertionError):
         env.then.domain_events.assert_has_event_with(DomainEvent, some_property='x')
 
-def test_event_store_has_not_event():
-    command_mapper = mock.MagicMock()
-    integration_mapper = mock.MagicMock()
-    event_mapper = mock.MagicMock()
-
-    DomainEvent = type(
-        'DomainEvent', 
-        (mock.MagicMock,),
-        {}
-    )
-
+def test_event_store_has_not_event(command_mapper, integration_mapper, event_mapper):
     env = Environment(
         context='some_context',
         command_mapper=command_mapper,
@@ -114,17 +127,7 @@ def test_event_store_has_not_event():
     )
     env.then.domain_events.assert_has_not_event(DomainEvent)
 
-def test_integrations_has_integration():
-    command_mapper = mock.MagicMock()
-    integration_mapper = mock.MagicMock()
-    event_mapper = mock.MagicMock()
-
-    IntegrationEvent = type(
-        'IntegrationEvent',
-        (mock.MagicMock,),
-        { }
-    )
-
+def test_integrations_has_integration(command_mapper, integration_mapper, event_mapper, integration):
     env = Environment(
         context='some_context',
         command_mapper=command_mapper,
@@ -132,23 +135,11 @@ def test_integrations_has_integration():
         event_mapper=event_mapper
     )
 
-    integration = IntegrationEvent()
-    integration.some_property = 'x'
     env.integration_publisher_bus.publish(integration)
     env.then.integration_events.assert_has_integration(IntegrationEvent)
     env.then.integration_events.assert_has_integration_with(IntegrationEvent, some_property='x')
 
-def test_integrations_has_not_integration():
-    command_mapper = mock.MagicMock()
-    integration_mapper = mock.MagicMock()
-    event_mapper = mock.MagicMock()
-
-    IntegrationEvent = type(
-        'IntegrationEvent',
-        (mock.MagicMock,),
-        { }
-    )
-
+def test_integrations_has_not_integration(command_mapper, integration_mapper, event_mapper):
     env = Environment(
         context='some_context',
         command_mapper=command_mapper,
@@ -158,20 +149,7 @@ def test_integrations_has_not_integration():
 
     env.then.integration_events.assert_has_not_integration(IntegrationEvent)
 
-def test_when():
-    command_mapper = mock.MagicMock()
-    integration_mapper = mock.MagicMock()
-    event_mapper = mock.MagicMock()
-
-    ApplicationCommand = type(
-        'ApplicationComand',
-        (mock.MagicMock,),
-        { }
-    )
-
-    command = ApplicationCommand()
-    command.__trace_id__ = 'tid'
-
+def test_when(command_mapper, integration_mapper, event_mapper, command):
     env = Environment(
         context='some_context',
         command_mapper=command_mapper,

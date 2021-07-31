@@ -2,7 +2,6 @@
 
 import pytest
 import typing
-import functools
 from unittest import mock
 
 from domainpy.typing.application import SystemMessage
@@ -13,9 +12,10 @@ from domainpy.domain.model.exceptions import DomainError
 from domainpy.infrastructure.eventsourced.eventstore import EventStore
 from domainpy.infrastructure.eventsourced.recordmanager import EventRecordManager
 from domainpy.infrastructure.mappers import Mapper
+from domainpy.infrastructure.transcoder import Transcoder
 from domainpy.environments.eventsourced import EventSourcedEnvironment
 from domainpy.exceptions import ConcurrencyError
-from domainpy.utils.bus import Bus, ISubscriber
+from domainpy.utils.bus import Bus, ISubscriber, Message
 from domainpy.utils.registry import Registry
 from domainpy.utils.bus_adapters import ApplicationBusAdapter, ProjectionBusAdapter, PublisherBusAdapter
 
@@ -54,12 +54,34 @@ class StorySubscriber(ISubscriber[SystemMessage]):
         self.story.append(self.name)
         
 
-def test_bus_sequence():
-    command_mapper = mock.MagicMock()
-    integration_mapper = mock.MagicMock()
-    event_mapper = mock.MagicMock()
-    event = mock.MagicMock()
-    
+@pytest.fixture
+def command_mapper():
+    return Mapper(
+        transcoder=Transcoder()
+    )
+
+@pytest.fixture
+def integration_mapper():
+    return Mapper(
+        transcoder=Transcoder()
+    )
+
+@pytest.fixture
+def event_mapper():
+    return Mapper(
+        transcoder=Transcoder()
+    )
+
+@pytest.fixture
+def event():
+    return DomainEvent(
+        __stream_id__ = 'sid',
+        __number__ = 1,
+        __timestamp__ = 0.0,
+        __trace_id__ = 'tid'
+    )
+
+def test_bus_sequence(command_mapper, integration_mapper, event_mapper, event):
     env = Environment(
         context='some_context',
         command_mapper=command_mapper,
@@ -78,13 +100,7 @@ def test_bus_sequence():
 
     assert story == ['domain', 'projection', 'resolver', 'handler']
 
-def test_bus_handle():
-    command_mapper = mock.MagicMock()
-    integration_mapper = mock.MagicMock()
-    event_mapper = mock.MagicMock()
-    command = mock.MagicMock()
-    command.__trace_id__ = 'tid'
-    
+def test_bus_handle(command_mapper, integration_mapper, event_mapper, event):
     env = Environment(
         context='some_context',
         command_mapper=command_mapper,
@@ -96,20 +112,14 @@ def test_bus_handle():
     env.resolver_bus.attach(StorySubscriber('resolver', story))
     env.handler_bus.attach(StorySubscriber('handler', story))
 
-    env.handle(command)
+    env.handle(event)
 
     assert story == ['resolver', 'handler']
 
-def test_publish_domain_error():
-    command_mapper = mock.MagicMock()
-    integration_mapper = mock.MagicMock()
-    event_mapper = mock.MagicMock()
-    command = mock.MagicMock()
-    command.__trace_id__ = 'tid'
-
+def test_publish_domain_error(command_mapper, integration_mapper, event_mapper, event):
     error = DomainError()
     def router(message):
-        if message == command:
+        if message == event:
             raise error
 
     handler = mock.MagicMock()
@@ -124,25 +134,18 @@ def test_publish_domain_error():
 
     env.handler_bus.attach(handler)
 
-    env.handle(command)
+    env.handle(event)
 
     handler.__route__.assert_called_with(error)
 
-def test_publish_retry_on_concurrency_error():
-    command_mapper = mock.MagicMock()
-    integration_mapper = mock.MagicMock()
-    event_mapper = mock.MagicMock()
-    command = mock.MagicMock()
-    command.__trace_id__ = 'tid'
-
+def test_publish_retry_on_concurrency_error(command_mapper, integration_mapper, event_mapper, event):
     story = []
-    def router(story, message):
-        if len(story) <= 1:
-            story.append('raised')
-            raise ConcurrencyError()
 
-    handler = mock.MagicMock()
-    handler.__route__ = mock.Mock(side_effect=functools.partial(router, story))
+    class Handler(ISubscriber):
+        def __route__(self, message: Message):
+            if len(story) <= 1:
+                story.append('raised')
+                raise ConcurrencyError()
     
     env = Environment(
         context='some_context',
@@ -151,27 +154,21 @@ def test_publish_retry_on_concurrency_error():
         event_mapper=event_mapper,
     )
 
+    handler = Handler()
     env.handler_bus.attach(handler)
 
-    env.handle(command)
+    env.handle(event)
 
     assert story == ['raised', 'raised']
 
-def test_publish_raise_concurrency_error_if_exahusted():
-    command_mapper = mock.MagicMock()
-    integration_mapper = mock.MagicMock()
-    event_mapper = mock.MagicMock()
-    command = mock.MagicMock()
-    command.__trace_id__ = 'tid'
-
+def test_publish_raise_concurrency_error_if_exahusted(command_mapper, integration_mapper, event_mapper, event):
     story = []
-    def router(story, message):
-        if len(story) <= 5:
-            story.append('raised')
-            raise ConcurrencyError()
 
-    handler = mock.MagicMock()
-    handler.__route__ = mock.Mock(side_effect=functools.partial(router, story))
+    class Handler(ISubscriber):
+        def __route__(self, message: Message):
+            if len(story) <= 5:
+                story.append('raised')
+                raise ConcurrencyError()
     
     env = Environment(
         context='some_context',
@@ -180,18 +177,20 @@ def test_publish_raise_concurrency_error_if_exahusted():
         event_mapper=event_mapper,
     )
 
+    handler = Handler()
     env.handler_bus.attach(handler)
 
     with pytest.raises(ConcurrencyError):
-        env.handle(command)
+        env.handle(event)
 
-def test_bus_handle_fails_if_trace_id_is_None():
-    command_mapper = mock.MagicMock()
-    integration_mapper = mock.MagicMock()
-    event_mapper = mock.MagicMock()
-    command = mock.MagicMock()
-    command.__trace_id__ = None
-    
+def test_bus_handle_fails_if_trace_id_is_None(command_mapper, integration_mapper, event_mapper):
+    event = DomainEvent(
+        __stream_id__ = 'sid',
+        __number__ = 1,
+        __timestamp__ = 0.0,
+        __trace_id__ = None
+    )
+
     env = Environment(
         context='some_context',
         command_mapper=command_mapper,
@@ -200,4 +199,4 @@ def test_bus_handle_fails_if_trace_id_is_None():
     )
 
     with pytest.raises(TypeError):
-        env.handle(command)
+        env.handle(event)
