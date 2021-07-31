@@ -1,27 +1,45 @@
-
+import typing
 from unittest import mock
 
+from domainpy.application.service import ApplicationService
+from domainpy.application.command import ApplicationCommand
+from domainpy.infrastructure.publishers.base import IPublisher
 from domainpy.utils import bus_subscribers as subs
+from domainpy.typing.application import SystemMessage
 
 
 def test_application_service_subscriber():
-    application_service = mock.MagicMock()
+    class Service(ApplicationService):
+        def handle(self, message: SystemMessage) -> None:
+            self.proof_of_work(message)
 
-    SomeMessageType = type('SomeMessageType', (), {})
-    some_message = SomeMessageType()
+        def proof_of_work(self, *args, **kwargs):
+            pass
 
-    x = subs.ApplicationServiceSubscriber(application_service)
-    x.__route__(some_message)
+    service = Service()
+    service.proof_of_work = mock.Mock()
 
-    application_service.handle.assert_called_once_with(some_message)
+    command = ApplicationCommand(__timestamp__=0.0)
+
+    x = subs.ApplicationServiceSubscriber(service)
+    x.__route__(command)
+
+    service.proof_of_work.assert_called_with(command)
 
 def test_publisher_subscriber():
-    publisher = mock.MagicMock()
+    class Publisher(IPublisher):
+        def publish(self, messages: typing.Union[SystemMessage, typing.Sequence[SystemMessage]]):
+            self.proof_of_work(messages)
 
-    SomeMessageType = type('SomeMessageType', (), {})
-    some_message = SomeMessageType()
+        def proof_of_work(self, *args, **kwargs):
+            pass
+
+    publisher = Publisher()
+    publisher.proof_of_work = mock.Mock()
+
+    command = ApplicationCommand(__timestamp__=0.0)
 
     x = subs.PublisherSubciber(publisher)
-    x.__route__(some_message)
+    x.__route__(command)
 
-    publisher.publish.assert_called_once_with(some_message)
+    publisher.proof_of_work.assert_called_with(command)

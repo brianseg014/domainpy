@@ -1,20 +1,24 @@
-import pytest
-import typing
+from unittest import mock
 
-from domainpy.utils.bus import Bus, ISubscriber
-from domainpy.utils.bus_subscribers import BasicSubscriber
+from domainpy.application.command import ApplicationCommand
+from domainpy.utils.bus import Bus, ISubscriber, Message
 
 
 def test_bus():
-    SomeMessageType = type('SomeMessageType', (), {})
-    some_message = SomeMessageType()
+    class Subscriber(ISubscriber):
+        def __route__(self, message: Message):
+            self.proof_of_work(message)
+
+        def proof_of_work(self, *args, **kwargs):
+            pass
+
+    subscriber = Subscriber()
+    subscriber.proof_of_work = mock.Mock()
+
+    command = ApplicationCommand(__timestamp__ = 0.0)
 
     bus = Bus()
+    bus.attach(subscriber)
+    bus.publish(command)
 
-    sub = BasicSubscriber()
-    bus.attach(sub)
-
-    bus.publish(some_message)
-
-    assert len(sub) == 1
-    assert sub[0] == some_message
+    subscriber.proof_of_work.assert_called_with(command)
