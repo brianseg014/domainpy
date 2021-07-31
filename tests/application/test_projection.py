@@ -5,21 +5,16 @@ from domainpy.application.projection import projector
 
 
 def test_projector():
-    story = []
-
-    something = mock.MagicMock()
+    event = mock.MagicMock()
     projection = mock.MagicMock()
+    method = mock.Mock()
 
     @projector
     def project():
         pass
 
-    def project_something(*args):
-        story.append(args)
+    project.event(event.__class__)(method)
 
-    project.event(something.__class__)(project_something)
+    project(projection, event)
 
-    project(projection, something)
-
-    assert story[0][0] == projection
-    assert story[0][1] == something
+    method.assert_called_once_with(projection, event)

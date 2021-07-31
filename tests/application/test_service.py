@@ -11,98 +11,72 @@ def test_service_stamp():
         {}
     )
     
-    class Service(ApplicationService):
-        def handle(self, message):
-            pass
-
-    service = Service()
-    partial_integration = service.stamp_integration(IntegrationEvent)
+    partial_integration = ApplicationService.stamp_integration(IntegrationEvent)
     assert isinstance(partial_integration, functools.partial)
 
 def test_handler_command():
-    story = []
-
-    something = mock.MagicMock()
-    something.__trace_id__ = 'some-trace-id'
+    message = mock.MagicMock()
     service = mock.MagicMock()
+    method = mock.Mock()
 
     @handler
     def handle():
         pass
 
-    def handle_something(*args):
-        story.append(args)
+    handle.command(message.__class__)(method)
 
-    handle.command(something.__class__)(handle_something)
+    handle(service, message)
 
-    handle(service, something)
-
-    assert story[0][0] == service
-    assert story[0][1] == something
+    method.assert_called_with(service, message)
 
 def test_handler_integration():
-    story = []
-
-    something = mock.MagicMock()
-    something.__trace_id__ = 'some-trace-id'
+    message = mock.MagicMock()
     service = mock.MagicMock()
+    method = mock.Mock()
 
     @handler
     def handle():
         pass
 
-    def handle_something(*args):
-        story.append(args)
+    handle.integration(message.__class__)(method)
 
-    handle.integration(something.__class__)(handle_something)
+    handle(service, message)
 
-    handle(service, something)
-
-    assert story[0][0] == service
-    assert story[0][1] == something
+    method.assert_called_with(service, message)
 
 def test_handler_event():
-    story = []
-
-    something = mock.MagicMock()
-    something.__trace_id__ = 'some-trace-id'
+    message = mock.MagicMock()
     service = mock.MagicMock()
+    method = mock.Mock()
 
     @handler
     def handle():
         pass
 
-    def handle_something(*args):
-        story.append(args)
+    handle.event(message.__class__)(method)
 
-    handle.event(something.__class__)(handle_something)
+    handle(service, message)
 
-    handle(service, something)
-
-    assert story[0][0] == service
-    assert story[0][1] == something
+    method.assert_called_with(service, message)
 
 def test_handler_trace():
     story = []
 
-    something = mock.MagicMock()
-    something.__trace_id__ = 'some-trace-id'
-    someotherthing = mock.MagicMock()
-    someotherthing.__trace_id__ = 'some-trace-id'
+    Message1 = type('Message1', (mock.MagicMock,), {})
+    Message2 = type('Message2', (mock.MagicMock,), {})
+
+    message1 = Message1()
+    message2 = Message2()
     service = mock.MagicMock()
+    method = mock.Mock()
 
     @handler
     def handle():
         pass
 
-    def handle_trace(*args):
-        story.append(args)
+    handle.trace(message1.__class__, message2.__class__)(method)
 
-    handle.trace(something.__class__, someotherthing.__class__)(handle_trace)
+    handle(service, message1)
+    handle(service, message2)
 
-    handle(service, something)
-    handle(service, someotherthing)
-
-    assert story[0][0] == service
-    assert story[0][1] == something
-    assert story[0][2] == someotherthing
+    method.assert_called_with(service, message1, message2)

@@ -103,45 +103,38 @@ def test_selector_get_trace_for_compensation():
 
 
 def test_mutator():
-    story = []
-
-    something = mock.MagicMock()
+    event = mock.MagicMock()
     aggregate = mock.MagicMock()
+    method = mock.Mock()
 
     @mutator
     def mutate():
         pass
 
-    def handle_something(*args):
-        story.append(args)
+    mutate.event(event.__class__)(method)
 
-    mutate.event(something.__class__)(handle_something)
+    mutate(aggregate, event)
 
-    mutate(aggregate, something)
-
-    assert story[0][0] == aggregate
-    assert story[0][1] == something
+    method.assert_called_with(aggregate, event)
 
 def test_mutator_must_be_unique():
-    something = mock.MagicMock()
+    event = mock.MagicMock()
+    method = mock.Mock()
 
     @mutator
     def mutate():
         pass
 
-    def handle_something(*args):
-        pass
-
-    mutate.event(something.__class__)(handle_something)
+    mutate.event(event.__class__)(method)
     with pytest.raises(DefinitionError):
-        mutate.event(something.__class__)(handle_something)
+        mutate.event(event.__class__)(method)
 
 def test_mutator_do_nothing_if_not_handle():
-    something = mock.MagicMock()
+    event = mock.MagicMock()
     aggregate = mock.MagicMock()
 
     @mutator
     def mutate():
         pass
 
-    mutate(aggregate, something)
+    mutate(aggregate, event)
