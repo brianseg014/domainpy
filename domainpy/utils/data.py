@@ -182,6 +182,34 @@ def create_eq_fn(cls):
     )
 
 
+def create_str_fn(cls):
+    fnname = '__str__'
+
+    cls_globals = sys.modules[cls.__module__].__dict__
+
+    args = ["self"]
+
+    body_lines = ["return f'{self.__class__.__name__}({self.__dict__})'"]
+
+    return create_fn(
+        fnname, args, body_lines, cls_globals=cls_globals, return_type=str
+    )
+
+
+def create_repr_fn(cls):
+    fnname = '__repr__'
+
+    cls_globals = sys.modules[cls.__module__].__dict__
+
+    args = ["self"]
+
+    body_lines = ["return f'{self.__class__.__name__}({self.__dict__})'"]
+
+    return create_fn(
+        fnname, args, body_lines, cls_globals=cls_globals, return_type=str
+    )
+
+
 class MetaSystemData(type):
     def __new__(cls, name, bases, dct):
         new_cls = super().__new__(cls, name, bases, dct)
@@ -202,6 +230,12 @@ class MetaSystemData(type):
         # Equality based on data
         if "__eq__" not in new_cls.__dict__:
             setattr(new_cls, "__eq__", create_eq_fn(new_cls))
+
+        if "__str__" not in new_cls.__dict__:
+            setattr(new_cls, "__str__", create_str_fn(new_cls))
+
+        if "__repr__" not in new_cls.__dict__:
+            setattr(new_cls, "__repr__", create_repr_fn(new_cls))
 
         return new_cls
 
