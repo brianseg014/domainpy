@@ -12,9 +12,6 @@ class MetaIdentity(MetaSystemData):
     def __new__(cls, name, bases, dct):
         new_cls = super().__new__(cls, name, bases, dct)
 
-        if name == "Identity":
-            return new_cls
-
         if not hasattr(new_cls, "__annotations__"):
             raise DefinitionError(
                 f"{cls.__name__} must include id: str annotation"
@@ -41,6 +38,8 @@ class MetaIdentity(MetaSystemData):
 
 
 class Identity(ValueObject, metaclass=MetaIdentity):
+    identity: str
+
     @classmethod
     def from_text(cls, identity: str):
         return cls(identity=identity)  # type: ignore

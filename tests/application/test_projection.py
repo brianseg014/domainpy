@@ -1,20 +1,34 @@
-
+import pytest
 from unittest import mock
 
-from domainpy.application.projection import projector
+from domainpy.application.projection import Projection, projector
+from domainpy.domain.model.event import DomainEvent
 
+@pytest.fixture
+def event():
+    event = DomainEvent(
+        __stream_id__ = 'sid',
+        __number__ = 1,
+        __timestamp__ = 0.0
+    )
+    return event
 
-def test_projector():
-    event = mock.MagicMock()
-    projection = mock.MagicMock()
-    method = mock.Mock()
+def test_projector(event):
+    class TestProjection(Projection):
+        @projector
+        def project():
+            pass
 
-    @projector
-    def project():
-        pass
+        @project.event(DomainEvent)
+        def _(self, e: DomainEvent):
+            self.proof_of_work(e)
 
-    project.event(event.__class__)(method)
+        def proof_of_work(self, *args, **kwargs):
+            pass
 
-    project(projection, event)
+    
+    projection = TestProjection()
+    projection.proof_of_work = mock.Mock()
+    projection.project(event)
 
-    method.assert_called_once_with(projection, event)
+    projection.proof_of_work.assert_called_with(event)

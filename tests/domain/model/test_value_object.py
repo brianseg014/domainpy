@@ -31,9 +31,6 @@ def test_identity_definition():
 
 def test_identity_bad_definition():
     with pytest.raises(DefinitionError):
-        type('BasicIdentity', (Identity,), {})
-
-    with pytest.raises(DefinitionError):
         type('BasicIdentity', (Identity,), { '__annotations__': { 'identity2': str } })
 
     with pytest.raises(DefinitionError):

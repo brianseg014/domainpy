@@ -23,7 +23,7 @@ class ApplicationService(abc.ABC):
         )
 
     @abc.abstractmethod
-    def handle(self, message: SystemMessage):
+    def handle(self, message: SystemMessage) -> None:
         pass  # pragma: no cover
 
 

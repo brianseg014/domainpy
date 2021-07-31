@@ -1,82 +1,125 @@
+import pytest
 import functools
 from unittest import mock
 
+from domainpy.application.command import ApplicationCommand
 from domainpy.application.service import ApplicationService, handler
+from domainpy.application.integration import IntegrationEvent
+from domainpy.domain.model.event import DomainEvent
+from domainpy.typing.application import SystemMessage
+
+
+@pytest.fixture
+def command():
+    return ApplicationCommand(
+        __timestamp__ = 0.0
+    )
+
+@pytest.fixture
+def integration():
+    return IntegrationEvent(
+        __resolve__ = 'success',
+        __error__ = None,
+        __timestamp__ = 0.0
+    )
+
+@pytest.fixture
+def event():
+    return DomainEvent(
+        __stream_id__ = 'sid',
+        __number__ = 1,
+        __timestamp__ = 0.0
+    )
 
 
 def test_service_stamp():
-    IntegrationEvent = type(
-        'IntegrationEvent',
-        (mock.MagicMock,),
-        {}
-    )
-    
     partial_integration = ApplicationService.stamp_integration(IntegrationEvent)
     assert isinstance(partial_integration, functools.partial)
 
-def test_handler_command():
-    message = mock.MagicMock()
-    service = mock.MagicMock()
-    method = mock.Mock()
+def test_handler_command(command):
+    class Service(ApplicationService):
+        @handler
+        def handle(self, message: SystemMessage) -> None:
+            pass
 
-    @handler
-    def handle():
-        pass
+        @handle.command(ApplicationCommand)
+        def _(self, c: ApplicationCommand):
+            self.proof_of_work(c)
 
-    handle.command(message.__class__)(method)
+        def proof_of_work(self, *args, **kwargs):
+            pass
 
-    handle(service, message)
+    service = Service()
+    service.proof_of_work = mock.Mock()
+    service.handle(command)
 
-    method.assert_called_with(service, message)
+    service.proof_of_work.assert_called_with(command)
 
-def test_handler_integration():
-    message = mock.MagicMock()
-    service = mock.MagicMock()
-    method = mock.Mock()
 
-    @handler
-    def handle():
-        pass
+def test_handler_integration(integration):
+    class Service(ApplicationService):
+        @handler
+        def handle(self, message: SystemMessage) -> None:
+            pass
 
-    handle.integration(message.__class__)(method)
+        @handle.integration(IntegrationEvent)
+        def _(self, i: IntegrationEvent):
+            self.proof_of_work(i)
 
-    handle(service, message)
+        def proof_of_work(self, *args, **kwargs):
+            pass
 
-    method.assert_called_with(service, message)
+    service = Service()
+    service.proof_of_work = mock.Mock()
+    service.handle(integration)
 
-def test_handler_event():
-    message = mock.MagicMock()
-    service = mock.MagicMock()
-    method = mock.Mock()
+    service.proof_of_work.assert_called_with(integration)
 
-    @handler
-    def handle():
-        pass
+def test_handler_event(event):
+    class Service(ApplicationService):
+        @handler
+        def handle(self, message: SystemMessage) -> None:
+            pass
 
-    handle.event(message.__class__)(method)
+        @handle.event(DomainEvent)
+        def _(self, e: DomainEvent):
+            self.proof_of_work(e)
 
-    handle(service, message)
+        def proof_of_work(self, *args, **kwargs):
+            pass
 
-    method.assert_called_with(service, message)
+    service = Service()
+    service.proof_of_work = mock.Mock()
+    service.handle(event)
 
-def test_handler_trace():
-    story = []
+    service.proof_of_work.assert_called_with(event)
+    
 
-    Message1 = type('Message1', (mock.MagicMock,), {})
-    Message2 = type('Message2', (mock.MagicMock,), {})
+def test_handler_trace(command, integration, event):
+    class Service(ApplicationService):
+        @handler
+        def handle(self, message: SystemMessage) -> None:
+            pass
 
-    message1 = Message1()
-    message2 = Message2()
-    service = mock.MagicMock()
-    method = mock.Mock()
+        @handle.trace(ApplicationCommand, IntegrationEvent)
+        def _(self, c: ApplicationCommand, i: IntegrationEvent):
+            self.proof_of_work(c, i)
 
-    @handler
-    def handle():
-        pass
+        @handle.trace(ApplicationCommand, DomainEvent)
+        def _(self, c: ApplicationCommand, e: DomainEvent):
+            self.proof_of_work(c, e)
 
-    handle.trace(message1.__class__, message2.__class__)(method)
+        def proof_of_work(self, *args, **kwargs):
+            pass
 
-    handle(service, message1)
-    handle(service, message2)
+    service = Service()
+    service.proof_of_work = mock.Mock()
+    service.handle(command)
+    service.handle(integration)
+    service.handle(event)
 
-    method.assert_called_with(service, message1, message2)
+    service.proof_of_work.assert_has_calls([
+        mock.call(command, integration),
+        mock.call(command, event)
+    ])
+    

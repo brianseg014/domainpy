@@ -1,18 +1,49 @@
-from inspect import trace
+
 import pytest
 import uuid
 from unittest import mock
 
 from domainpy.exceptions import DefinitionError, VersionError
 from domainpy.domain.model.aggregate import AggregateRoot, mutator, Selector
+from domainpy.domain.model.event import DomainEvent
+from domainpy.domain.model.value_object import Identity
 
 
+@pytest.fixture
+def trace_id():
+    return str(uuid.uuid4())
 
-def test_aggregate_add_to_changes_and_mutate_when_apply():
-    identity = mock.MagicMock()
-    event = mock.MagicMock()
-    event.__number__ = 1
+@pytest.fixture
+def identity():
+    return Identity.create()
 
+@pytest.fixture
+def event():
+    return DomainEvent(
+        __stream_id__ = 'sid',
+        __number__ = 1,
+        __timestamp__ = 0.0,
+    )
+
+@pytest.fixture
+def event2():
+    return DomainEvent(
+        __stream_id__ = 'sid',
+        __number__ = 2,
+        __timestamp__ = 0.0
+    )
+
+def test_aggregate_add_to_changes_when_apply(identity, event):
+    class Aggregate(AggregateRoot):
+        def mutate(self, event):
+            pass
+
+    agg = Aggregate(identity=identity)
+    agg.__apply__(event)
+
+    assert len(agg.__changes__) == 1
+
+def test_aggregate_call_mutate_when_apply(identity, event):
     class Aggregate(AggregateRoot):
         def mutate(self, event):
             pass
@@ -21,14 +52,9 @@ def test_aggregate_add_to_changes_and_mutate_when_apply():
     agg.mutate = mock.Mock()
     agg.__apply__(event)
 
-    assert len(agg.__changes__) == 1
-    agg.mutate.assert_called_once_with(event)
+    agg.mutate.assert_called_with(event)
 
-def test_aggregate_call_mutate_when_route():
-    identity = mock.MagicMock()
-    event = mock.MagicMock()
-    event.__number__ = 1
-
+def test_aggregate_call_mutate_when_route(identity, event):
     class Aggregate(AggregateRoot):
         def mutate(self, event):
             pass
@@ -39,11 +65,7 @@ def test_aggregate_call_mutate_when_route():
 
     agg.mutate.assert_called_once_with(event)
 
-def test_aggregate_route_mismatch_version():
-    identity = mock.MagicMock()
-    event = mock.MagicMock()
-    event.__number__ = 2
-
+def test_aggregate_route_mismatch_version(identity, event2):
     class Aggregate(AggregateRoot):
         def mutate(self, event):
             pass
@@ -52,11 +74,9 @@ def test_aggregate_route_mismatch_version():
     agg.mutate = mock.Mock()
 
     with pytest.raises(VersionError):
-        agg.__route__(event)
+        agg.__route__(event2)
 
-def test_aggregate_selector():
-    identity = mock.MagicMock()
-
+def test_aggregate_selector(identity):
     class Aggregate(AggregateRoot):
         def mutate(self, event):
             pass
@@ -64,31 +84,43 @@ def test_aggregate_selector():
     agg = Aggregate(identity=identity)
     assert isinstance(agg.__selector__, Selector)
 
-def test_selector_filter_trace():
-    trace_id = str(uuid.uuid4())
-
-    event = mock.MagicMock()
-    event.__trace_id__ = trace_id
+def test_selector_filter_trace(event, trace_id):
+    event = DomainEvent(
+        __stream_id__ = 'sid',
+        __number__ = 1,
+        __timestamp__ = 0.0,
+        __trace_id__ = trace_id
+    )
 
     selector = Selector(e for e in [event])
     events = selector.filter_trace(trace_id)
 
     assert len([e for e in events]) == 1
 
-def test_selector_get_trace_for_compensation():
-    trace_id = str(uuid.uuid4())
+def test_selector_get_trace_for_compensation(trace_id):
+    class StandardEvent(DomainEvent):
+        pass
 
-    StandarEvent = type('StandarEvent', (mock.MagicMock,), {})
-    standard_event = StandarEvent()
-    standard_event.__trace_id__ = trace_id
+    class CompensationEvent(DomainEvent):
+        pass
 
-    CompensationEvent = type('CompensationEvent', (mock.MagicMock,), {})
-    compensation_event = CompensationEvent()
-    compensation_event.__trace_id__ = trace_id
+    standard_event = StandardEvent(
+        __stream_id__ = 'sid',
+        __number__ = 1,
+        __timestamp__ = 0.0,
+        __trace_id__ = trace_id
+    )
+
+    compensation_event = CompensationEvent(
+        __stream_id__ = 'sid',
+        __number__ = 1,
+        __timestamp__ = 0.0,
+        __trace_id__ = trace_id
+    )
 
     selector = Selector(e for e in [standard_event])
     events = selector.get_events_for_compensation(
-        trace_id, empty_if_has_event=CompensationEvent, return_event=StandarEvent
+        trace_id, empty_if_has_event=CompensationEvent, return_event=StandardEvent
     )
     # Should return event to compensate
     assert len(events) == 1
@@ -96,45 +128,43 @@ def test_selector_get_trace_for_compensation():
 
     selector = Selector(e for e in [standard_event, compensation_event])
     events = selector.get_events_for_compensation(
-        trace_id, empty_if_has_event=CompensationEvent, return_event=StandarEvent
+        trace_id, empty_if_has_event=CompensationEvent, return_event=StandardEvent
     )
     # Should return empty as is already compensated
     assert len(events) == 0
 
 
-def test_mutator():
-    event = mock.MagicMock()
-    aggregate = mock.MagicMock()
-    method = mock.Mock()
+def test_mutator(identity, event):
+    class Aggregate(AggregateRoot):
+        @mutator
+        def mutate(self, event: DomainEvent) -> None:
+            pass
 
-    @mutator
-    def mutate():
-        pass
+        @mutate.event(DomainEvent)
+        def _(self, e: DomainEvent):
+            self.proof_of_work(event)
 
-    mutate.event(event.__class__)(method)
+        def proof_of_work(self, event):
+            pass
 
-    mutate(aggregate, event)
+    agg = Aggregate(identity=identity)
+    agg.__dict__['proof_of_work'] = mock.Mock()
+    agg.mutate(event)
 
-    method.assert_called_with(aggregate, event)
+    agg.proof_of_work.assert_called_with(event)
 
 def test_mutator_must_be_unique():
-    event = mock.MagicMock()
-    method = mock.Mock()
-
     @mutator
     def mutate():
         pass
 
-    mutate.event(event.__class__)(method)
+    mutate.event(DomainEvent)(lambda: ... )
     with pytest.raises(DefinitionError):
-        mutate.event(event.__class__)(method)
+        mutate.event(DomainEvent)(lambda: ... )
 
-def test_mutator_do_nothing_if_not_handle():
-    event = mock.MagicMock()
-    aggregate = mock.MagicMock()
-
+def test_mutator_do_nothing_if_not_handle(event):
     @mutator
     def mutate():
         pass
 
-    mutate(aggregate, event)
+    mutate(None, event)
