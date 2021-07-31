@@ -5,14 +5,14 @@ import typing
 import boto3  # type: ignore
 
 from domainpy.exceptions import PublisherError
-from domainpy.infrastructure.publishers.base import IPublisher
+from domainpy.infrastructure.publishers.base import Publisher
 
 if typing.TYPE_CHECKING:
     from domainpy.typing.application import SystemMessage  # type: ignore
     from domainpy.infrastructure.mappers import Mapper
 
 
-class AwsEventBridgePublisher(IPublisher):
+class AwsEventBridgePublisher(Publisher):
     def __init__(self, bus_name: str, context: str, mapper: Mapper, **kwargs):
         self.bus_name = bus_name
         self.context = context

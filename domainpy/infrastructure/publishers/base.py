@@ -9,6 +9,15 @@ if typing.TYPE_CHECKING:  # pragma: no cover
 
 
 class IPublisher(abc.ABC):
+    @abc.abstractmethod
+    def publish(
+        self,
+        messages: typing.Union[SystemMessage, typing.Sequence[SystemMessage]],
+    ):
+        pass
+
+
+class Publisher(IPublisher):
     def publish(
         self,
         messages: typing.Union[SystemMessage, typing.Sequence[SystemMessage]],
