@@ -1,11 +1,12 @@
-from collections import namedtuple
 import pytest
 import boto3
 import moto
-from unittest import mock
 
-from domainpy import exceptions as excs
+from domainpy.application.command import ApplicationCommand
+from domainpy.infrastructure.mappers import Mapper
+from domainpy.infrastructure.transcoder import Transcoder
 from domainpy.infrastructure.publishers.aws_eventbridge import AwsEventBridgePublisher
+
 
 @pytest.fixture
 def bus_name():
@@ -25,11 +26,13 @@ def _(cloudwatch_events, bus_name):
     cloudwatch_events.create_event_bus(Name=bus_name)
 
 def test_eventbridge_publish(bus_name):
-    SomeMessageType = type('SomeMessageType', (), {})
-    some_message = SomeMessageType()
+    command = ApplicationCommand(
+        __timestamp__=0.0,
+        __trace_id__='tid'
+    )
 
-    mapper = mock.MagicMock()
-    mapper.serialize_asdict = mock.Mock(return_value={ 'some_property': 'x' })
+    mapper = Mapper(transcoder=Transcoder())
+    mapper.register(ApplicationCommand)
 
     pub = AwsEventBridgePublisher(bus_name, 'some_context', mapper)
-    pub.publish(some_message)
+    pub.publish(command)

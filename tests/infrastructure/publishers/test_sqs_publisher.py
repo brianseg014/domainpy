@@ -2,10 +2,11 @@ import pytest
 import boto3
 import json
 import moto
-import dataclasses
 from unittest import mock
 
-from domainpy import exceptions as excs
+from domainpy.application.command import ApplicationCommand
+from domainpy.infrastructure.mappers import Mapper
+from domainpy.infrastructure.transcoder import Transcoder
 from domainpy.infrastructure.publishers.aws_sqs import AwsSimpleQueueServicePublisher
 
 
@@ -28,15 +29,16 @@ def queue_url(sqs, queue_name):
     return queue['QueueUrl']
 
 def test_sqs_publish(sqs, queue_url, queue_name, region_name):
-    SomeMessageType = type('SomeMessageType', (), {})
-    some_message = SomeMessageType()
+    command = ApplicationCommand(
+        __timestamp__=0.0,
+        __trace_id__='tid'
+    )
 
-    mapper = mock.MagicMock()
-    mapper.serialize_asdict = mock.Mock(return_value={ 'some_property': 'x' })
+    mapper = Mapper(transcoder=Transcoder())
+    mapper.register(ApplicationCommand)
 
     pub = AwsSimpleQueueServicePublisher(queue_name, mapper, region_name=region_name)
-    pub.publish(some_message)
+    pub.publish(command)
     
     sqs_messages = sqs.receive_message(QueueUrl=queue_url)
     assert len(sqs_messages['Messages']) == 1
-    assert json.loads(sqs_messages['Messages'][0]['Body'])['some_property'] == 'x'

@@ -1,11 +1,11 @@
 import pytest
 import boto3
-import json
 import moto
 from unittest import mock
-from collections import namedtuple
 
-from domainpy import exceptions as excs
+from domainpy.application.command import ApplicationCommand
+from domainpy.infrastructure.mappers import Mapper
+from domainpy.infrastructure.transcoder import Transcoder
 from domainpy.infrastructure.publishers.aws_sns import AwsSimpleNotificationServicePublisher
 
 
@@ -28,11 +28,13 @@ def topic_arn(sns, topic_name):
     return topic['TopicArn']
 
 def test_sns_publish(topic_arn, region_name):
-    SomeMessageType = type('SomeMessageType', (), {})
-    some_message = SomeMessageType()
+    command = ApplicationCommand(
+        __timestamp__=0.0,
+        __trace_id__='tid'
+    )
 
-    mapper = mock.MagicMock()
-    mapper.serialize_asdict = mock.Mock(return_value={ 'some_property': 'x' })
+    mapper = Mapper(transcoder=Transcoder())
+    mapper.register(ApplicationCommand)
 
     pub = AwsSimpleNotificationServicePublisher(topic_arn, mapper, region_name=region_name)
-    pub.publish(some_message)
+    pub.publish(command)

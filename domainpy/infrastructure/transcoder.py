@@ -107,7 +107,7 @@ class _PrimitiveCodec(ICodec):
 
 class _NoneCodec(ICodec):
     def can_handle(self, field_type: typing.Type) -> bool:
-        return field_type is type(None)
+        return field_type is type(None)  # noqa: E721
 
     def encode(self, obj: typing.Any, field_type: typing.Type) -> typing.Any:
         return None
