@@ -1,34 +1,42 @@
-import pytest
-import dataclasses
-from unittest import mock
 
+from domainpy.application.command import ApplicationCommand
 from domainpy.infrastructure.mappers import Mapper
-
-
-@dataclasses.dataclass
-class Record:
-    topic: str
+from domainpy.infrastructure.transcoder import Transcoder
+from domainpy.infrastructure.records import CommandRecord
 
 
 def test_mapper_serialize_command():
-    transcoder = mock.MagicMock()
-    transcoder.serialize = mock.Mock()
+    command = ApplicationCommand(
+        __timestamp__=0.0,
+        __trace_id__='tid'
+    )
     
-    message = mock.MagicMock()
+    mapper = Mapper(transcoder=Transcoder())
+    record = mapper.serialize(command)
     
-    mapper = Mapper(transcoder=transcoder)
-    mapper.serialize(message)
-
-    transcoder.serialize.assert_called()
+    assert isinstance(record, CommandRecord)
+    assert record.trace_id == 'tid'
+    assert record.topic == 'ApplicationCommand'
+    assert record.version == 1
+    assert record.timestamp == 0.0
+    assert record.message == 'command'
+    assert record.payload == {}
 
 def  test_mapper_deserialize():
-    transcoder = mock.MagicMock()
-    transcoder.serialize = mock.Mock()
-    
-    mapper = Mapper(transcoder=transcoder)
-    mapper.register(type('Message', (mock.MagicMock,), {}))
+    record = CommandRecord(
+        trace_id='tid',
+        topic='ApplicationCommand',
+        version=1,
+        timestamp=0.0,
+        message='command',
+        payload={ }
+    )
 
-    record = Record(topic='Message')
-    mapper.deserialize(record)
+    mapper = Mapper(transcoder=Transcoder())
+    mapper.register(ApplicationCommand)
+    message = mapper.deserialize(record)
 
-    transcoder.deserialize.assert_called()
+    assert isinstance(message, ApplicationCommand)
+    assert message.__timestamp__ == 0.0
+    assert message.__version__ == 1
+    assert message.__message__ == 'command'
