@@ -1,40 +1,15 @@
 import sys
 import pytest
 import typing
-import dataclasses
-from unittest import mock
 
+from domainpy.application.command import ApplicationCommand
+from domainpy.application.integration import IntegrationEvent
+from domainpy.domain.model.event import DomainEvent
+from domainpy.domain.model.value_object import ValueObject
 from domainpy.infrastructure.transcoder import Transcoder
 from domainpy.infrastructure.records import CommandRecord, IntegrationRecord, EventRecord
 
 
-class ApplicationCommand:
-    __version__: int
-    def __init__(self, **kwargs):
-        self.__version__ = 1
-        self.__dict__.update(kwargs)
-
-
-class IntegrationEvent:
-    __version__: int
-    def __init__(self, **kwargs):
-        self.__version__ = 1
-        self.__dict__.update(kwargs)
-
-
-class DomainEvent:
-    __version__: int
-    def __init__(self, **kwargs):
-        self.__version__ = 1
-        self.__dict__.update(kwargs)
-
-
-class ValueObject:
-    def __init__(self, **kwargs):
-        self.__dict__.update(kwargs)
-
-
-@mock.patch('domainpy.infrastructure.transcoder.ApplicationCommand', new=ApplicationCommand)
 def test_serialize_command():
     class Command(ApplicationCommand):
         __trace_id__: str
@@ -53,7 +28,6 @@ def test_serialize_command():
     r = t.serialize(m)
     assert r.payload['some_property'] == 'x'
 
-@mock.patch('domainpy.infrastructure.transcoder.ApplicationCommand', new=ApplicationCommand)
 def test_deserialize_command():
     class Command(ApplicationCommand):
         __trace_id__: str
@@ -74,7 +48,6 @@ def test_deserialize_command():
     m = t.deserialize(r, Command)
     assert m.some_property == 'x'
 
-@mock.patch('domainpy.infrastructure.transcoder.IntegrationEvent', new=IntegrationEvent)
 def test_serialize_integration():
     class Integration(IntegrationEvent):
         __trace_id__: str
@@ -99,7 +72,6 @@ def test_serialize_integration():
     r = t.serialize(m)
     assert r.payload['some_property'] == 'x'
 
-@mock.patch('domainpy.infrastructure.transcoder.IntegrationEvent', new=IntegrationEvent)
 def test_deserialize_integration():
     class Integration(IntegrationEvent):
         some_property: str
@@ -120,8 +92,6 @@ def test_deserialize_integration():
     m = t.deserialize(r, Integration)
     assert m.some_property == 'x'
 
-@mock.patch('domainpy.infrastructure.transcoder.DomainEvent', new=DomainEvent)
-@mock.patch('domainpy.infrastructure.transcoder.ValueObject', new=ValueObject)
 def test_serialize_event():
     class Attribute(ValueObject):
         some_property: str
@@ -149,8 +119,6 @@ def test_serialize_event():
     r = t.serialize(m)
     assert r.payload['some_property']['some_property'] == 'x'
 
-@mock.patch('domainpy.infrastructure.transcoder.DomainEvent', new=DomainEvent)
-@mock.patch('domainpy.infrastructure.transcoder.ValueObject', new=ValueObject)
 def test_deserialize_event():
     class Attribute(ValueObject):
         some_property: str
