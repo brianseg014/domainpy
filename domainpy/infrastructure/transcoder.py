@@ -40,6 +40,7 @@ class Transcoder(abc.ABC):
     def __init__(self):
         self.codecs: typing.List[ICodec] = [
             _PrimitiveCodec(self),
+            _NoneCodec(),
             _DictCodec(self),
             _SingleTypeInfiteSequenceCodec(self),
             _OptionalCodec(self),
@@ -102,6 +103,17 @@ class _PrimitiveCodec(ICodec):
 
     def decode(self, data: dict, field_type: typing.Type) -> typing.Any:
         return field_type(data)
+
+
+class _NoneCodec(ICodec):
+    def can_handle(self, field_type: typing.Type) -> bool:
+        return field_type is type(None)
+
+    def encode(self, obj: typing.Any, field_type: typing.Type) -> typing.Any:
+        return None
+
+    def decode(self, data: dict, field_type: typing.Type) -> typing.Any:
+        return None
 
 
 class _SingleTypeInfiteSequenceCodec(ICodec):

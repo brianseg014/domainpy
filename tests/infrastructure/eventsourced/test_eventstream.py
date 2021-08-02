@@ -1,16 +1,27 @@
 
 import datetime
-from unittest import mock
 
+from domainpy.domain.model.event import DomainEvent
 from domainpy.infrastructure.eventsourced.eventstream import EventStream
 
 
 def test_substream_topic():
-    SomeEvent = type('SomeEvent', (mock.MagicMock,), {})
-    SomeOtherEvent = type('SomeOtherEvent', (mock.MagicMock,), {})
+    class SomeEvent(DomainEvent):
+        pass
 
-    some_event = SomeEvent()
-    some_other_event = SomeOtherEvent()
+    class SomeOtherEvent(DomainEvent):
+        pass
+
+    some_event = SomeEvent(
+        __stream_id__ = 'sid',
+        __number__ = 1,
+        __timestamp__ = 0.0
+    )
+    some_other_event = SomeOtherEvent(
+        __stream_id__ = 'sid',
+        __number__ = 1,
+        __timestamp__ = 0.0
+    )
 
     es = EventStream()
     es.append(some_event)
@@ -23,11 +34,16 @@ def test_substream_topic():
     assert subes[0].__class__ == some_other_event.__class__
 
 def test_substream_from_number():
-    event0 = mock.MagicMock()
-    event0.__number__ = 0
-
-    event1 = mock.MagicMock()
-    event1.__number__ = 1
+    event0 = DomainEvent(
+        __stream_id__ = 'sid',
+        __number__ = 0,
+        __timestamp__ = 0.0
+    )
+    event1 = DomainEvent(
+        __stream_id__ = 'sid',
+        __number__ = 1,
+        __timestamp__ = 0.0
+    )
 
     es = EventStream()
     es.extend([event0, event1])
@@ -39,11 +55,16 @@ def test_substream_from_number():
     assert subes[0].__number__ == 1
 
 def test_substream_to_number():
-    event0 = mock.MagicMock()
-    event0.__number__ = 0
-
-    event1 = mock.MagicMock()
-    event1.__number__ = 1
+    event0 = DomainEvent(
+        __stream_id__ = 'sid',
+        __number__ = 0,
+        __timestamp__ = 0.0
+    )
+    event1 = DomainEvent(
+        __stream_id__ = 'sid',
+        __number__ = 1,
+        __timestamp__ = 0.0
+    )
 
     es = EventStream()
     es.extend([event0, event1])
@@ -58,11 +79,16 @@ def test_substream_from_timestamp():
     timestamp_60_mins_ago = datetime.datetime.timestamp(datetime.datetime.now() - datetime.timedelta(minutes=60))
     timestamp_now = datetime.datetime.timestamp(datetime.datetime.now())
 
-    event0 = mock.MagicMock()
-    event0.__timestamp__=timestamp_60_mins_ago
-
-    event1 = mock.MagicMock()
-    event1.__timestamp__=timestamp_now
+    event0 = DomainEvent(
+        __stream_id__ = 'sid',
+        __number__ = 0,
+        __timestamp__ = timestamp_60_mins_ago
+    )
+    event1 = DomainEvent(
+        __stream_id__ = 'sid',
+        __number__ = 1,
+        __timestamp__ = timestamp_now
+    )
 
     es = EventStream()
     es.extend([event0, event1])
@@ -77,11 +103,16 @@ def test_substream_to_timestamp():
     timestamp_60_mins_ago = datetime.datetime.timestamp(datetime.datetime.now() - datetime.timedelta(minutes=60))
     timestamp_now = datetime.datetime.timestamp(datetime.datetime.now())
 
-    event0 = mock.MagicMock()
-    event0.__timestamp__=timestamp_60_mins_ago
-
-    event1 = mock.MagicMock()
-    event1.__timestamp__=timestamp_now
+    event0 = DomainEvent(
+        __stream_id__ = 'sid',
+        __number__ = 0,
+        __timestamp__ = timestamp_60_mins_ago
+    )
+    event1 = DomainEvent(
+        __stream_id__ = 'sid',
+        __number__ = 1,
+        __timestamp__ = timestamp_now
+    )
 
     es = EventStream()
     es.extend([event0, event1])

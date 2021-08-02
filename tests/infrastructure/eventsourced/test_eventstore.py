@@ -1,27 +1,49 @@
 from datetime import datetime
+from domainpy.domain.model.event import DomainEvent
 import uuid
 import pytest
 from unittest import mock
 
 from domainpy.infrastructure.records import EventRecord
 from domainpy.infrastructure.eventsourced.eventstore import EventStore
+from domainpy.infrastructure.eventsourced.managers.memory import MemoryEventRecordManager
+from domainpy.infrastructure.mappers import Mapper
+from domainpy.infrastructure.transcoder import Transcoder
+from domainpy.utils.bus import Bus
+from domainpy.utils.bus_subscribers import BasicSubscriber
 
 
 @pytest.fixture
 def event_mapper():
-    return mock.MagicMock()
+    mapper = Mapper(transcoder=Transcoder())
+    mapper.register(DomainEvent)
+    return mapper
 
 @pytest.fixture
 def record_manager():
-    return mock.MagicMock()
+    return MemoryEventRecordManager()
 
 @pytest.fixture
-def bus():
-    return mock.MagicMock()
+def bus_subscriber():
+    return BasicSubscriber()
 
-def test_store_events(event_mapper, record_manager, bus):
-    event = mock.MagicMock()
+@pytest.fixture
+def bus(bus_subscriber):
+    bus = Bus()
+    bus.attach(bus_subscriber)
+    return bus
 
+@pytest.fixture
+def event():
+    return DomainEvent(
+        __stream_id__ = 'sid',
+        __number__ = 1,
+        __timestamp__ = 0.0,
+        __trace_id__ = 'tid',
+        __context__ = 'ctx'
+    )
+
+def test_store_events(event_mapper, record_manager, bus, bus_subscriber, event):
     es = EventStore(
         event_mapper=event_mapper,
         record_manager=record_manager,
@@ -29,36 +51,22 @@ def test_store_events(event_mapper, record_manager, bus):
     )
     es.store_events([event])
 
-    record_manager.session.assert_called()
-    event_mapper.serialize.assert_called_once_with(event)
-    bus.publish.assert_called_once_with(event)
+    records = record_manager.get_records(event.__stream_id__)
 
-def test_get_events(event_mapper, record_manager, bus):
-    stream_id = str(uuid.uuid4())
-    er = EventRecord(
-        stream_id=stream_id,
-        number=0,
-        topic='some-topic',
-        version=1,
-        timestamp=datetime.timestamp(datetime.now()),
-        trace_id=str(uuid.uuid4()),
-        message='event',
-        context='some-context',
-        payload={}
-    )
-    record_manager.get_records = mock.Mock(return_value=[er])
+    assert len(list(records)) == 1
+    assert len(bus_subscriber) == 1
 
-    event = mock.MagicMock()
-    event.__stream_id__ = stream_id
-    event.__number__ = 0
-    event_mapper.deserialize = mock.Mock(return_value=event)
+def test_get_events(event_mapper, record_manager, bus, event):
+    with record_manager.session() as session:
+        session.append(event_mapper.serialize(event))
+        session.commit()
 
     es = EventStore(
         event_mapper=event_mapper,
         record_manager=record_manager,
         bus=bus
     )
-    events = es.get_events(stream_id=stream_id)
+    events = es.get_events(stream_id=event.__stream_id__)
 
     assert len(events) == 1
     assert events[0] == event
