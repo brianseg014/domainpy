@@ -40,6 +40,9 @@ class MetaIdentity(MetaSystemData):
 class Identity(ValueObject, metaclass=MetaIdentity):
     identity: str
 
+    def __hash__(self) -> int:
+        return hash(self.identity)
+
     @classmethod
     def from_text(cls, identity: str):
         return cls(identity=identity)  # type: ignore
