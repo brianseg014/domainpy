@@ -27,7 +27,7 @@ from .publishers.aws_sqs import AwsSimpleQueueServicePublisher
 from .tracer.tracestore import TraceStore, TraceResolution
 from .tracer.recordmanager import TraceRecordManager
 from .tracer.managers.dynamodb import DynamoDBTraceRecordManager
-from .records import CommandRecord, EventRecord, IntegrationRecord, TraceRecord
+from .records import CommandRecord, EventRecord, IntegrationRecord
 from .transcoder import Transcoder, ICodec
 
 __all__ = [
@@ -60,5 +60,4 @@ __all__ = [
     "CommandRecord",
     "IntegrationRecord",
     "EventRecord",
-    "TraceRecord",
 ]

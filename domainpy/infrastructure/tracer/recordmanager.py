@@ -1,22 +1,41 @@
 import abc
 import typing
+import dataclasses
 
-from domainpy.infrastructure.records import TraceRecord
+from domainpy.infrastructure.records import CommandRecord
+
+
+class StatusCode:
+    CODE_200 = 200
+
+
+class Resolution:
+    pending = "pending"
+    success = "success"
+    failure = "failure"
+
+
+@dataclasses.dataclass
+class ContextResolution:
+    context: str
+    resolution: str
+    timestamp_resolution: typing.Optional[float] = None
+    error: typing.Optional[str] = None
 
 
 class TraceRecordManager(abc.ABC):
     @abc.abstractmethod
     def get_trace_contexts(
         self, trace_id: str
-    ) -> typing.Generator[TraceRecord.ContextResolution, None, None]:
+    ) -> typing.Generator[ContextResolution, None, None]:
         pass  # pragma: no cover
 
     @abc.abstractmethod
     def store_in_progress(
         self,
         trace_id: str,
-        command: dict,
-        contexts_resolutions: typing.Tuple[TraceRecord.ContextResolution, ...],
+        command_record: CommandRecord,
+        contexts_resolutions: typing.Tuple[str, ...],
     ) -> None:
         pass  # pragma: no cover
 
