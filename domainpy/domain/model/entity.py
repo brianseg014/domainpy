@@ -3,7 +3,7 @@ from __future__ import annotations
 import abc
 import typing
 
-from domainpy.domain.model.value_object import Identity, ValueObject
+from domainpy.domain.model.value_object import Identity
 
 if typing.TYPE_CHECKING:  # pragma: no cover
     from domainpy.domain.model.aggregate import AggregateRoot
