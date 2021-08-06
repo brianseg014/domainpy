@@ -279,9 +279,57 @@ class EventSourcedPetStoreRepository(PetStoreRepository, Adapter):
     pass
 ```
 
+### One last thing, an utility (Mapper)
+
+As you may guess, all system messages (command, integration event and domain
+event) will need to be serialized to be exposed in the infrastructure.
+
+```python
+from domainpy.infrastructure import (
+    Mapper,
+    Transcoder
+)
+
+command_mapper = Mapper(
+    transcoder=Transcoder()
+)
+integration_mapper = Mapper(
+    transcoder=Transcoder()
+)
+event_mapper = Mapper(
+    transcoder=Transcoder()
+)
+...
+```
+
+Now, you just need to add a decorator to add a auto-serializer-deserializer
+support.
+
+```python
+...
+
+@command_mapper.register
+class RegisterPetStore(ApplicationCommand):
+    pet_store_id: str
+    pet_store_name: str
+
+@integration_mapper.register
+class CreatePetStoreSucceeded(IntegrationEvent):
+    __resolve__: str = 'success'
+    __error__: typing.Optional[str] = None
+    __version__: int = 1
+
+@event_mapper.register
+class PetStoreRegistered(DomainEvent):
+    pet_store_id: PetStoreId
+    pet_store_name: PetStoreName
+```
+
 ### Environment
 
-Putting all togheter.
+Putting all togheter. In the environment, we established the abstractions
+for projections, repositories and domain services. And we construct a
+factory to instance the actual implementation.
 
 ```python
 from domainpy.bootstrap import IFactory
@@ -325,56 +373,6 @@ class IntegrationTestFactory(IFactory):
 
     env.add_resolver(PetStoreResolver(env.integration_bus))
 ```
-
-### One last thing, an utility (Mapper)
-
-As you may guess, all system messages (command, integration event and domain
-event) will need to be serialized in exposed in the infrastructure. There is a 
-built-in system.
-
-```python
-from domainpy.infrastructure import (
-    Mapper,
-    Transcoder
-)
-
-command_mapper = Mapper(
-    transcoder=Transcoder()
-)
-integration_mapper = Mapper(
-    transcoder=Transcoder()
-)
-event_mapper = Mapper(
-    transcoder=Transcoder()
-)
-...
-```
-
-Now, you just need to add a decorator to add a auto-serializer-deserializer
-support.
-
-```python
-...
-
-@command_mapper.register
-class RegisterPetStore(ApplicationCommand):
-    pet_store_id: str
-    pet_store_name: str
-
-@integration_mapper.register
-class CreatePetStoreSucceeded(IntegrationEvent):
-    __resolve__: str = 'success'
-    __error__: typing.Optional[str] = None
-    __version__: int = 1
-
-@event_mapper.register
-class PetStoreRegistered(DomainEvent):
-    pet_store_id: PetStoreId
-    pet_store_name: PetStoreName
-```
-
-Mapper has serialize and deserlize method you need. We are not
-using mapper in this example as I'm not definig infrastructure.
 
 ### Finally
 
