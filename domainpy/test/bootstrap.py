@@ -72,24 +72,39 @@ class TestEnvironment(abc.ABC):
         )
 
     @classmethod
-    def stamp_command(cls, command_type: typing.Type[ApplicationCommand]):
-        return command_type.stamp()
+    def stamp_command(cls, command_type: typing.Type[ApplicationCommand], *, trace_id: str = None):
+        _trace_id = trace_id
+        if _trace_id is None:
+            _trace_id = Traceable.__trace_id__
+
+        return command_type.stamp(trace_id=trace_id)
 
     @classmethod
     def stamp_integration(
-        cls, integration_type: typing.Type[IntegrationEvent]
+        cls, integration_type: typing.Type[IntegrationEvent], *, trace_id: str = None
     ):
-        return integration_type.stamp()
+        _trace_id = trace_id
+        if _trace_id is None:
+            _trace_id = Traceable.__trace_id__
+
+        return integration_type.stamp(trace_id=trace_id)
 
     def stamp_event(
         self,
         event_type: typing.Type[DomainEvent],
         aggregate_type: typing.Type[AggregateRoot],
         aggregate_id: str,
+        *,
+        trace_id: str = None
     ):
+        _trace_id = trace_id
+        if _trace_id is None:
+            _trace_id = Traceable.__trace_id__
+
         return event_type.stamp(
             stream_id=aggregate_type.create_stream_id(aggregate_id),
             number=self.next_event_number(aggregate_type, aggregate_id),
+            trace_id=trace_id
         )
 
     def given(self, event: DomainEvent) -> None:
