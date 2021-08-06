@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import typing
-import datetime
 import functools
 
 from domainpy.domain.model.entity import DomainEntity
@@ -26,11 +25,9 @@ class AggregateRoot(DomainEntity):
         return Selector(e for e in self.__seen__)
 
     def __stamp__(self, event_type: typing.Type[DomainEvent]):
-        return functools.partial(
-            event_type,
-            __stream_id__=self.create_stream_id(self.__identity__),
-            __number__=self.__version__ + 1,
-            __timestamp__=datetime.datetime.timestamp(datetime.datetime.now()),
+        return event_type.stamp(
+            stream_id=self.create_stream_id(self.__identity__),
+            number=self.__version__ + 1,
         )
 
     def __apply__(self, event: DomainEvent):

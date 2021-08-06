@@ -1,139 +1,112 @@
 from __future__ import annotations
 
+import abc
 import sys
-import uuid
 import types
 import typing
-import datetime
-import functools
 import dataclasses
 
-
+from domainpy.bootstrap import Environment
 from domainpy.application.command import ApplicationCommand
 from domainpy.application.integration import IntegrationEvent
 from domainpy.domain.model.aggregate import AggregateRoot
 from domainpy.domain.model.event import DomainEvent
-from domainpy.environments.eventsourced import EventSourcedEnvironment
+from domainpy.infrastructure.eventsourced.eventstore import EventStore
 from domainpy.infrastructure.eventsourced.eventstream import EventStream
-from domainpy.infrastructure.eventsourced.recordmanager import (
-    EventRecordManager,
-)
-from domainpy.infrastructure.eventsourced.managers.memory import (
-    MemoryEventRecordManager,
-)
-from domainpy.infrastructure.publishers.memory import MemoryPublisher
-from domainpy.infrastructure.mappers import Mapper
-from domainpy.utils.bus_adapters import PublisherBusAdapter
 from domainpy.utils.traceable import Traceable
-
-if typing.TYPE_CHECKING:
-    from domainpy.typing.application import SystemMessage  # type: ignore
+from domainpy.utils.bus_subscribers import BasicSubscriber
+from domainpy.typing.application import SystemMessage
 
 
 @dataclasses.dataclass(frozen=True)
 class Then:
-    domain_events: DomeinEventsTestExpression
+    domain_events: DomainEventsTestExpression
     integration_events: IntegrationEventsTestExpression
 
 
-class EventSourcedEnvironmentTestAdapter(EventSourcedEnvironment):
-    def __init__(self, *args, **kwargs) -> None:
-        self.domain_events = MemoryPublisher()
-        self.integration_events = MemoryPublisher()
-        super().__init__(*args, **kwargs)
+class EventProcessor(abc.ABC):
+    @abc.abstractmethod
+    def process(self, event: DomainEvent) -> None:
+        pass
 
-    def setup_event_record_manager(
-        self, setupargs: dict
-    ) -> EventRecordManager:
-        return MemoryEventRecordManager()
+    def next_event_number(
+        self, aggregate_type: typing.Type[AggregateRoot], aggregate_id: str
+    ) -> int:
+        pass
 
-    def setup_domain_publisher_bus(
-        self,
-        domain_publisher_bus: PublisherBusAdapter[DomainEvent],
-        event_mapper: Mapper,
-        setupargs: dict,
+
+class EventSourcedProcessor(EventProcessor):
+    def __init__(self, event_store: EventStore):
+        self.event_store = event_store
+
+    def process(self, event: DomainEvent) -> None:
+        Traceable.__trace_id__ = event.__trace_id__
+        self.event_store.store_events(EventStream([event]))
+
+    def next_event_number(
+        self, aggregate_type: typing.Type[AggregateRoot], aggregate_id: str
+    ) -> int:
+        stream_id = aggregate_type.create_stream_id(aggregate_id)
+        events = self.event_store.get_events(stream_id)
+        return len(events) + 1
+
+
+class TestEnvironment(abc.ABC):
+    def __init__(
+        self, environment: Environment, event_processor: EventProcessor
     ) -> None:
-        domain_publisher_bus.attach(self.domain_events)
+        self.environment = environment
+        self.event_processor = event_processor
 
-    def setup_integration_publisher_bus(  # pylint: disable=all
-        self,
-        integration_publisher_bus: PublisherBusAdapter[IntegrationEvent],
-        integration_mapper: Mapper,
-        setupargs: dict,
-    ) -> None:
-        integration_publisher_bus.attach(self.integration_events)
+        self.domain_events = BasicSubscriber()
+        self.environment.service_bus.event_bus.attach(self.domain_events)
+
+        self.integration_events = BasicSubscriber()
+        self.environment.integration_bus.attach(self.integration_events)
+
+    def next_event_number(
+        self, aggregate_type: typing.Type[AggregateRoot], aggregate_id: str
+    ) -> int:
+        return self.event_processor.next_event_number(
+            aggregate_type, aggregate_id
+        )
 
     @classmethod
-    def stamp_command(
-        cls,
-        command_type: typing.Type[ApplicationCommand],
-        *,
-        trace_id: str = None,
-    ):
-        if trace_id is None:
-            trace_id = str(uuid.uuid4())
-
-        return functools.partial(
-            command_type,
-            __trace_id__=trace_id,
-            __timestamp__=datetime.datetime.timestamp(datetime.datetime.now()),
-        )
+    def stamp_command(cls, command_type: typing.Type[ApplicationCommand]):
+        return command_type.stamp()
 
     @classmethod
     def stamp_integration(
-        cls,
-        integration_type: typing.Type[IntegrationEvent],
-        *,
-        trace_id: str = None,
+        cls, integration_type: typing.Type[IntegrationEvent]
     ):
-        if trace_id is None:
-            trace_id = str(uuid.uuid4())
-
-        return functools.partial(
-            integration_type,
-            __trace_id__=trace_id,
-            __timestamp__=datetime.datetime.timestamp(datetime.datetime.now()),
-        )
+        return integration_type.stamp()
 
     def stamp_event(
         self,
         event_type: typing.Type[DomainEvent],
         aggregate_type: typing.Type[AggregateRoot],
-        aggregate_id: str = None,
-        *,
-        trace_id: str = None,
+        aggregate_id: str,
     ):
-        if aggregate_id is None:
-            aggregate_id = str(uuid.uuid4())
-
-        if trace_id is None:
-            trace_id = str(uuid.uuid4())
-
-        events = self.event_store.get_events(
-            f"{aggregate_id}:{aggregate_type.__name__}"
+        return event_type.stamp(
+            stream_id=aggregate_type.create_stream_id(aggregate_id),
+            number=self.next_event_number(aggregate_type, aggregate_id),
         )
 
-        return functools.partial(
-            event_type,
-            __trace_id__=trace_id,
-            __stream_id__=f"{aggregate_id}:{aggregate_type.__name__}",
-            __number__=len(events) + 1,
-            __timestamp__=datetime.datetime.timestamp(datetime.datetime.now()),
-        )
+    def given(self, event: DomainEvent) -> None:
+        self.event_processor.process(event)
+        self.environment.service_bus.event_bus.publish(event)
 
-    def given(self, event: DomainEvent):
-        Traceable.__trace_id__ = event.__trace_id__
-        self.event_store.store_events(EventStream([event]))
-
-    def when(self, message: SystemMessage):
-        self.handle(message)
+    def when(self, message: SystemMessage) -> None:
+        self.environment.handle(message)
 
     @property
-    def then(self):
+    def then(self) -> Then:
         return Then(
-            domain_events=DomeinEventsTestExpression(self.domain_events),
+            domain_events=DomainEventsTestExpression(
+                tuple(self.domain_events)
+            ),
             integration_events=IntegrationEventsTestExpression(
-                self.integration_events
+                tuple(self.integration_events)
             ),
         )
 
@@ -141,8 +114,8 @@ class EventSourcedEnvironmentTestAdapter(EventSourcedEnvironment):
 TDomainEvent = typing.TypeVar("TDomainEvent", bound=DomainEvent)
 
 
-class DomeinEventsTestExpression:
-    def __init__(self, domain_events: typing.List[DomainEvent]):
+class DomainEventsTestExpression:
+    def __init__(self, domain_events: typing.Tuple[DomainEvent, ...]):
         self.domain_events = domain_events
 
     def get_events(
@@ -333,6 +306,9 @@ class DomeinEventsTestExpression:
         ).with_traceback(traceback)
 
 
+TIntegrationEvent = typing.TypeVar("TIntegrationEvent", bound=IntegrationEvent)
+
+
 class IntegrationEventsTestExpression:
     def __init__(
         self, integration_events: typing.Tuple[IntegrationEvent, ...]
@@ -340,8 +316,8 @@ class IntegrationEventsTestExpression:
         self.integration_events = integration_events
 
     def get_integrations(
-        self, integration_type: typing.Type[IntegrationEvent]
-    ) -> typing.Generator[IntegrationEvent, None, None]:
+        self, integration_type: typing.Type[TIntegrationEvent]
+    ) -> typing.Generator[TIntegrationEvent, None, None]:
         integrations = (
             i
             for i in self.integration_events

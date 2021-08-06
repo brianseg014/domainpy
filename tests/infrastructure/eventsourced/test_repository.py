@@ -1,4 +1,4 @@
-from domainpy.infrastructure.records import EventRecord
+
 import pytest
 import datetime
 from unittest import mock
@@ -11,7 +11,7 @@ from domainpy.infrastructure.eventsourced.managers.memory import MemoryEventReco
 from domainpy.infrastructure.eventsourced.repository import make_adapter, SnapshotConfiguration
 from domainpy.infrastructure.mappers import Mapper
 from domainpy.infrastructure.transcoder import Transcoder
-from domainpy.utils.bus import Bus
+from domainpy.infrastructure.records import EventRecord
 
 
 @pytest.fixture
@@ -23,12 +23,8 @@ def record_manager():
     return MemoryEventRecordManager()
 
 @pytest.fixture
-def bus():
-    return Bus()
-
-@pytest.fixture
-def event_store(event_mapper, record_manager, bus):
-    return EventStore(event_mapper, record_manager, bus)
+def event_store(event_mapper, record_manager):
+    return EventStore(event_mapper, record_manager)
 
 def test_save(record_manager, event_store):
     class Aggregate(AggregateRoot):

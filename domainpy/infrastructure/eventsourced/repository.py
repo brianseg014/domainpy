@@ -7,6 +7,7 @@ from domainpy.domain.model.event import DomainEvent
 from domainpy.domain.model.value_object import Identity
 from domainpy.domain.repository import IRepository, TAggregateRoot, TIdentity
 from domainpy.infrastructure.eventsourced.eventstream import EventStream
+from domainpy.utils.bus import Bus, ISubscriber
 
 if typing.TYPE_CHECKING:
     from domainpy.infrastructure.eventsourced.eventstore import EventStore
@@ -41,12 +42,21 @@ def make_adapter(
                     enabled=False
                 )
 
+            self.event_bus = Bus[DomainEvent]()
+
+        def attach(self, subscriber: ISubscriber) -> None:
+            self.event_bus.attach(subscriber)
+
         def save(self, aggregate: TAggregateRoot) -> None:
-            self.event_store.store_events(EventStream(aggregate.__changes__))
+            events = EventStream(aggregate.__changes__)
+            self.event_store.store_events(events)
 
             if self._should_take_snapshot(aggregate):
                 snapshot = self._take_snapshot(aggregate)
                 self.event_store.store_events(EventStream([snapshot]))
+
+            for event in events:
+                self.event_bus.publish(event)
 
         def get(
             self, identity: typing.Union[TIdentity, str]

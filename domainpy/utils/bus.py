@@ -8,17 +8,17 @@ Message = typing.TypeVar("Message")
 
 class ISubscriber(typing.Generic[Message], abc.ABC):
     @abc.abstractmethod
-    def __route__(self, message: Message):
+    def __route__(self, message: Message) -> None:
         pass
 
 
 class IBus(typing.Generic[Message], abc.ABC):
     @abc.abstractmethod
-    def attach(self, subscriber: ISubscriber[Message]):
+    def attach(self, subscriber: ISubscriber[Message]) -> None:
         pass
 
     @abc.abstractmethod
-    def publish(self, message: Message):
+    def publish(self, message: Message) -> None:
         pass
 
 
@@ -26,7 +26,7 @@ class Bus(IBus[Message]):
     def __init__(self):
         self.subscribers: typing.List[ISubscriber[Message]] = []
 
-    def attach(self, subscriber: ISubscriber[Message]):
+    def attach(self, subscriber: ISubscriber[Message]) -> None:
         if not hasattr(subscriber, "__route__"):
             sub_name = subscriber.__class__.__name__
             raise DefinitionError(
@@ -36,6 +36,6 @@ class Bus(IBus[Message]):
 
         self.subscribers.append(subscriber)
 
-    def publish(self, message: Message):
+    def publish(self, message: Message) -> None:
         for subscriber in self.subscribers:
             subscriber.__route__(message)

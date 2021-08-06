@@ -10,7 +10,7 @@ if typing.TYPE_CHECKING:  # pragma: no cover
     from domainpy.application.projection import Projection
     from domainpy.domain.model.event import DomainEvent
     from domainpy.infrastructure.publishers.base import IPublisher
-    from domainpy.utils.bus import Bus
+    from domainpy.utils.bus import IBus
 
 
 class BasicSubscriber(ISubscriber, list):
@@ -19,7 +19,7 @@ class BasicSubscriber(ISubscriber, list):
 
 
 class BusSubscriber(ISubscriber):
-    def __init__(self, bus: Bus):
+    def __init__(self, bus: IBus):
         self.bus = bus
 
     def __route__(self, message: SystemMessage):

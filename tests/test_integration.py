@@ -4,16 +4,15 @@ from domainpy.application import (
     ApplicationService, 
     handler, 
     ApplicationCommand, 
-    IntegrationEvent
+    IntegrationEvent,
+    Projection
 )
 from domainpy.domain.model import (
     AggregateRoot, 
     mutator, 
-    DomainEntity, 
     DomainEvent, 
     ValueObject, 
     Identity,
-    DomainError
 )
 from domainpy.domain import (
     IRepository,
@@ -22,18 +21,18 @@ from domainpy.domain import (
 from domainpy.infrastructure import (
     Mapper,
     EventStore,
-    SnapshotConfiguration,
     make_eventsourced_repository_adapter as make_repo_adapter,
-    Transcoder
+    Transcoder,
+    MemoryEventRecordManager,
+    IPublisher,
+    MemoryPublisher
 )
 from domainpy.utils import (
     Registry,
     Bus,
-    ApplicationBusAdapter,
-    ProjectionBusAdapter, 
-    PublisherBusAdapter
 )
-from domainpy.mock import EventSourcedEnvironmentTestAdapter
+from domainpy.bootstrap import Environment, IFactory, ServiceBus
+from domainpy.test.bootstrap import EventSourcedProcessor, TestEnvironment
 from domainpy.typing.application import SystemMessage
 
 
@@ -160,66 +159,60 @@ def test_all_system():
     class EventSourcedPetStoreRepository(PetStoreRepository, Adapter):
         pass
 
-    ################################## Environment ######################################
+    ################################## Bootstrap ######################################
 
-    class Environment(
-        EventSourcedEnvironmentTestAdapter
-    ):
+    class IntegrationTestFactory(IFactory):
 
-        def setup_registry(
-            self, registry: Registry, 
-            event_store: EventStore, 
-            setupargs: dict
-        ) -> None:
-            registry.put(PetStoreRepository, EventSourcedPetStoreRepository(event_store))
+        def __init__(self, event_store: EventStore):
+            self.event_store = event_store
 
-        def setup_projection_bus(
-            self, 
-            projection_bus: ProjectionBusAdapter, 
-            registry: Registry, 
-            setupargs: dict
-        ) -> None:
+        def create_projection(self, key: typing.Type[Projection]) -> Projection:
             pass
-        
-        def setup_resolver_bus(
-            self, 
-            resolver_bus: ApplicationBusAdapter, 
-            publisher_integration_bus: Bus[DomainEvent], 
-            setupargs: dict
-        ) -> None:
-            resolver_bus.attach(
-                PetStoreResolver(publisher_integration_bus)
-            )
 
-        def setup_handler_bus(
-            self, 
-            handler_bus: ApplicationBusAdapter, 
-            registry: Registry, 
-            setupargs: dict
-        ) -> None:
-            handler_bus.attach(
-                PetStoreSerivce(registry)
-            )
+        def create_repository(self, key: typing.Type[IRepository]) -> IRepository:
+            if key is PetStoreRepository:
+                return EventSourcedPetStoreRepository(self.event_store)
+
+        def create_domain_service(self, key: typing.Type[IDomainService]) -> IDomainService:
+            pass
+
+        def create_event_publisher(self) -> IPublisher:
+            return MemoryPublisher()
+
+        def create_integration_publisher(self) -> IPublisher:
+            return MemoryPublisher()
+
+    event_store = EventStore(
+        event_mapper=event_mapper,
+        record_manager=MemoryEventRecordManager()
+    )
+
+    factory = IntegrationTestFactory(event_store)
+    env = Environment('ctx', factory)
+    
+    env.add_repository(PetStoreRepository)
+
+    env.add_handler(PetStoreSerivce(env.registry))
+
+    env.add_resolver(PetStoreResolver(env.integration_bus))
 
     ################################## Some tests ######################################
 
-    env = Environment(
-        context='some_context',
-        command_mapper=command_mapper,
-        integration_mapper=integration_mapper,
-        event_mapper=event_mapper
-    )
-    env.given(
-        env.stamp_event(PetStoreRegistered, PetStore)(
+    adap = TestEnvironment(env, EventSourcedProcessor(event_store))
+    adap.given(
+        PetStoreRegistered.stamp(
+            stream_id=PetStore.create_stream_id(PetStoreId.create()),
+            number=1
+        )(
             pet_store_id=PetStoreId.create(),
             pet_store_name=PetStoreName.from_text('noe')
         )
     )
-    env.when(
-        env.stamp_command(RegisterPetStore)(
+    adap.when(
+        RegisterPetStore.stamp()(
             pet_store_id='ark',
             pet_store_name='ark'
         )
     )
-    env.then.domain_events.assert_has_event_n_times(PetStoreRegistered, times=2)
-    env.then.integration_events.assert_has_integration(CreatePetStoreSucceeded)
+    adap.then.domain_events.assert_has_event_n_times(PetStoreRegistered, times=2)
+    adap.then.integration_events.assert_has_integration(CreatePetStoreSucceeded)

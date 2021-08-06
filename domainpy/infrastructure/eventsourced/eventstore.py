@@ -19,7 +19,8 @@ class EventStore:
         self,
         event_mapper: Mapper,
         record_manager: EventRecordManager,
-        bus: Bus,
+        *,
+        bus: Bus = None,
     ) -> None:
         self.event_mapper = event_mapper
         self.record_manager = record_manager
@@ -32,6 +33,7 @@ class EventStore:
 
             session.commit()
 
+        if self.bus is not None:
             for event in stream:
                 self.bus.publish(event)
 

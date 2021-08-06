@@ -11,6 +11,7 @@ from .bus_subscribers import (
     PublisherSubciber,
 )
 from .registry import Registry
+from .contextualized import Contextualized
 
 
 __all__ = [
@@ -24,4 +25,5 @@ __all__ = [
     "BasicSubscriber",
     "PublisherSubciber",
     "Registry",
+    "Contextualized",
 ]
