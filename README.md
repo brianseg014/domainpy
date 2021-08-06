@@ -281,60 +281,49 @@ class EventSourcedPetStoreRepository(PetStoreRepository, Adapter):
 
 ### Environment
 
-Putting all togheter. An EventSourcedEnvionment creates internally some
-buses which will transport system messages and an event store which stores
-and retreives events from a record manager such as dynamodb.
-
-`Projection Bus` distrubite domain events to projections subscibed.
-
-`Resolver Bus` distribute all system messages to application services
-with semantic role of resolvers.
-
-`Handler Bus` distribute all system messages to application services
-with semantic role of handlers.
-
-`Domain Publisher Bus` all domain events to be published in an infrastructure
-bus such as aws event bridge.
-
-`Integration Publisher Bus` all integration events to be publisher in an
-infrastructure bus such as aws event bridge.
+Putting all togheter.
 
 ```python
-from domainpy.environments import EventSourcedEnvironment
+from domainpy.bootstrap import IFactory
+from domainpy.application import Projection
+from domainpy.domain import IRepository, IDomainService
+from domainpy.infrastructure import EventStore, IPublisher, MemoryPublisher
 
-class Environment(
-        EventSourcedEnvironment
-    ):
 
-        def setup_registry(
-            self, registry: Registry, 
-            event_store: EventStore, 
-            setupargs: dict
-        ) -> None:
-            registry.put(
-                PetStoreRepository, 
-                EventSourcedPetStoreRepository(event_store)
-            )
-        
-        def setup_resolver_bus(
-            self, 
-            resolver_bus: ApplicationBusAdapter, 
-            publisher_integration_bus: Bus[DomainEvent], 
-            setupargs: dict
-        ) -> None:
-            resolver_bus.attach(
-                PetStoreResolver(publisher_integration_bus)
-            )
+class IntegrationTestFactory(IFactory):
 
-        def setup_handler_bus(
-            self, 
-            handler_bus: ApplicationBusAdapter, 
-            registry: Registry, 
-            setupargs: dict
-        ) -> None:
-            handler_bus.attach(
-                PetStoreSerivce(registry)
-            )
+        def __init__(self, event_store: EventStore):
+            self.event_store = event_store
+
+        def create_projection(self, key: typing.Type[Projection]) -> Projection:
+            pass
+
+        def create_repository(self, key: typing.Type[IRepository]) -> IRepository:
+            if key is PetStoreRepository:
+                return EventSourcedPetStoreRepository(self.event_store)
+
+        def create_domain_service(self, key: typing.Type[IDomainService]) -> IDomainService:
+            pass
+
+        def create_event_publisher(self) -> IPublisher:
+            return MemoryPublisher()
+
+        def create_integration_publisher(self) -> IPublisher:
+            return MemoryPublisher()
+
+    event_store = EventStore(
+        event_mapper=event_mapper,
+        record_manager=MemoryEventRecordManager()
+    )
+
+    factory = IntegrationTestFactory(event_store)
+    env = Environment('ctx', factory)
+    
+    env.add_repository(PetStoreRepository)
+
+    env.add_handler(PetStoreSerivce(env.registry))
+
+    env.add_resolver(PetStoreResolver(env.integration_bus))
 ```
 
 ### One last thing, an utility (Mapper)
@@ -414,31 +403,23 @@ For testing we need to create a new environment with an adapter.
 This will enable some useful methods: given, when then
 
 ```python
-class TestingEnvrionment(
-    Environment,
-    EventSourcedEnvironmentTestAdapter
-):
-    pass
+from domainpy.test import TestEnvironment, EventSourcedProcessor
 
-env = TestingEnvrionment(
-    command_mapper=command_mapper,
-    integration_mapper=integration_mapper,
-    event_mapper=event_mapper
-)
-env.given(
-    env.stamp_event(PetStoreRegistered, PetStore)(
+adap = TestEnvironment(env, EventSourcedProcessor(event_store))
+adap.given(
+    adap.stamp_event(PetStoreRegistered, PetStore)(
         pet_store_id=PetStoreId.create(),
         pet_store_name=PetStoreName.from_text('noe')
     )
 )
-env.when(
-    env.stamp_command(RegisterPetStore)(
+adap.when(
+    adap.stamp_command(RegisterPetStore)(
         pet_store_id='ark',
         pet_store_name='ark'
     )
 )
-env.then.domain_events.assert_has_event_n_times(PetStoreRegistered, times=2)
-env.then.integration_events.assert_has_integration(CreatePetStoreSucceeded)
+adap.then.domain_events.assert_has_event_n_times(PetStoreRegistered, times=2)
+adap.then.integration_events.assert_has_integration(CreatePetStoreSucceeded)
 ```
 
 This example can be found in tests/test_integration.py
