@@ -1,3 +1,3 @@
-from .bootstrap import TestEnvironment, EventSourcedProcessor
+from .bootstrap import TestEnvironment, EventSourcedProcessor, LeanProcessor
 
-__all__ = ["TestEnvironment", "EventSourcedProcessor"]
+__all__ = ["TestEnvironment", "EventSourcedProcessor", "LeanProcessor"]

@@ -158,7 +158,7 @@ class IFactory(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def create_event_publisher(self) -> IPublisher:
+    def create_event_publisher(self) -> typing.Optional[IPublisher]:
         pass
 
     @abc.abstractmethod
@@ -181,7 +181,8 @@ class Environment:
         self.registry = Registry()
 
         domain_publisher = factory.create_event_publisher()
-        self.service_bus.add_event_publisher(domain_publisher)
+        if domain_publisher is not None:
+            self.service_bus.add_event_publisher(domain_publisher)
 
         integration_publisher = factory.create_integration_publisher()
         self.integration_bus.attach(PublisherSubciber(integration_publisher))

@@ -4,6 +4,7 @@ import abc
 import sys
 import types
 import typing
+import itertools
 import dataclasses
 
 from domainpy.bootstrap import Environment
@@ -29,6 +30,7 @@ class EventProcessor(abc.ABC):
     def process(self, event: DomainEvent) -> None:
         pass
 
+    @abc.abstractmethod
     def next_event_number(
         self, aggregate_type: typing.Type[AggregateRoot], aggregate_id: str
     ) -> int:
@@ -49,6 +51,18 @@ class EventSourcedProcessor(EventProcessor):
         stream_id = aggregate_type.create_stream_id(aggregate_id)
         events = self.event_store.get_events(stream_id)
         return len(events) + 1
+
+
+class LeanProcessor(EventProcessor):
+    def __init__(self, environment: Environment) -> None:
+        self.environment = environment
+        self.sequence = itertools.count(start=1, step=1)
+
+    def process(self, event: DomainEvent) -> None:
+        pass
+
+    def next_event_number(self, aggregate_type: typing.Type[AggregateRoot], aggregate_id: str) -> int:
+        return next(self.sequence)
 
 
 class TestEnvironment(abc.ABC):
@@ -352,6 +366,12 @@ class IntegrationEventsTestExpression:
         integrations = self.get_integrations(integration_type)
         return len(list(integrations)) >= 1
 
+    def has_integration_n(
+        self, integration_type: typing.Type[IntegrationEvent], times: int
+    ) -> bool:
+        integrations = self.get_integrations(integration_type)
+        return len(list(integrations)) == times
+
     def has_integration_with(
         self, integration_type: typing.Type[IntegrationEvent], **kwargs
     ) -> bool:
@@ -366,6 +386,9 @@ class IntegrationEventsTestExpression:
         self, integration_type: typing.Type[IntegrationEvent], **kwargs
     ) -> bool:
         return not self.has_integration_with(integration_type, **kwargs)
+
+    def has_n_events(self, count: int) -> bool:
+        return len(self.integration_events) == count
 
     def assert_has_not_integration(
         self, integration_type: typing.Type[IntegrationEvent]
@@ -383,6 +406,14 @@ class IntegrationEventsTestExpression:
         except AssertionError:
             self.raise_error("integration not found")
 
+    def assert_has_integration_n(
+        self, integration_type: typing.Type[IntegrationEvent], times: int
+    ) -> None:
+        try:
+            assert self.has_integration_n(integration_type, times)
+        except AssertionError:
+            self.raise_error(f"integration not found {times} time(s)")
+
     def assert_has_integration_with(
         self, integration_type: typing.Type[IntegrationEvent], **kwargs
     ) -> None:
@@ -398,6 +429,12 @@ class IntegrationEventsTestExpression:
             assert self.has_not_integration_with(integration_type, **kwargs)
         except AssertionError:
             self.raise_error("integration found")
+
+    def assert_has_n_events(self, count: int) -> None:
+        try:
+            assert self.has_n_events(count)
+        except AssertionError:
+            self.raise_error(f"not found {count} integrations")
 
     def raise_error(self, message):
         traceback = None
