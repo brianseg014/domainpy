@@ -61,11 +61,13 @@ class LeanProcessor(EventProcessor):
     def process(self, event: DomainEvent) -> None:
         pass
 
-    def next_event_number(self, aggregate_type: typing.Type[AggregateRoot], aggregate_id: str) -> int:
+    def next_event_number(
+        self, aggregate_type: typing.Type[AggregateRoot], aggregate_id: str
+    ) -> int:
         return next(self.sequence)
 
 
-class TestEnvironment(abc.ABC):
+class TestEnvironment:
     def __init__(
         self, environment: Environment, event_processor: EventProcessor
     ) -> None:
@@ -86,7 +88,12 @@ class TestEnvironment(abc.ABC):
         )
 
     @classmethod
-    def stamp_command(cls, command_type: typing.Type[ApplicationCommand], *, trace_id: str = None):
+    def stamp_command(
+        cls,
+        command_type: typing.Type[ApplicationCommand],
+        *,
+        trace_id: str = None,
+    ):
         _trace_id = trace_id
         if _trace_id is None:
             _trace_id = Traceable.__trace_id__
@@ -95,7 +102,10 @@ class TestEnvironment(abc.ABC):
 
     @classmethod
     def stamp_integration(
-        cls, integration_type: typing.Type[IntegrationEvent], *, trace_id: str = None
+        cls,
+        integration_type: typing.Type[IntegrationEvent],
+        *,
+        trace_id: str = None,
     ):
         _trace_id = trace_id
         if _trace_id is None:
@@ -109,7 +119,7 @@ class TestEnvironment(abc.ABC):
         aggregate_type: typing.Type[AggregateRoot],
         aggregate_id: str,
         *,
-        trace_id: str = None
+        trace_id: str = None,
     ):
         _trace_id = trace_id
         if _trace_id is None:
@@ -118,7 +128,7 @@ class TestEnvironment(abc.ABC):
         return event_type.stamp(
             stream_id=aggregate_type.create_stream_id(aggregate_id),
             number=self.next_event_number(aggregate_type, aggregate_id),
-            trace_id=trace_id
+            trace_id=trace_id,
         )
 
     def given(self, event: DomainEvent) -> None:

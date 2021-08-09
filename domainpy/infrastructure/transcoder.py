@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import abc
 import functools
-import dataclasses
 
 import domainpy.compat_typing as typing
 
@@ -14,6 +13,7 @@ from domainpy.infrastructure.records import (
     CommandRecord,
     EventRecord,
     IntegrationRecord,
+    asdict,
 )
 from domainpy.typing.application import SystemMessage
 from domainpy.typing.infrastructure import SystemRecord
@@ -59,7 +59,7 @@ class Transcoder(abc.ABC):
     def deserialize(
         self, record: TSystemRecord, message_type: typing.Type[TSystemMessage]
     ) -> TSystemMessage:
-        return self.decode(dataclasses.asdict(record), message_type)
+        return self.decode(asdict(record), message_type)
 
     def encode(self, obj, objtype):
         codec = self._get_codec(objtype)

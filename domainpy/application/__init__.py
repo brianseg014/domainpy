@@ -1,5 +1,9 @@
 from .command import ApplicationCommand
-from .integration import IntegrationEvent, SuccessIntegrationEvent, FailureIntegrationEvent
+from .integration import (
+    IntegrationEvent,
+    SuccessIntegrationEvent,
+    FailureIntegrationEvent,
+)
 from .projection import Projection, projector
 from .service import ApplicationService, handler
 
