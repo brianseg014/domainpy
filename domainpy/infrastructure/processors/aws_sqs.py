@@ -10,9 +10,12 @@ class AwsSimpleQueueServiceBatchProcessor(Processor):
         self,
         raw_message: dict,
         record_handler: typing.Callable[[dict], None],
+        raise_exception: bool = True,
         **kwargs,
     ):
         super().__init__(raw_message, record_handler)
+        self.raise_exception = raise_exception
+
         self.client = boto3.client("sqs", **kwargs)
 
     def get_records(self):
@@ -45,17 +48,15 @@ class AwsSimpleQueueServiceBatchProcessor(Processor):
                 QueueUrl=queue_url, Entries=entries_to_delete
             )
 
-        raise PartialBatchError(
-            f"{len(self.fail_messages)} records processing raise error",
-            errors=self.fail_messages,
-        )
+        if self.raise_exception:
+            raise PartialBatchError(errors=self.fail_messages)
 
 
-def sqs_batch_processor(record_handler):
+def sqs_batch_processor(record_handler, raise_exception: bool = True):
     def inner_function(func):
         def wrapper(queue_message, *args, **kwargs):
             with AwsSimpleQueueServiceBatchProcessor(
-                queue_message, record_handler
+                queue_message, record_handler, raise_exception
             ) as (
                 success_messages,
                 fail_messages,

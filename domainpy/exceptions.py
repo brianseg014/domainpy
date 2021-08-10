@@ -34,7 +34,11 @@ class IdempotencyItemError(Exception):
 
 
 class PartialBatchError(Exception):
-    def __init__(self, message, errors):
-        super().__init__(message)
-        self.message = message
+    def __init__(self, errors):
         self.errors = errors
+
+        lines = [f"{len(self.errors)} record(s) processing raise error:"]
+        for record, error in errors:
+            lines.append(str(record) + ": " + repr(error))
+
+        super().__init__("\n".join(lines))
