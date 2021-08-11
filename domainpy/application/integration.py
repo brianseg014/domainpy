@@ -26,9 +26,6 @@ class IntegrationEvent(SystemData, Traceable, Contextualized):
         if _trace_id is None:
             _trace_id = Traceable.__trace_id__
 
-        if _trace_id is None:
-            _trace_id = str(uuid.uuid4())
-
         _context = context
         if _context is None:
             _context = Contextualized.__context__

@@ -1,4 +1,3 @@
-import uuid
 import datetime
 import functools
 
@@ -19,9 +18,6 @@ class ApplicationCommand(SystemData, Traceable):
         _trace_id = trace_id
         if _trace_id is None:
             _trace_id = Traceable.__trace_id__
-
-        if _trace_id is None:
-            _trace_id = str(uuid.uuid4())
 
         return functools.partial(
             cls,
