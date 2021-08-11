@@ -241,6 +241,12 @@ class _SystemMessageCodec(ICodec):
 
             dct[field.name] = self.trancoder.decode(field_data, field.type)
 
+        if 'trace_id' in data:
+            dct['__trace_id__'] = data['trace_id']
+
+        if 'context' in data:
+            dct['__context__'] = data['context']
+
         return field_type(**dct)
 
     @classmethod
