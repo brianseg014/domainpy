@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import abc
 import sys
+import uuid
 import types
 import typing
 import itertools
@@ -98,7 +99,10 @@ class TestEnvironment:
         if _trace_id is None:
             _trace_id = Traceable.__trace_id__
 
-        return command_type.stamp(trace_id=trace_id)
+        if _trace_id is None:
+            _trace_id = str(uuid.uuid4())
+
+        return command_type.stamp(trace_id=_trace_id)
 
     @classmethod
     def stamp_integration(
@@ -111,7 +115,10 @@ class TestEnvironment:
         if _trace_id is None:
             _trace_id = Traceable.__trace_id__
 
-        return integration_type.stamp(trace_id=trace_id)
+        if _trace_id is None:
+            _trace_id = str(uuid.uuid4())
+
+        return integration_type.stamp(trace_id=_trace_id)
 
     def stamp_event(
         self,
@@ -125,10 +132,13 @@ class TestEnvironment:
         if _trace_id is None:
             _trace_id = Traceable.__trace_id__
 
+        if _trace_id is None:
+            _trace_id = str(uuid.uuid4())
+
         return event_type.stamp(
             stream_id=aggregate_type.create_stream_id(aggregate_id),
             number=self.next_event_number(aggregate_type, aggregate_id),
-            trace_id=trace_id,
+            trace_id=_trace_id,
         )
 
     def given(self, event: DomainEvent) -> None:

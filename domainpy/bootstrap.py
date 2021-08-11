@@ -1,4 +1,5 @@
 import abc
+from domainpy.utils.traceable import Traceable
 import typing
 
 from domainpy.exceptions import ConcurrencyError
@@ -217,4 +218,5 @@ class Environment:
         message: typing.Union[SystemMessage, DomainError],
         retries: int = 3,
     ) -> None:
+        Traceable.set_default_trace_id(message.__trace_id__)
         self.service_bus.handle(message, retries)
