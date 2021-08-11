@@ -1,4 +1,6 @@
-from typing import Sequence
+import json
+import traceback
+import typing
 
 
 class DefinitionError(Exception):
@@ -23,7 +25,7 @@ class PublisherError(Exception):
             self.message = message
             self.reason = reason
 
-    def __init__(self, message: str, errors: Sequence[EntryError]):
+    def __init__(self, message: str, errors: typing.Sequence[EntryError]):
         super().__init__(message)
         self.message = message
         self.errors = errors
@@ -37,8 +39,13 @@ class PartialBatchError(Exception):
     def __init__(self, errors):
         self.errors = errors
 
-        lines = [f"{len(self.errors)} record(s) processing raise error:"]
-        for record, error in errors:
-            lines.append(str(record) + ": " + repr(error))
-
-        super().__init__("\n".join(lines))
+        super().__init__(json.dumps({
+            "summary": f"{len(self.errors)} record(s) processing raise error:",
+            "errors": [
+                {
+                    "record": record,
+                    "error": traceback.format_exception(None, error, error.__traceback__),
+                }
+                for record,error in errors
+            ]
+        }))
