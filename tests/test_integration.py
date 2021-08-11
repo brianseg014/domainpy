@@ -31,7 +31,7 @@ from domainpy.utils import (
     Registry,
     Bus,
 )
-from domainpy.bootstrap import Environment, IFactory, ServiceBus
+from domainpy.bootstrap import Environment, IFactory
 from domainpy.test.bootstrap import EventSourcedProcessor, TestEnvironment
 from domainpy.typing.application import SystemMessage
 
@@ -200,9 +200,8 @@ def test_all_system():
 
     adap = TestEnvironment(env, EventSourcedProcessor(event_store))
     adap.given(
-        PetStoreRegistered.stamp(
-            stream_id=PetStore.create_stream_id(PetStoreId.create()),
-            number=1
+        adap.stamp_event(
+            PetStoreRegistered, PetStore, PetStoreId.create().identity
         )(
             pet_store_id=PetStoreId.create(),
             pet_store_name=PetStoreName.from_text('noe')
