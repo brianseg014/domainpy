@@ -6,6 +6,7 @@ from domainpy.application.command import ApplicationCommand
 from domainpy.application.integration import IntegrationEvent
 from domainpy.domain.model.event import DomainEvent
 from domainpy.domain.model.value_object import ValueObject
+from domainpy.infrastructure.tracer.tracestore import TraceResolution
 from domainpy.infrastructure.transcoder import Transcoder, MessageType
 from domainpy.infrastructure.records import CommandRecord, IntegrationRecord, EventRecord
 
@@ -179,6 +180,16 @@ def test_deserialize_event():
     assert m.__trace_id__ == r.trace_id
     assert m.__context__ == r.context
     assert m.some_property.some_property == 'x'
+
+def test_serialize_trace_resolution():
+    m = TraceResolution(
+        trace_id='tid',
+        resolution='success'
+    )
+
+    t = Transcoder()
+    r = t.serialize(m)
+    assert r == m
 
 def test_encode_single_type_sequence():
     t = Transcoder()
