@@ -1,7 +1,7 @@
 
 from domainpy.application.command import ApplicationCommand
 from domainpy.infrastructure.mappers import Mapper
-from domainpy.infrastructure.transcoder import Transcoder
+from domainpy.infrastructure.transcoder import Transcoder, MessageType
 from domainpy.infrastructure.records import CommandRecord
 
 
@@ -19,7 +19,7 @@ def test_mapper_serialize_command():
     assert record.topic == 'ApplicationCommand'
     assert record.version == 1
     assert record.timestamp == 0.0
-    assert record.message == 'command'
+    assert record.message == MessageType.APPLICATION_COMMAND.value
     assert record.payload == {}
 
 def  test_mapper_deserialize():
@@ -28,7 +28,7 @@ def  test_mapper_deserialize():
         topic='ApplicationCommand',
         version=1,
         timestamp=0.0,
-        message='command',
+        message=MessageType.APPLICATION_COMMAND.value,
         payload={ }
     )
 
@@ -39,4 +39,4 @@ def  test_mapper_deserialize():
     assert isinstance(message, ApplicationCommand)
     assert message.__timestamp__ == 0.0
     assert message.__version__ == 1
-    assert message.__message__ == 'command'
+    assert message.__message__ == MessageType.APPLICATION_COMMAND.value

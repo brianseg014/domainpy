@@ -6,7 +6,7 @@ from domainpy.application.command import ApplicationCommand
 from domainpy.application.integration import IntegrationEvent
 from domainpy.domain.model.event import DomainEvent
 from domainpy.domain.model.value_object import ValueObject
-from domainpy.infrastructure.transcoder import Transcoder
+from domainpy.infrastructure.transcoder import Transcoder, MessageType
 from domainpy.infrastructure.records import CommandRecord, IntegrationRecord, EventRecord
 
 
@@ -40,7 +40,7 @@ def test_deserialize_command():
         topic='Command',
         version=1,
         timestamp=0.0,
-        message='command',
+        message=MessageType.APPLICATION_COMMAND.value,
         payload={ 'some_property': 'x' }
     )
 
@@ -84,7 +84,7 @@ def test_deserialize_integration():
         error=None,
         version=1,
         timestamp=0.0,
-        message='integration_event',
+        message=MessageType.INTEGRATION_EVENT.value,
         payload={ 'some_property': 'x' }
     )
 
@@ -133,7 +133,7 @@ def test_deserialize_event():
         version=1,
         timestamp=0.0,
         trace_id='tid',
-        message='domain_event',
+        message=MessageType.DOMAIN_EVENT.value,
         context='some_context',
         payload={ 'some_property': { 'some_property': 'x' } }
     )

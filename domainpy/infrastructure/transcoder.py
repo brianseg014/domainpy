@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import abc
+import enum
 import functools
 
 import domainpy.compat_typing as typing
@@ -30,6 +31,12 @@ class MissingCodecError(Exception):
 
 class MissingFieldValueError(Exception):
     pass
+
+
+class MessageType(enum.Enum):
+    APPLICATION_COMMAND = "application_command"
+    INTEGRATION_EVENT = "integration_event"
+    DOMAIN_EVENT = "domain_event"
 
 
 TSystemMessage = typing.TypeVar("TSystemMessage", bound=SystemMessage)
@@ -278,7 +285,7 @@ class _ApplicationCommandCodec(_SystemMessageCodec):
             topic=field_type.__name__,
             version=msg.__version__,
             timestamp=msg.__timestamp__,
-            message="command",
+            message=MessageType.APPLICATION_COMMAND.value,
             payload=dct["payload"],
         )
         return record
@@ -311,7 +318,7 @@ class _IntegrationEventCodec(_SystemMessageCodec):
             error=msg.__error__,
             version=msg.__version__,
             timestamp=msg.__timestamp__,
-            message="integration_event",
+            message=MessageType.INTEGRATION_EVENT.value,
             payload=dct["payload"],
         )
 
@@ -342,7 +349,7 @@ class _DomainEventCodec(_SystemMessageCodec):
             version=msg.__version__,
             timestamp=msg.__timestamp__,
             trace_id=msg.__trace_id__,
-            message="domain_event",
+            message=MessageType.DOMAIN_EVENT.value,
             context=msg.__context__,
             payload=dct["payload"],
         )
