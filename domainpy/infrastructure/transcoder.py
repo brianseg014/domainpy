@@ -109,7 +109,7 @@ class Transcoder(abc.ABC):
             _IntegrationEventCodec(self),
             _DomainEventCodec(self),
             _ValueObjectCodec(self),
-            _TraceResolutionCodec()
+            _TraceResolutionCodec(),
         ]
 
     def add_codec(self, codec: ICodec) -> None:

@@ -37,7 +37,9 @@ class PublisherError(Exception):
                         {
                             "message": entry_error.message,
                             "error": traceback.format_exception(
-                                None, entry_error.error, entry_error.error.__traceback__
+                                None,
+                                entry_error.error,
+                                entry_error.error.__traceback__,
                             ),
                         }
                         for entry_error in errors

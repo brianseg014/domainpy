@@ -42,9 +42,9 @@ class AwsSimpleQueueServicePublisher(Publisher):
         for i, entry in enumerate(entries):
             try:
                 self.client.send_message(**entry)
-            except Exception as error:
+            except Exception as error:  # pylint: disable=broad-except
                 errors.append(
                     PublisherError.EntryError(messages[i], str(error))
                 )
         if len(errors) > 0:
-            raise PublisherError(f"Queue name: {self.queue_name}", errors)
+            raise PublisherError(errors)

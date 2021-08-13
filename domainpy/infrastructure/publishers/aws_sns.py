@@ -27,9 +27,7 @@ class AwsSimpleNotificationServicePublisher(Publisher):
         entries = [
             {
                 "TopicArn": self.topic_arn,
-                "Message": json.dumps(
-                    record_asdict(self.mapper.serialize(m))
-                ),
+                "Message": json.dumps(record_asdict(self.mapper.serialize(m))),
             }
             for m in messages
         ]
@@ -38,9 +36,7 @@ class AwsSimpleNotificationServicePublisher(Publisher):
         for i, entry in enumerate(entries):
             try:
                 self.client.publish(**entry)
-            except Exception as error:
-                errors.append(
-                    PublisherError.EntryError(entries[i], error)
-                )
+            except Exception as error:  # pylint: disable=broad-except
+                errors.append(PublisherError.EntryError(entries[i], error))
         if len(errors) > 0:
             raise PublisherError(errors)

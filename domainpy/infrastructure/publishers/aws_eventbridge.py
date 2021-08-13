@@ -28,9 +28,7 @@ class AwsEventBridgePublisher(Publisher):
         entries = [
             {
                 "Source": self.context,
-                "Detail": json.dumps(
-                    record_asdict(self.mapper.serialize(m))
-                ),
+                "Detail": json.dumps(record_asdict(self.mapper.serialize(m))),
                 "DetailType": m.__class__.__name__,
                 "EventBusName": self.bus_name,
             }
@@ -44,4 +42,4 @@ class AwsEventBridgePublisher(Publisher):
                 for i, e in enumerate(response["Entries"])
                 if "EventId" not in e  # Failed
             ]
-            raise PublisherError(f"Bus name: {self.bus_name}", errors)
+            raise PublisherError(errors)

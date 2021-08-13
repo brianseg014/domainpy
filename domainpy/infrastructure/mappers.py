@@ -1,4 +1,3 @@
-import dataclasses
 import typing
 
 from domainpy.infrastructure.transcoder import Transcoder
