@@ -39,13 +39,20 @@ class PartialBatchError(Exception):
     def __init__(self, errors):
         self.errors = errors
 
-        super().__init__(json.dumps({
-            "summary": f"{len(self.errors)} record(s) processing raise error:",
-            "errors": [
+        summary = f"{len(self.errors)} record(s) processing raise error:"
+        super().__init__(
+            json.dumps(
                 {
-                    "record": record,
-                    "error": traceback.format_exception(None, error, error.__traceback__),
+                    "summary": summary,
+                    "errors": [
+                        {
+                            "record": record,
+                            "error": traceback.format_exception(
+                                None, error, error.__traceback__
+                            ),
+                        }
+                        for record, error in errors
+                    ],
                 }
-                for record,error in errors
-            ]
-        }))
+            )
+        )

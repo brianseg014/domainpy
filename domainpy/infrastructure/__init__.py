@@ -27,12 +27,14 @@ from .publishers.aws_sqs import AwsSimpleQueueServicePublisher
 from .tracer.tracestore import TraceStore, TraceResolution
 from .tracer.recordmanager import TraceRecordManager
 from .tracer.managers.dynamodb import DynamoDBTraceRecordManager
-from .records import (
-    CommandRecord,
-    EventRecord,
-    IntegrationRecord
+from .records import CommandRecord, EventRecord, IntegrationRecord
+from .transcoder import (
+    Transcoder,
+    ICodec,
+    MessageType,
+    record_asdict,
+    record_fromdict,
 )
-from .transcoder import Transcoder, ICodec, MessageType, record_asdict, record_fromdict
 
 __all__ = [
     "EventStore",

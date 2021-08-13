@@ -137,9 +137,7 @@ class DynamoSession(Session):
                     "Item": self.record_manager.serialize(event_record),
                     "ConditionExpression": "attribute_not_exists(stream_id) "
                     "and attribute_not_exists(#number)",
-                    "ExpressionAttributeNames": {
-                        "#number": "number"
-                    }
+                    "ExpressionAttributeNames": {"#number": "number"},
                 }
             )
 

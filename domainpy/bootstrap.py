@@ -1,8 +1,8 @@
 import abc
-from domainpy.utils.traceable import Traceable
 import typing
 
 from domainpy.exceptions import ConcurrencyError
+from domainpy.application.command import ApplicationCommand
 from domainpy.application.service import ApplicationService
 from domainpy.application.projection import Projection
 from domainpy.application.integration import IntegrationEvent
@@ -20,6 +20,7 @@ from domainpy.utils.bus_subscribers import (
 )
 from domainpy.utils.registry import Registry
 from domainpy.utils.contextualized import Contextualized
+from domainpy.utils.traceable import Traceable
 from domainpy.typing.application import SystemMessage
 
 
@@ -218,5 +219,12 @@ class Environment:
         message: typing.Union[SystemMessage, DomainError],
         retries: int = 3,
     ) -> None:
-        Traceable.set_default_trace_id(message.__trace_id__)
+        if isinstance(
+            message, (ApplicationCommand, IntegrationEvent, DomainEvent)
+        ):
+            if message.__trace_id__ is None:
+                raise TypeError("message.__trace_id__ should not be None")
+
+            Traceable.set_default_trace_id(message.__trace_id__)
+
         self.service_bus.handle(message, retries)

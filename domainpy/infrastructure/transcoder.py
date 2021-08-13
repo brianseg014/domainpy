@@ -14,7 +14,7 @@ from domainpy.domain.model.value_object import ValueObject
 from domainpy.infrastructure.records import (
     CommandRecord,
     EventRecord,
-    IntegrationRecord
+    IntegrationRecord,
 )
 from domainpy.typing.application import SystemMessage
 from domainpy.typing.infrastructure import SystemRecord
@@ -23,6 +23,7 @@ from domainpy.utils.data import get_fields, Field, MISSING
 
 def isgenerictype(objtype) -> bool:
     return typing.get_origin(objtype) is not None
+
 
 def record_fromdict(
     dct: dict,
@@ -42,11 +43,11 @@ def record_fromdict(
         "integration_event or domain_event"
     )
 
+
 def record_asdict(
     record: typing.Union[CommandRecord, IntegrationRecord, EventRecord]
 ) -> dict:
     return dataclasses.asdict(record)
-
 
 
 class MissingCodecError(Exception):
@@ -63,17 +64,31 @@ class MessageType(enum.Enum):
     DOMAIN_EVENT = "domain_event"
 
     @classmethod
-    def of(cls, message_type: typing.Type[typing.Union[ApplicationCommand, IntegrationEvent, DomainEvent]]) -> MessageType:
-        if message_type is ApplicationCommand or issubclass(message_type, ApplicationCommand):
+    def of(  # pylint: disable=invalid-name
+        cls,
+        message_type: typing.Type[
+            typing.Union[ApplicationCommand, IntegrationEvent, DomainEvent]
+        ],
+    ) -> MessageType:
+        if message_type is ApplicationCommand or issubclass(
+            message_type, ApplicationCommand
+        ):
             return MessageType.APPLICATION_COMMAND
 
-        if message_type is IntegrationEvent or issubclass(message_type, IntegrationEvent):
+        if message_type is IntegrationEvent or issubclass(
+            message_type, IntegrationEvent
+        ):
             return MessageType.INTEGRATION_EVENT
 
-        if message_type is DomainEvent or issubclass(message_type, DomainEvent):
+        if message_type is DomainEvent or issubclass(
+            message_type, DomainEvent
+        ):
             return MessageType.DOMAIN_EVENT
 
-        raise TypeError('message type should be one of ApplicationCommand, IntegrationEvent or DomainEvent')
+        raise TypeError(
+            "message type should be one of "
+            "ApplicationCommand, IntegrationEvent or DomainEvent"
+        )
 
 
 TSystemMessage = typing.TypeVar("TSystemMessage", bound=SystemMessage)
@@ -274,22 +289,26 @@ class _SystemMessageCodec(ICodec):
                 field_data = data.get(
                     self._get_record_field_name(field), MISSING
                 )
+
+                if field_data is MISSING:
+                    field_data = field.default
+
             else:
                 payload = data.get("payload", MISSING)
                 if payload is MISSING:
                     raise MissingFieldValueError("missing field: payload")
                 field_data = payload.get(field.name, MISSING)
 
-            if field_data == MISSING:
+            if field_data is MISSING:
                 raise MissingFieldValueError(f"missing field: {field.name}")
 
             dct[field.name] = self.trancoder.decode(field_data, field.type)
 
-        if 'trace_id' in data:
-            dct['__trace_id__'] = data['trace_id']
+        if "trace_id" in data:
+            dct["__trace_id__"] = data["trace_id"]
 
-        if 'context' in data:
-            dct['__context__'] = data['context']
+        if "context" in data:
+            dct["__context__"] = data["context"]
 
         return field_type(**dct)
 

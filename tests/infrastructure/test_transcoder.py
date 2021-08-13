@@ -26,12 +26,16 @@ def test_serialize_command():
     
     t = Transcoder()
     r = t.serialize(m)
+    assert isinstance(r, CommandRecord)
+    assert r.trace_id == m.__trace_id__
+    assert r.version == m.__version__
+    assert r.timestamp == m.__timestamp__
     assert r.payload['some_property'] == 'x'
 
 def test_deserialize_command():
     class Command(ApplicationCommand):
         __trace_id__: str
-        __version__: int
+        __version__: int = 1
         __timestamp__: float
         some_property: str
 
@@ -46,6 +50,10 @@ def test_deserialize_command():
 
     t = Transcoder()
     m = t.deserialize(r, Command)
+    assert isinstance(m, Command)
+    assert m.__trace_id__ == r.trace_id
+    assert m.__version__ == r.version
+    assert m.__timestamp__ == r.timestamp
     assert m.some_property == 'x'
 
 def test_serialize_integration():
@@ -70,6 +78,13 @@ def test_serialize_integration():
 
     t = Transcoder()
     r = t.serialize(m)
+    assert isinstance(r, IntegrationRecord)
+    assert r.trace_id == m.__trace_id__
+    assert r.context == m.__context__
+    assert r.resolve == m.__resolve__
+    assert r.error == m.__error__
+    assert r.version == m.__version__
+    assert r.timestamp == m.__timestamp__
     assert r.payload['some_property'] == 'x'
 
 def test_deserialize_integration():
@@ -90,6 +105,13 @@ def test_deserialize_integration():
 
     t = Transcoder()
     m = t.deserialize(r, Integration)
+    assert isinstance(m, Integration)
+    assert m.__trace_id__ == r.trace_id
+    assert m.__context__ == r.context
+    assert m.__resolve__ == r.resolve
+    assert m.__error__ == r.error
+    assert m.__version__ == r.version
+    assert m.__timestamp__ == r.timestamp
     assert m.some_property == 'x'
 
 def test_serialize_event():
@@ -117,6 +139,13 @@ def test_serialize_event():
 
     t = Transcoder()
     r = t.serialize(m)
+    assert isinstance(r, EventRecord)
+    assert r.stream_id == m.__stream_id__
+    assert r.number == m.__number__
+    assert r.version == m.__version__
+    assert r.timestamp == m.__timestamp__
+    assert r.trace_id == m.__trace_id__
+    assert r.context == m.__context__
     assert r.payload['some_property']['some_property'] == 'x'
 
 def test_deserialize_event():
@@ -140,6 +169,13 @@ def test_deserialize_event():
 
     t = Transcoder()
     m = t.deserialize(r, Event)
+    assert isinstance(m, Event)
+    assert m.__stream_id__ == r.stream_id
+    assert m.__number__ == r.number
+    assert m.__version__ == r.version
+    assert m.__timestamp__ == r.timestamp
+    assert m.__trace_id__ == r.trace_id
+    assert m.__context__ == r.context
     assert m.some_property.some_property == 'x'
 
 def test_encode_single_type_sequence():
