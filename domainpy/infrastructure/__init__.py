@@ -30,11 +30,9 @@ from .tracer.managers.dynamodb import DynamoDBTraceRecordManager
 from .records import (
     CommandRecord,
     EventRecord,
-    IntegrationRecord,
-    asdict as record_asdict,
-    fromdict as record_fromdict,
+    IntegrationRecord
 )
-from .transcoder import Transcoder, ICodec
+from .transcoder import Transcoder, ICodec, MessageType, record_asdict, record_fromdict
 
 __all__ = [
     "EventStore",
@@ -63,6 +61,7 @@ __all__ = [
     "Mapper",
     "Transcoder",
     "ICodec",
+    "MessageType",
     "CommandRecord",
     "IntegrationRecord",
     "EventRecord",

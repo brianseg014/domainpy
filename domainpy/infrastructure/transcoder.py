@@ -3,6 +3,7 @@ from __future__ import annotations
 import abc
 import enum
 import functools
+import dataclasses
 
 import domainpy.compat_typing as typing
 
@@ -13,8 +14,7 @@ from domainpy.domain.model.value_object import ValueObject
 from domainpy.infrastructure.records import (
     CommandRecord,
     EventRecord,
-    IntegrationRecord,
-    asdict,
+    IntegrationRecord
 )
 from domainpy.typing.application import SystemMessage
 from domainpy.typing.infrastructure import SystemRecord
@@ -23,6 +23,30 @@ from domainpy.utils.data import get_fields, Field, MISSING
 
 def isgenerictype(objtype) -> bool:
     return typing.get_origin(objtype) is not None
+
+def record_fromdict(
+    dct: dict,
+) -> typing.Union[CommandRecord, IntegrationRecord, EventRecord]:
+    message = dct["message"]
+    if message == MessageType.APPLICATION_COMMAND.value:
+        return CommandRecord(**dct)
+
+    if message == MessageType.INTEGRATION_EVENT.value:
+        return IntegrationRecord(**dct)
+
+    if message == MessageType.DOMAIN_EVENT.value:
+        return EventRecord(**dct)
+
+    raise ValueError(
+        "dct[message] should be one of command, "
+        "integration_event or domain_event"
+    )
+
+def record_asdict(
+    record: typing.Union[CommandRecord, IntegrationRecord, EventRecord]
+) -> dict:
+    return dataclasses.asdict(record)
+
 
 
 class MissingCodecError(Exception):
@@ -37,6 +61,19 @@ class MessageType(enum.Enum):
     APPLICATION_COMMAND = "application_command"
     INTEGRATION_EVENT = "integration_event"
     DOMAIN_EVENT = "domain_event"
+
+    @classmethod
+    def of(cls, message_type: typing.Type[typing.Union[ApplicationCommand, IntegrationEvent, DomainEvent]]) -> MessageType:
+        if message_type is ApplicationCommand or issubclass(message_type, ApplicationCommand):
+            return MessageType.APPLICATION_COMMAND
+
+        if message_type is IntegrationEvent or issubclass(message_type, IntegrationEvent):
+            return MessageType.INTEGRATION_EVENT
+
+        if message_type is DomainEvent or issubclass(message_type, DomainEvent):
+            return MessageType.DOMAIN_EVENT
+
+        raise TypeError('message type should be one of ApplicationCommand, IntegrationEvent or DomainEvent')
 
 
 TSystemMessage = typing.TypeVar("TSystemMessage", bound=SystemMessage)
@@ -66,7 +103,7 @@ class Transcoder(abc.ABC):
     def deserialize(
         self, record: TSystemRecord, message_type: typing.Type[TSystemMessage]
     ) -> TSystemMessage:
-        return self.decode(asdict(record), message_type)
+        return self.decode(record_asdict(record), message_type)
 
     def encode(self, obj, objtype):
         codec = self._get_codec(objtype)

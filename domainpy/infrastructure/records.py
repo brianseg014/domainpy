@@ -36,28 +36,3 @@ class EventRecord:  # pylint: disable=too-many-instance-attributes
     message: str
     context: str
     payload: dict
-
-
-def fromdict(
-    dct: dict,
-) -> typing.Union[CommandRecord, IntegrationRecord, EventRecord]:
-    message = dct["message"]
-    if message == "command":
-        return CommandRecord(**dct)
-
-    if message == "integration_event":
-        return IntegrationRecord(**dct)
-
-    if message == "domain_event":
-        return EventRecord(**dct)
-
-    raise ValueError(
-        "dct[message] should be one of command, "
-        "integration_event or domain_event"
-    )
-
-
-def asdict(
-    record: typing.Union[CommandRecord, IntegrationRecord, EventRecord]
-) -> dict:
-    return dataclasses.asdict(record)
