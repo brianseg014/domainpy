@@ -104,6 +104,7 @@ class Transcoder(abc.ABC):
             _SingleTypeInfiteSequenceCodec(self),
             _OptionalCodec(self),
             _ApplicationCommandCodec(self),
+            _ApplicationCommandStructCodec(self),
             _IntegrationEventCodec(self),
             _DomainEventCodec(self),
             _ValueObjectCodec(self),
@@ -348,6 +349,19 @@ class _ApplicationCommandCodec(_SystemMessageCodec):
 
     def decode(self, data: dict, field_type: typing.Type) -> typing.Any:
         return self._decode(data, field_type)
+
+
+class _ApplicationCommandStructCodec(_SystemMessageCodec):
+    def can_handle(self, field_type: typing.Type) -> bool:
+        if isgenerictype(field_type):
+            return False
+        return issubclass(field_type, ApplicationCommand.Struct)
+
+    def encode(self, obj: typing.Any, field_type: typing.Type) -> typing.Any:
+        return self._encode(obj, field_type)
+
+    def decode(self, data: dict, field_type: typing.Type) -> typing.Any:
+        return self._decode(dict(payload=data), field_type)
 
 
 class _IntegrationEventCodec(_SystemMessageCodec):

@@ -9,7 +9,6 @@ from domainpy.domain.model.value_object import ValueObject
 from domainpy.infrastructure.transcoder import Transcoder, MessageType
 from domainpy.infrastructure.records import CommandRecord, IntegrationRecord, EventRecord
 
-
 def test_serialize_command():
     class Command(ApplicationCommand):
         __trace_id__: str
@@ -34,10 +33,13 @@ def test_serialize_command():
 
 def test_deserialize_command():
     class Command(ApplicationCommand):
+        class Struct(ApplicationCommand.Struct):
+            some_property: str
+
         __trace_id__: str
         __version__: int = 1
         __timestamp__: float
-        some_property: str
+        some_property: Struct
 
     r = CommandRecord(
         trace_id='tid',
@@ -45,7 +47,7 @@ def test_deserialize_command():
         version=1,
         timestamp=0.0,
         message=MessageType.APPLICATION_COMMAND.value,
-        payload={ 'some_property': 'x' }
+        payload={ 'some_property': { 'some_property': 'x' } }
     )
 
     t = Transcoder()
@@ -54,7 +56,7 @@ def test_deserialize_command():
     assert m.__trace_id__ == r.trace_id
     assert m.__version__ == r.version
     assert m.__timestamp__ == r.timestamp
-    assert m.some_property == 'x'
+    assert m.some_property.some_property == 'x'
 
 def test_serialize_integration():
     class Integration(IntegrationEvent):
