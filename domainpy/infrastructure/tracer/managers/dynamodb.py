@@ -105,9 +105,15 @@ class DynamoDBTraceRecordManager(TraceRecordManager):
         item = {
             "TableName": self.table_name,
             "Key": {"trace_id": serialize(trace_id)},
-            "UpdateExpression": f"SET contexts_resolutions.{context}.resolution = :resolution",  # noqa: E501 # pylint: disable=line-too-long
+            "UpdateExpression": (
+                f"SET contexts_resolutions.{context}.resolution = :resolution, "  # noqa: E501 # pylint: disable=line-too-long
+                f"contexts_resolutions.{context}.timestamp_resolution = :timestamp"  # noqa: E501 # pylint: disable=line-too-long
+            ),
             "ExpressionAttributeValues": {
-                ":resolution": serialize(Resolution.success)
+                ":resolution": serialize(Resolution.success),
+                ":timestamp": serialize(
+                    datetime.datetime.timestamp(datetime.datetime.now())
+                ),
             },
         }
         self.client.update_item(**item)
@@ -119,12 +125,16 @@ class DynamoDBTraceRecordManager(TraceRecordManager):
             "TableName": self.table_name,
             "Key": {"trace_id": serialize(trace_id)},
             "UpdateExpression": (
-                f"SET contexts_resolutions.{context}.resolution = :resolution,"
-                f"contexts_resolutions.{context}.#error = :error"
+                f"SET contexts_resolutions.{context}.resolution = :resolution, "  # noqa: E501 # pylint: disable=line-too-long
+                f"contexts_resolutions.{context}.#error = :error, "
+                f"contexts_resolutions.{context}.timestamp_resolution = :timestamp"  # noqa: E501 # pylint: disable=line-too-long
             ),
             "ExpressionAttributeValues": {
                 ":resolution": serialize(Resolution.failure),
                 ":error": serialize(error),
+                ":timestamp": serialize(
+                    datetime.datetime.timestamp(datetime.datetime.now())
+                ),
             },
             "ExpressionAttributeNames": {"#error": "error"},
         }
