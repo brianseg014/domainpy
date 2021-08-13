@@ -42,7 +42,7 @@ class ProjectionSubscriber(ISubscriber):
         self.projection.project(message)
 
 
-class PublisherSubciber(ISubscriber):
+class PublisherSubscriber(ISubscriber):
     def __init__(self, publisher: IPublisher):
         self.publisher = publisher
 

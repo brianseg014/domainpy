@@ -8,7 +8,7 @@ from .bus_subscribers import (
     BusSubscriber,
     ApplicationServiceSubscriber,
     BasicSubscriber,
-    PublisherSubciber,
+    PublisherSubscriber,
 )
 from .registry import Registry
 from .contextualized import Contextualized
@@ -23,7 +23,7 @@ __all__ = [
     "PublisherBusAdapter",
     "ApplicationServiceSubscriber",
     "BasicSubscriber",
-    "PublisherSubciber",
+    "PublisherSubscriber",
     "Registry",
     "Contextualized",
 ]

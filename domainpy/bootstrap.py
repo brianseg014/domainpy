@@ -16,7 +16,7 @@ from domainpy.utils.bus_subscribers import (
     ApplicationServiceSubscriber,
     BusSubscriber,
     ProjectionSubscriber,
-    PublisherSubciber,
+    PublisherSubscriber,
 )
 from domainpy.utils.registry import Registry
 from domainpy.utils.contextualized import Contextualized
@@ -101,7 +101,7 @@ class EventBus(IBus[DomainEvent]):
         self.handler_bus.attach(ApplicationServiceSubscriber(handler))
 
     def add_publisher(self, publisher: IPublisher) -> None:
-        self.publisher_bus.attach(PublisherSubciber(publisher))
+        self.publisher_bus.attach(PublisherSubscriber(publisher))
 
 
 class ServiceBus(IBus[typing.Union[SystemMessage, DomainError]]):
@@ -187,7 +187,7 @@ class Environment:
             self.service_bus.add_event_publisher(domain_publisher)
 
         integration_publisher = factory.create_integration_publisher()
-        self.integration_bus.attach(PublisherSubciber(integration_publisher))
+        self.integration_bus.attach(PublisherSubscriber(integration_publisher))
 
     def add_handler(self, handler: ApplicationService):
         self.service_bus.add_handler(handler)

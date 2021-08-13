@@ -37,6 +37,7 @@ class TraceStore:
             record,
             contexts_resolutions,
         )
+        self.trace_resolution(trace_id)
 
     def store_context_success(self, trace_id: str, context: str) -> None:
         self.record_manager.store_context_resolve_success(trace_id, context)

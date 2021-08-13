@@ -39,7 +39,7 @@ def test_publisher_subscriber():
 
     command = ApplicationCommand(__timestamp__=0.0)
 
-    x = subs.PublisherSubciber(publisher)
+    x = subs.PublisherSubscriber(publisher)
     x.__route__(command)
 
     publisher.proof_of_work.assert_called_with(command)
