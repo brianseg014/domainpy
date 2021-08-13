@@ -6,6 +6,7 @@ import boto3  # type: ignore
 
 from domainpy.exceptions import PublisherError
 from domainpy.infrastructure.publishers.base import Publisher
+from domainpy.infrastructure.transcoder import record_asdict
 
 if typing.TYPE_CHECKING:
     from domainpy.typing.application import SystemMessage  # type: ignore
@@ -30,7 +31,9 @@ class AwsSimpleQueueServicePublisher(Publisher):
         entries = [
             {
                 "QueueUrl": self.queue_url,
-                "MessageBody": json.dumps(self.mapper.serialize_asdict(m)),
+                "MessageBody": json.dumps(
+                    record_asdict(self.mapper.serialize(m))
+                ),
             }
             for m in messages
         ]
@@ -39,7 +42,7 @@ class AwsSimpleQueueServicePublisher(Publisher):
         for i, entry in enumerate(entries):
             try:
                 self.client.send_message(**entry)
-            except self.client.exceptions.InvalidMessageContents as error:
+            except Exception as error:
                 errors.append(
                     PublisherError.EntryError(messages[i], str(error))
                 )

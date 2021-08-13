@@ -25,11 +25,6 @@ class Mapper(typing.Generic[TSystemMessage, TSystemRecord, TSystemRecordDict]):
         self.map[cls.__name__] = cls
         return cls
 
-    def serialize_asdict(self, message: TSystemMessage) -> TSystemRecordDict:
-        return typing.cast(
-            TSystemRecordDict, dataclasses.asdict(self.serialize(message))
-        )
-
     def serialize(self, message: TSystemMessage) -> TSystemRecord:
         return typing.cast(TSystemRecord, self.transcoder.serialize(message))
 

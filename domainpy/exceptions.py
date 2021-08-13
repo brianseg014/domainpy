@@ -21,14 +21,30 @@ class ConcurrencyError(Exception):
 
 class PublisherError(Exception):
     class EntryError:
-        def __init__(self, message, reason: str):
+        def __init__(self, message, error):
             self.message = message
-            self.reason = reason
+            self.error = error
 
-    def __init__(self, message: str, errors: typing.Sequence[EntryError]):
-        super().__init__(message)
-        self.message = message
+    def __init__(self, errors: typing.Sequence[EntryError]):
         self.errors = errors
+
+        summary = f"{len(errors)} message(s) failed to be published"
+        super().__init__(
+            json.dumps(
+                {
+                    "message": summary,
+                    "errors": [
+                        {
+                            "message": entry_error.message,
+                            "error": traceback.format_exception(
+                                None, entry_error.error, entry_error.error.__traceback__
+                            ),
+                        }
+                        for entry_error in errors
+                    ],
+                }
+            )
+        )
 
 
 class IdempotencyItemError(Exception):

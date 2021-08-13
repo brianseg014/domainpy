@@ -6,6 +6,7 @@ import boto3  # type: ignore
 
 from domainpy.exceptions import PublisherError
 from domainpy.infrastructure.publishers.base import Publisher
+from domainpy.infrastructure.transcoder import record_asdict
 
 if typing.TYPE_CHECKING:
     from domainpy.typing.application import SystemMessage  # type: ignore
@@ -27,7 +28,9 @@ class AwsEventBridgePublisher(Publisher):
         entries = [
             {
                 "Source": self.context,
-                "Detail": json.dumps(self.mapper.serialize_asdict(m)),
+                "Detail": json.dumps(
+                    record_asdict(self.mapper.serialize(m))
+                ),
                 "DetailType": m.__class__.__name__,
                 "EventBusName": self.bus_name,
             }

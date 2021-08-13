@@ -6,6 +6,7 @@ import boto3  # type: ignore
 
 from domainpy.exceptions import PublisherError
 from domainpy.infrastructure.publishers.base import Publisher
+from domainpy.infrastructure.transcoder import record_asdict
 
 if typing.TYPE_CHECKING:
     from domainpy.typing.application import SystemMessage  # type: ignore
@@ -26,7 +27,9 @@ class AwsSimpleNotificationServicePublisher(Publisher):
         entries = [
             {
                 "TopicArn": self.topic_arn,
-                "Message": json.dumps(self.mapper.serialize_asdict(m)),
+                "Message": json.dumps(
+                    record_asdict(self.mapper.serialize(m))
+                ),
             }
             for m in messages
         ]
@@ -35,9 +38,9 @@ class AwsSimpleNotificationServicePublisher(Publisher):
         for i, entry in enumerate(entries):
             try:
                 self.client.publish(**entry)
-            except self.client.InternalErrorException as error:
+            except Exception as error:
                 errors.append(
-                    PublisherError.EntryError(messages[i], str(error))
+                    PublisherError.EntryError(entries[i], error)
                 )
         if len(errors) > 0:
-            raise PublisherError(f"Topic Arn: {self.topic_arn}", errors)
+            raise PublisherError(errors)
