@@ -360,10 +360,10 @@ class _ApplicationCommandStructCodec(_SystemMessageCodec):
         return issubclass(field_type, ApplicationCommand.Struct)
 
     def encode(self, obj: typing.Any, field_type: typing.Type) -> typing.Any:
-        return self._encode(obj, field_type)
+        return self._encode(obj, field_type)['payload']
 
     def decode(self, data: dict, field_type: typing.Type) -> typing.Any:
-        return self._decode(dict(payload=data['payload']), field_type)
+        return self._decode(dict(payload=data), field_type)
 
 
 class _IntegrationEventCodec(_SystemMessageCodec):

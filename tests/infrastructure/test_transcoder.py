@@ -35,7 +35,7 @@ def test_serialize_command():
     assert r.trace_id == m.__trace_id__
     assert r.version == m.__version__
     assert r.timestamp == m.__timestamp__
-    assert r.payload['some_property'] == { 'payload': { 'some_property': 'x' } }
+    assert r.payload['some_property'] == { 'some_property': 'x' }
 
 def test_deserialize_command():
     class Command(ApplicationCommand):
@@ -53,7 +53,7 @@ def test_deserialize_command():
         version=1,
         timestamp=0.0,
         message=MessageType.APPLICATION_COMMAND.value,
-        payload={ 'some_property': { 'payload': { 'some_property': 'x' } } }
+        payload={ 'some_property': { 'some_property': 'x' } }
     )
 
     t = Transcoder()
