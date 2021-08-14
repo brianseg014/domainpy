@@ -363,7 +363,7 @@ class _ApplicationCommandStructCodec(_SystemMessageCodec):
         return self._encode(obj, field_type)
 
     def decode(self, data: dict, field_type: typing.Type) -> typing.Any:
-        return self._decode(dict(payload=data), field_type)
+        return self._decode(dict(payload=data['payload']), field_type)
 
 
 class _IntegrationEventCodec(_SystemMessageCodec):
