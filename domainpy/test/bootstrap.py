@@ -170,8 +170,10 @@ class DomainEventsTestExpression:
     def get_events(
         self,
         event_type: typing.Type[TDomainEvent],
+        *,
         aggregate_type: typing.Type[AggregateRoot] = None,
         aggregate_id: str = None,
+        trace_id: str = None,
     ) -> typing.Generator[TDomainEvent, None, None]:
         events = (e for e in self.domain_events if isinstance(e, event_type))
         if aggregate_type is not None or aggregate_id is not None:
@@ -186,54 +188,94 @@ class DomainEventsTestExpression:
                 for e in events
                 if e.__stream_id__ == stream_id  # type: ignore
             )
+
+        if trace_id is not None:
+            events = (  # type: ignore
+                e for e in events if e.__trace_id__ == trace_id  # type: ignore
+            )
+
         return events
 
     def has_not_event(
         self,
         event_type: typing.Type[DomainEvent],
+        *,
         aggregate_type: typing.Type[AggregateRoot] = None,
         aggregate_id: str = None,
+        trace_id: str = None,
     ) -> bool:
-        events = self.get_events(event_type, aggregate_type, aggregate_id)
+        events = self.get_events(
+            event_type,
+            aggregate_type=aggregate_type,
+            aggregate_id=aggregate_id,
+            trace_id=trace_id,
+        )
         return len(list(events)) == 0
 
     def has_event(
         self,
         event_type: typing.Type[DomainEvent],
+        *,
         aggregate_type: typing.Type[AggregateRoot] = None,
         aggregate_id: str = None,
+        trace_id: str = None,
     ) -> bool:
-        events = self.get_events(event_type, aggregate_type, aggregate_id)
+        events = self.get_events(
+            event_type,
+            aggregate_type=aggregate_type,
+            aggregate_id=aggregate_id,
+            trace_id=trace_id,
+        )
         return len(list(events)) > 0
 
     def has_event_n_times(
         self,
         event_type: typing.Type[DomainEvent],
         times: int,
+        *,
         aggregate_type: typing.Type[AggregateRoot] = None,
         aggregate_id: str = None,
+        trace_id: str = None,
     ) -> bool:
-        events = self.get_events(event_type, aggregate_type, aggregate_id)
+        events = self.get_events(
+            event_type,
+            aggregate_type=aggregate_type,
+            aggregate_id=aggregate_id,
+            trace_id=trace_id,
+        )
         return len(list(events)) == times
 
     def has_event_once(
         self,
         event_type: typing.Type[DomainEvent],
+        *,
         aggregate_type: typing.Type[AggregateRoot] = None,
         aggregate_id: str = None,
+        trace_id: str = None,
     ) -> bool:
         return self.has_event_n_times(
-            event_type, 1, aggregate_type, aggregate_id
+            event_type,
+            1,
+            aggregate_type=aggregate_type,
+            aggregate_id=aggregate_id,
+            trace_id=trace_id,
         )
 
     def has_event_with(
         self,
         event_type: typing.Type[DomainEvent],
+        *,
         aggregate_type: typing.Type[AggregateRoot] = None,
         aggregate_id: str = None,
+        trace_id: str = None,
         **kwargs,
     ) -> bool:
-        events = self.get_events(event_type, aggregate_type, aggregate_id)
+        events = self.get_events(
+            event_type,
+            aggregate_type=aggregate_type,
+            aggregate_id=aggregate_id,
+            trace_id=trace_id,
+        )
         return any(
             True
             for e in events
@@ -243,12 +285,18 @@ class DomainEventsTestExpression:
     def has_not_event_with(
         self,
         event_type: typing.Type[DomainEvent],
+        *,
         aggregate_type: typing.Type[AggregateRoot] = None,
         aggregate_id: str = None,
+        trace_id: str = None,
         **kwargs,
     ) -> bool:
         return not self.has_event_with(
-            event_type, aggregate_type, aggregate_id, **kwargs
+            event_type,
+            aggregate_type=aggregate_type,
+            aggregate_id=aggregate_id,
+            trace_id=trace_id,
+            **kwargs,
         )
 
     def has_n_events(self, count: int):
@@ -257,22 +305,36 @@ class DomainEventsTestExpression:
     def assert_has_not_event(
         self,
         event_type: typing.Type[DomainEvent],
+        *,
         aggregate_type: typing.Type[AggregateRoot] = None,
         aggregate_id: str = None,
+        trace_id: str = None,
     ) -> None:
         try:
-            assert self.has_not_event(event_type, aggregate_type, aggregate_id)
+            assert self.has_not_event(
+                event_type,
+                aggregate_type=aggregate_type,
+                aggregate_id=aggregate_id,
+                trace_id=trace_id,
+            )
         except AssertionError:
             self.raise_error("event found")
 
     def assert_has_event(
         self,
         event_type: typing.Type[DomainEvent],
+        *,
         aggregate_type: typing.Type[AggregateRoot] = None,
         aggregate_id: str = None,
+        trace_id: str = None,
     ) -> None:
         try:
-            assert self.has_event(event_type, aggregate_type, aggregate_id)
+            assert self.has_event(
+                event_type,
+                aggregate_type=aggregate_type,
+                aggregate_id=aggregate_id,
+                trace_id=trace_id,
+            )
         except AssertionError:
             self.raise_error("event not found")
 
@@ -280,12 +342,18 @@ class DomainEventsTestExpression:
         self,
         event_type: typing.Type[DomainEvent],
         times: int,
+        *,
         aggregate_type: typing.Type[AggregateRoot] = None,
         aggregate_id: str = None,
+        trace_id: str = None,
     ) -> None:
         try:
             assert self.has_event_n_times(
-                event_type, times, aggregate_type, aggregate_id
+                event_type,
+                times,
+                aggregate_type=aggregate_type,
+                aggregate_id=aggregate_id,
+                trace_id=trace_id,
             )
         except AssertionError:
             self.raise_error(f"event not found {times} time(s)")
@@ -293,12 +361,17 @@ class DomainEventsTestExpression:
     def assert_has_event_once(
         self,
         event_type: typing.Type[DomainEvent],
+        *,
         aggregate_type: typing.Type[AggregateRoot] = None,
         aggregate_id: str = None,
+        trace_id: str = None,
     ) -> None:
         try:
             assert self.has_event_once(
-                event_type, aggregate_type, aggregate_id
+                event_type,
+                aggregate_type=aggregate_type,
+                aggregate_id=aggregate_id,
+                trace_id=trace_id,
             )
         except AssertionError:
             self.raise_error("event not found 1 time")
@@ -306,13 +379,19 @@ class DomainEventsTestExpression:
     def assert_has_event_with(
         self,
         event_type: typing.Type[DomainEvent],
+        *,
         aggregate_type: typing.Type[AggregateRoot] = None,
         aggregate_id: str = None,
+        trace_id: str = None,
         **kwargs,
     ) -> None:
         try:
             assert self.has_event_with(
-                event_type, aggregate_type, aggregate_id, **kwargs
+                event_type,
+                aggregate_type=aggregate_type,
+                aggregate_id=aggregate_id,
+                trace_id=trace_id,
+                **kwargs,
             )
         except AssertionError:
             self.raise_error("event not found")
@@ -320,15 +399,18 @@ class DomainEventsTestExpression:
     def assert_has_not_event_with(
         self,
         event_type: typing.Type[DomainEvent],
+        *,
         aggregate_type: typing.Type[AggregateRoot] = None,
         aggregate_id: str = None,
+        trace_id: str = None,
         **kwargs,
     ) -> None:
         try:
             assert self.has_not_event_with(
                 event_type,
-                aggregate_type,
-                aggregate_id,
+                aggregate_type=aggregate_type,
+                aggregate_id=aggregate_id,
+                trace_id=trace_id,
                 **kwargs,
             )
         except AssertionError:
@@ -374,37 +456,69 @@ class IntegrationEventsTestExpression:
         self.integration_events = integration_events
 
     def get_integrations(
-        self, integration_type: typing.Type[TIntegrationEvent]
+        self,
+        integration_type: typing.Type[TIntegrationEvent],
+        *,
+        trace_id: str = None,
     ) -> typing.Generator[TIntegrationEvent, None, None]:
         integrations = (
             i
             for i in self.integration_events
             if isinstance(i, integration_type)
         )
+        if trace_id is not None:
+            integrations = (  # type: ignore
+                i
+                for i in integrations
+                if i.__trace_id__ == trace_id  # type: ignore
+            )
+
         return integrations
 
     def has_not_integration(
-        self, integration_type: typing.Type[IntegrationEvent]
+        self,
+        integration_type: typing.Type[IntegrationEvent],
+        *,
+        trace_id: str = None,
     ) -> bool:
-        integrations = self.get_integrations(integration_type)
+        integrations = self.get_integrations(
+            integration_type, trace_id=trace_id
+        )
         return len(list(integrations)) == 0
 
     def has_integration(
-        self, integration_type: typing.Type[IntegrationEvent]
+        self,
+        integration_type: typing.Type[IntegrationEvent],
+        *,
+        trace_id: str = None,
     ) -> bool:
-        integrations = self.get_integrations(integration_type)
+        integrations = self.get_integrations(
+            integration_type, trace_id=trace_id
+        )
         return len(list(integrations)) >= 1
 
     def has_integration_n(
-        self, integration_type: typing.Type[IntegrationEvent], times: int
+        self,
+        integration_type: typing.Type[IntegrationEvent],
+        times: int,
+        *,
+        trace_id: str = None,
     ) -> bool:
-        integrations = self.get_integrations(integration_type)
+        integrations = self.get_integrations(
+            integration_type, trace_id=trace_id
+        )
         return len(list(integrations)) == times
 
     def has_integration_with(
-        self, integration_type: typing.Type[IntegrationEvent], **kwargs
+        self,
+        integration_type: typing.Type[IntegrationEvent],
+        *,
+        trace_id: str = None,
+        **kwargs,
     ) -> bool:
-        integrations = self.get_integrations(integration_type)
+        integrations = self.get_integrations(
+            integration_type, trace_id=trace_id
+        )
         return any(
             True
             for i in integrations
@@ -412,52 +526,125 @@ class IntegrationEventsTestExpression:
         )
 
     def has_not_integration_with(
-        self, integration_type: typing.Type[IntegrationEvent], **kwargs
+        self,
+        integration_type: typing.Type[IntegrationEvent],
+        *,
+        trace_id: str = None,
+        **kwargs,
     ) -> bool:
-        return not self.has_integration_with(integration_type, **kwargs)
+        return not self.has_integration_with(
+            integration_type, trace_id=trace_id, **kwargs
+        )
 
     def has_n_integrations(self, count: int) -> bool:
         return len(self.integration_events) == count
 
+    def has_integration_with_error(
+        self,
+        integration_type: typing.Type[IntegrationEvent],
+        error: str,
+        *,
+        trace_id: str = None,
+    ):
+        return self.has_integration_with(
+            integration_type, trace_id=trace_id, __error__=error
+        )
+
     def assert_has_not_integration(
-        self, integration_type: typing.Type[IntegrationEvent]
+        self,
+        integration_type: typing.Type[IntegrationEvent],
+        *,
+        trace_id: str = None,
     ) -> None:
         try:
-            assert self.has_not_integration(integration_type)
+            assert self.has_not_integration(
+                integration_type, trace_id=trace_id
+            )
         except AssertionError:
-            self.raise_error("integration event found")
+            self.raise_error(
+                f"integration event found: {integration_type.__name__}"
+            )
 
     def assert_has_integration(
-        self, integration_type: typing.Type[IntegrationEvent]
+        self,
+        integration_type: typing.Type[IntegrationEvent],
+        *,
+        trace_id: str = None,
     ) -> None:
         try:
-            assert self.has_integration(integration_type)
+            assert self.has_integration(integration_type, trace_id=trace_id)
         except AssertionError:
-            self.raise_error("integration not found")
+            self.raise_error(
+                f"integration not found: {integration_type.__name__}"
+            )
 
     def assert_has_integration_n(
-        self, integration_type: typing.Type[IntegrationEvent], times: int
+        self,
+        integration_type: typing.Type[IntegrationEvent],
+        times: int,
+        *,
+        trace_id: str = None,
     ) -> None:
         try:
-            assert self.has_integration_n(integration_type, times)
+            assert self.has_integration_n(
+                integration_type, times, trace_id=trace_id
+            )
         except AssertionError:
-            self.raise_error(f"integration not found {times} time(s)")
+            self.raise_error(
+                f"integration not found {times} time(s): "
+                f"{integration_type.__name__}"
+            )
 
     def assert_has_integration_with(
-        self, integration_type: typing.Type[IntegrationEvent], **kwargs
+        self,
+        integration_type: typing.Type[IntegrationEvent],
+        *,
+        trace_id: str = None,
+        **kwargs,
     ) -> None:
         try:
-            assert self.has_integration_with(integration_type, **kwargs)
+            assert self.has_integration_with(
+                integration_type, trace_id=trace_id, **kwargs
+            )
         except AssertionError:
-            self.raise_error("integration not found")
+            self.raise_error(
+                f"integration not found: "
+                f"{integration_type.__name__}, kwargs={kwargs}"
+            )
 
     def assert_has_not_integration_with(
-        self, integration_type: typing.Type[IntegrationEvent], **kwargs
+        self,
+        integration_type: typing.Type[IntegrationEvent],
+        *,
+        trace_id: str = None,
+        **kwargs,
     ) -> None:
         try:
-            assert self.has_not_integration_with(integration_type, **kwargs)
+            assert self.has_not_integration_with(
+                integration_type, trace_id=trace_id, **kwargs
+            )
         except AssertionError:
-            self.raise_error("integration found")
+            self.raise_error(
+                f"integration found: "
+                f"{integration_type.__name__}, kwargs={kwargs}"
+            )
+
+    def assert_has_integration_with_error(
+        self,
+        integration_type: typing.Type[IntegrationEvent],
+        error: str,
+        *,
+        trace_id: str = None,
+    ):
+        try:
+            assert self.has_integration_with_error(
+                integration_type, error, trace_id=trace_id
+            )
+        except AssertionError:
+            self.raise_error(
+                f"integration not found: "
+                f"{integration_type.__name__}, error={error}"
+            )
 
     def assert_has_n_integrations(self, count: int) -> None:
         try:
