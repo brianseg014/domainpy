@@ -27,7 +27,7 @@ class DynamoDBTraceRecordManager(TraceRecordManager):
             "TableName": self.table_name,
             "Key": {"trace_id": serialize(trace_id)},
             "ProjectionExpression": "contexts_resolutions",
-            "ConsistentRead": True
+            "ConsistentRead": True,
         }
         dynamodb_item = self.client.get_item(**item)
 
