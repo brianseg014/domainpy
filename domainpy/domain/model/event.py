@@ -46,3 +46,19 @@ class DomainEvent(SystemData, Traceable, Contextualized):
             __trace_id__=_trace_id,
             __context__=_context,
         )
+
+    def __str__(self) -> str:
+        return (
+            super().__str__()
+            + " with "
+            + str({"trace_id": self.__trace_id__, "context": self.__context__})
+        )
+
+    def __repr__(self) -> str:
+        return (
+            super().__repr__()
+            + " with "
+            + repr(
+                {"trace_id": self.__trace_id__, "context": self.__context__}
+            )
+        )

@@ -36,6 +36,22 @@ class IntegrationEvent(SystemData, Traceable, Contextualized):
             __context__=_context,
         )
 
+    def __str__(self) -> str:
+        return (
+            super().__str__()
+            + " with "
+            + str({"trace_id": self.__trace_id__, "context": self.__context__})
+        )
+
+    def __repr__(self) -> str:
+        return (
+            super().__repr__()
+            + " with "
+            + repr(
+                {"trace_id": self.__trace_id__, "context": self.__context__}
+            )
+        )
+
 
 class SuccessIntegrationEvent(IntegrationEvent):
     __resolve__: str = IntegrationEvent.Resolution.success

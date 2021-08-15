@@ -24,3 +24,15 @@ class ApplicationCommand(SystemData, Traceable):
             __timestamp__=datetime.datetime.timestamp(datetime.datetime.now()),
             __trace_id__=_trace_id,
         )
+
+    def __str__(self) -> str:
+        return (
+            super().__str__() + " with " + str({"trace_id": self.__trace_id__})
+        )
+
+    def __repr__(self) -> str:
+        return (
+            super().__repr__()
+            + " with "
+            + repr({"trace_id": self.__trace_id__})
+        )
