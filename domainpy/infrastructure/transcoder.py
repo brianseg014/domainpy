@@ -151,15 +151,19 @@ class Transcoder(abc.ABC):
 
 class ICodec(abc.ABC):
     @abc.abstractmethod
-    def can_handle(self, field_type: typing.Type) -> bool:
+    def can_handle(self, field_type: typing.Type) -> bool:  # pragma: no cover
         pass
 
     @abc.abstractmethod
-    def encode(self, obj: typing.Any, field_type: typing.Type) -> typing.Any:
+    def encode(
+        self, obj: typing.Any, field_type: typing.Type
+    ) -> typing.Any:  # pragma: no cover
         pass
 
     @abc.abstractmethod
-    def decode(self, data: dict, field_type: typing.Type) -> typing.Any:
+    def decode(
+        self, data: dict, field_type: typing.Type
+    ) -> typing.Any:  # pragma: no cover
         pass
 
 
