@@ -1,5 +1,6 @@
-import dataclasses
 import typing
+import datetime
+import dataclasses
 
 from domainpy.infrastructure.tracer.recordmanager import (
     TraceRecordManager,
@@ -56,13 +57,16 @@ class MemoryTraceRecordManager(TraceRecordManager):
     def store_context_resolve_success(
         self, trace_id: str, context: str
     ) -> None:
-        self.heap[trace_id].contexts_resolutions[
-            context
-        ].resolution = Resolution.success
+        trace = self.heap[trace_id]
+        context_resolution = trace.contexts_resolutions[context]
+        context_resolution.resolution = Resolution.success
+        context_resolution.timestamp_resolution = datetime.datetime.timestamp(datetime.datetime.now())
 
     def store_context_resolve_failure(
         self, trace_id: str, context: str, error: str
     ) -> None:
-        self.heap[trace_id].contexts_resolutions[
-            context
-        ].resolution = Resolution.failure
+        trace = self.heap[trace_id]
+        context_resolution = trace.contexts_resolutions[context]
+        context_resolution.resolution = Resolution.failure
+        context_resolution.timestamp_resolution = datetime.datetime.timestamp(datetime.datetime.now())
+        context_resolution.error = error

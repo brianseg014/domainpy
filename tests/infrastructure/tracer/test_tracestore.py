@@ -1,65 +1,71 @@
-
 import uuid
-from unittest import mock
+import pytest
 
 from domainpy.application.command import ApplicationCommand
-from domainpy.infrastructure.tracer.tracestore import TraceStore
+from domainpy.infrastructure.tracer.tracestore import TraceStore, Resolution
+from domainpy.infrastructure.tracer.managers.memory import MemoryTraceRecordManager
+from domainpy.infrastructure.records import CommandRecord
+from domainpy.infrastructure.transcoder import MessageType
+from domainpy.utils.bus import Bus
 
-"""
-def test_store_in_progress():
-    mapper = mock.MagicMock()
-    manager = mock.MagicMock()
-    bus = mock.MagicMock()
 
-    command = mock.MagicMock(spec=ApplicationCommand(
-        __timestamp__=0.0
-    ))
+@pytest.fixture
+def trace_id():
+    return str(uuid.uuid4())
 
-    trace_id = str(uuid.uuid4())
 
-    store = TraceStore(mapper, manager, bus)
-    store.store_in_progress(trace_id, command, ['some_context'])
+@pytest.fixture
+def record(trace_id):
+    return CommandRecord(
+        trace_id=trace_id,
+        topic=ApplicationCommand.__name__,
+        version=1,
+        timestamp=0.0,
+        message=MessageType.APPLICATION_COMMAND.value,
+        payload={}
+    )
 
-    manager.store_in_progress.assert_called()
+def test_store_in_progress(trace_id, record):
+    some_context = 'some_context'
 
-def test_store_context_success():
-    trace_id = str(uuid.uuid4())
+    record_manager = MemoryTraceRecordManager()
+    store = TraceStore(record_manager, Bus())
+    store.store_in_progress(trace_id, record, [some_context])
+    trace_contexts = record_manager.get_trace_contexts(trace_id)
 
-    mapper = mock.MagicMock()
-    manager = mock.MagicMock()
-    bus = mock.MagicMock()
+    trace_contexts = list(trace_contexts)
+    assert len(trace_contexts) == 1
+    assert trace_contexts[0].context == some_context
+    assert trace_contexts[0].resolution == Resolution.pending
+    assert trace_contexts[0].timestamp_resolution == None
+    assert trace_contexts[0].error == None
 
-    manager.get_trace_contexts = mock.Mock(return_value=[
-        TraceRecord.ContextResolution(
-            context='some_context',
-            resolution=TraceRecord.Resolution.success
-        )
-    ])
+def test_store_context_success(trace_id, record):
+    some_context = 'some_context'
 
-    store = TraceStore(mapper, manager, bus)
-    store.store_context_success(trace_id, 'some_context')
-
-    manager.store_context_resolve_success.assert_called()
-    bus.publish.assert_called()
+    record_manager = MemoryTraceRecordManager()
+    store = TraceStore(record_manager, Bus())
+    store.store_in_progress(trace_id, record, [some_context])
+    store.store_context_success(trace_id, some_context)
+    trace_contexts = record_manager.get_trace_contexts(trace_id)
+    
+    trace_contexts = list(trace_contexts)
+    assert len(trace_contexts) == 1
+    assert trace_contexts[0].context == some_context
+    assert trace_contexts[0].resolution == Resolution.success
 
 def test_store_context_failure():
-    trace_id = str(uuid.uuid4())
+    some_context = 'some_context'
+    error = 'error'
 
-    mapper = mock.MagicMock()
-    manager = mock.MagicMock()
-    bus = mock.MagicMock()
-
-    manager.get_trace_contexts = mock.Mock(return_value=[
-        TraceRecord.ContextResolution(
-            context='some_context',
-            resolution=TraceRecord.Resolution.failure,
-            error='some-error-description'
-        )
-    ])
-
-    store = TraceStore(mapper, manager, bus)
-    store.store_context_failure(trace_id, 'some_context', 'some-error')
-
-    manager.store_context_resolve_failure.assert_called()
-    bus.publish.assert_called()
-"""
+    record_manager = MemoryTraceRecordManager()
+    store = TraceStore(record_manager, Bus())
+    store.store_in_progress(trace_id, record, [some_context])
+    store.store_context_failure(trace_id, some_context, error)
+    trace_contexts = record_manager.get_trace_contexts(trace_id)
+    
+    trace_contexts = list(trace_contexts)
+    assert len(trace_contexts) == 1
+    assert trace_contexts[0].context == some_context
+    assert trace_contexts[0].resolution == Resolution.failure
+    assert trace_contexts[0].error == error
