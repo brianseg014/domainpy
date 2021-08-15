@@ -17,8 +17,8 @@ from domainpy.infrastructure.records import (
     IntegrationRecord,
 )
 from domainpy.infrastructure.tracer.tracestore import TraceResolution
-from domainpy.typing.application import SystemMessage
-from domainpy.typing.infrastructure import SystemRecord
+from domainpy.typing.infrastructure import InfrastructureMessage
+from domainpy.typing.infrastructure import InfrastructureRecord
 from domainpy.utils.data import get_fields, Field, MISSING
 
 
@@ -92,8 +92,12 @@ class MessageType(enum.Enum):
         )
 
 
-TSystemMessage = typing.TypeVar("TSystemMessage", bound=SystemMessage)
-TSystemRecord = typing.TypeVar("TSystemRecord", bound=SystemRecord)
+TInfrastructureMessage = typing.TypeVar(
+    "TInfrastructureMessage", bound=InfrastructureMessage
+)
+TInfrastructureRecord = typing.TypeVar(
+    "TInfrastructureRecord", bound=InfrastructureRecord
+)
 
 
 class Transcoder(abc.ABC):
@@ -115,12 +119,18 @@ class Transcoder(abc.ABC):
     def add_codec(self, codec: ICodec) -> None:
         self.codecs.append(codec)
 
-    def serialize(self, message: SystemMessage) -> SystemRecord:
-        return typing.cast(SystemRecord, self.encode(message, type(message)))
+    def serialize(
+        self, message: InfrastructureMessage
+    ) -> InfrastructureRecord:
+        return typing.cast(
+            InfrastructureRecord, self.encode(message, type(message))
+        )
 
     def deserialize(
-        self, record: TSystemRecord, message_type: typing.Type[TSystemMessage]
-    ) -> TSystemMessage:
+        self,
+        record: TInfrastructureRecord,
+        message_type: typing.Type[TInfrastructureMessage],
+    ) -> TInfrastructureMessage:
         return self.decode(record_asdict(record), message_type)
 
     def encode(self, obj, objtype):
@@ -360,7 +370,7 @@ class _ApplicationCommandStructCodec(_SystemMessageCodec):
         return issubclass(field_type, ApplicationCommand.Struct)
 
     def encode(self, obj: typing.Any, field_type: typing.Type) -> typing.Any:
-        return self._encode(obj, field_type)['payload']
+        return self._encode(obj, field_type)["payload"]
 
     def decode(self, data: dict, field_type: typing.Type) -> typing.Any:
         return self._decode(dict(payload=data), field_type)

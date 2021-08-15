@@ -5,12 +5,14 @@ import typing
 from domainpy.infrastructure.publishers.base import Publisher
 
 if typing.TYPE_CHECKING:
-    from domainpy.typing.application import SystemMessage  # type: ignore
+    from domainpy.typing.infrastructure import (
+        SequenceOfInfrastructureMessage,
+    )
 
 
 class MemoryPublisher(Publisher, list):
     def _publish(
         self,
-        messages: typing.Sequence[SystemMessage],
+        messages: SequenceOfInfrastructureMessage,
     ):
         self.extend(messages)

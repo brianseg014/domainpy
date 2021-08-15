@@ -5,12 +5,12 @@ from domainpy.application.service import ApplicationService
 from domainpy.application.command import ApplicationCommand
 from domainpy.infrastructure.publishers.base import IPublisher
 from domainpy.utils import bus_subscribers as subs
-from domainpy.typing.application import SystemMessage
+from domainpy.typing.application import ApplicationMessage
 
 
 def test_application_service_subscriber():
     class Service(ApplicationService):
-        def handle(self, message: SystemMessage) -> None:
+        def handle(self, message: ApplicationMessage) -> None:
             self.proof_of_work(message)
 
         def proof_of_work(self, *args, **kwargs):
@@ -28,7 +28,7 @@ def test_application_service_subscriber():
 
 def test_publisher_subscriber():
     class Publisher(IPublisher):
-        def publish(self, messages: typing.Union[SystemMessage, typing.Sequence[SystemMessage]]):
+        def publish(self, messages: ApplicationMessage):
             self.proof_of_work(messages)
 
         def proof_of_work(self, *args, **kwargs):

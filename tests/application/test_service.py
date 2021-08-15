@@ -6,7 +6,7 @@ from domainpy.application.command import ApplicationCommand
 from domainpy.application.service import ApplicationService, handler
 from domainpy.application.integration import IntegrationEvent
 from domainpy.domain.model.event import DomainEvent
-from domainpy.typing.application import SystemMessage
+from domainpy.typing.application import ApplicationMessage
 
 
 @pytest.fixture
@@ -39,7 +39,7 @@ def test_service_stamp():
 def test_handler_command(command):
     class Service(ApplicationService):
         @handler
-        def handle(self, message: SystemMessage) -> None:
+        def handle(self, message: ApplicationMessage) -> None:
             pass
 
         @handle.command(ApplicationCommand)
@@ -59,7 +59,7 @@ def test_handler_command(command):
 def test_handler_integration(integration):
     class Service(ApplicationService):
         @handler
-        def handle(self, message: SystemMessage) -> None:
+        def handle(self, message: ApplicationMessage) -> None:
             pass
 
         @handle.integration(IntegrationEvent)
@@ -78,7 +78,7 @@ def test_handler_integration(integration):
 def test_handler_event(event):
     class Service(ApplicationService):
         @handler
-        def handle(self, message: SystemMessage) -> None:
+        def handle(self, message: ApplicationMessage) -> None:
             pass
 
         @handle.event(DomainEvent)
@@ -98,7 +98,7 @@ def test_handler_event(event):
 def test_handler_trace(command, integration, event):
     class Service(ApplicationService):
         @handler
-        def handle(self, message: SystemMessage) -> None:
+        def handle(self, message: ApplicationMessage) -> None:
             pass
 
         @handle.trace(ApplicationCommand, IntegrationEvent)

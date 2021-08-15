@@ -17,7 +17,7 @@ from domainpy.infrastructure.eventsourced.eventstore import EventStore
 from domainpy.infrastructure.eventsourced.eventstream import EventStream
 from domainpy.utils.traceable import Traceable
 from domainpy.utils.bus_subscribers import BasicSubscriber
-from domainpy.typing.application import SystemMessage
+from domainpy.typing.application import ApplicationMessage
 
 
 @dataclasses.dataclass(frozen=True)
@@ -145,7 +145,7 @@ class TestEnvironment:
         self.event_processor.process(event)
         self.environment.service_bus.event_bus.publish(event)
 
-    def when(self, message: SystemMessage) -> None:
+    def when(self, message: ApplicationMessage) -> None:
         self.environment.handle(message)
 
     @property

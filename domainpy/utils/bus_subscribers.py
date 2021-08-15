@@ -5,7 +5,9 @@ import typing
 from domainpy.utils.bus import ISubscriber
 
 if typing.TYPE_CHECKING:  # pragma: no cover
-    from domainpy.typing.application import SystemMessage  # type: ignore
+    from domainpy.typing.infrastructure import (
+        InfrastructureMessage,
+    )  # noqa: E501 # type: ignore
     from domainpy.application.service import ApplicationService
     from domainpy.application.projection import Projection
     from domainpy.domain.model.event import DomainEvent
@@ -22,7 +24,7 @@ class BusSubscriber(ISubscriber):
     def __init__(self, bus: IBus):
         self.bus = bus
 
-    def __route__(self, message: SystemMessage):
+    def __route__(self, message: InfrastructureMessage):
         self.bus.publish(message)
 
 
@@ -30,7 +32,7 @@ class ApplicationServiceSubscriber(ISubscriber):
     def __init__(self, application_service: ApplicationService):
         self.application_service = application_service
 
-    def __route__(self, message: SystemMessage):
+    def __route__(self, message: InfrastructureMessage):
         self.application_service.handle(message)
 
 
@@ -46,5 +48,5 @@ class PublisherSubscriber(ISubscriber):
     def __init__(self, publisher: IPublisher):
         self.publisher = publisher
 
-    def __route__(self, message: SystemMessage):
+    def __route__(self, message: InfrastructureMessage):
         self.publisher.publish(message)

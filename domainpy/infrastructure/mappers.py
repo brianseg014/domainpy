@@ -1,20 +1,15 @@
 import typing
 
 from domainpy.infrastructure.transcoder import Transcoder
-from domainpy.typing.application import SystemMessage
-from domainpy.typing.infrastructure import SystemRecord, SystemRecordDict
+from domainpy.typing.infrastructure import InfrastructureMessage
+from domainpy.typing.infrastructure import InfrastructureRecord
 
 
 class MessageTypeNotFoundError(Exception):
     pass
 
 
-TSystemMessage = typing.TypeVar("TSystemMessage", bound=SystemMessage)
-TSystemRecord = typing.TypeVar("TSystemRecord", bound=SystemRecord)
-TSystemRecordDict = typing.TypeVar("TSystemRecordDict", bound=SystemRecordDict)
-
-
-class Mapper(typing.Generic[TSystemMessage, TSystemRecord, TSystemRecordDict]):
+class Mapper:
     def __init__(self, transcoder: Transcoder) -> None:
         self.transcoder = transcoder
 
@@ -24,10 +19,16 @@ class Mapper(typing.Generic[TSystemMessage, TSystemRecord, TSystemRecordDict]):
         self.map[cls.__name__] = cls
         return cls
 
-    def serialize(self, message: TSystemMessage) -> TSystemRecord:
-        return typing.cast(TSystemRecord, self.transcoder.serialize(message))
+    def serialize(
+        self, message: InfrastructureMessage
+    ) -> InfrastructureRecord:
+        return typing.cast(
+            InfrastructureRecord, self.transcoder.serialize(message)
+        )
 
-    def deserialize(self, record: TSystemRecord) -> TSystemMessage:
+    def deserialize(
+        self, record: InfrastructureRecord
+    ) -> InfrastructureMessage:
         try:
             message_type = self.map[record.topic]
         except KeyError as error:

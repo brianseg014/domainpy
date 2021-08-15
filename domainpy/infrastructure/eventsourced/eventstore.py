@@ -65,6 +65,8 @@ class EventStore:
 
         stream = EventStream()
         for record in records:
-            stream.append(self.event_mapper.deserialize(record))
+            stream.append(
+                typing.cast(DomainEvent, self.event_mapper.deserialize(record))
+            )
 
         return stream

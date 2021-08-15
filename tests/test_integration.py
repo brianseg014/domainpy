@@ -33,7 +33,7 @@ from domainpy.utils import (
 )
 from domainpy.bootstrap import Environment, IFactory
 from domainpy.test.bootstrap import EventSourcedProcessor, TestEnvironment
-from domainpy.typing.application import SystemMessage
+from domainpy.typing.application import ApplicationMessage
 
 
 def test_all_system():
@@ -116,7 +116,7 @@ def test_all_system():
             self.pet_store_repository = registry.get(PetStoreRepository)
 
         @handler
-        def handle(self, message: SystemMessage) -> None:
+        def handle(self, message: ApplicationMessage) -> None:
             pass
 
         @handle.command(RegisterPetStore)
@@ -141,7 +141,7 @@ def test_all_system():
             self.integration_bus = integration_bus
 
         @handler
-        def handle(self, message: SystemMessage):
+        def handle(self, message: ApplicationMessage):
             pass
 
         @handle.trace(RegisterPetStore, PetStoreRegistered)

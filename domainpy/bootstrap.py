@@ -21,28 +21,24 @@ from domainpy.utils.bus_subscribers import (
 from domainpy.utils.registry import Registry
 from domainpy.utils.contextualized import Contextualized
 from domainpy.utils.traceable import Traceable
-from domainpy.typing.application import SystemMessage
+from domainpy.typing.application import ApplicationMessage
 
 
-class HandlerBus(IBus[typing.Union[SystemMessage, DomainError]]):
+class HandlerBus(IBus[ApplicationMessage]):
     def __init__(self) -> None:
-        self.bus = Bus[typing.Union[SystemMessage, DomainError]]()
-        self.handler_bus = Bus[typing.Union[SystemMessage, DomainError]]()
-        self.resolver_bus = Bus[typing.Union[SystemMessage, DomainError]]()
+        self.bus = Bus[ApplicationMessage]()
+        self.handler_bus = Bus[ApplicationMessage]()
+        self.resolver_bus = Bus[ApplicationMessage]()
 
-    def attach(
-        self, subscriber: ISubscriber[typing.Union[SystemMessage, DomainError]]
-    ) -> None:
+    def attach(self, subscriber: ISubscriber[ApplicationMessage]) -> None:
         self.bus.attach(subscriber)
 
-    def publish(
-        self, message: typing.Union[SystemMessage, DomainError]
-    ) -> None:
+    def publish(self, message: typing.Union[ApplicationMessage]) -> None:
         self.handle(message)
 
     def handle(
         self,
-        message: typing.Union[SystemMessage, DomainError],
+        message: typing.Union[ApplicationMessage],
         retries: int = 3,
     ) -> None:
         if retries <= 0:
@@ -104,24 +100,20 @@ class EventBus(IBus[DomainEvent]):
         self.publisher_bus.attach(PublisherSubscriber(publisher))
 
 
-class ServiceBus(IBus[typing.Union[SystemMessage, DomainError]]):
+class ServiceBus(IBus[ApplicationMessage]):
     def __init__(self) -> None:
         self.handler_bus = HandlerBus()
         self.event_bus = EventBus()
 
-    def attach(
-        self, subscriber: ISubscriber[typing.Union[SystemMessage, DomainError]]
-    ) -> None:
+    def attach(self, subscriber: ISubscriber[ApplicationMessage]) -> None:
         self.handler_bus.attach(subscriber)
 
-    def publish(
-        self, message: typing.Union[SystemMessage, DomainError]
-    ) -> None:
+    def publish(self, message: ApplicationMessage) -> None:
         self.handle(message)
 
     def handle(
         self,
-        message: typing.Union[SystemMessage, DomainError],
+        message: ApplicationMessage,
         retries: int = 3,
     ) -> None:
         self.handler_bus.handle(message, retries)
@@ -216,7 +208,7 @@ class Environment:
 
     def handle(
         self,
-        message: typing.Union[SystemMessage, DomainError],
+        message: ApplicationMessage,
         retries: int = 3,
     ) -> None:
         if isinstance(

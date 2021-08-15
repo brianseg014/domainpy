@@ -7,7 +7,7 @@ from domainpy.application.projection import Projection
 from domainpy.domain.model.event import DomainEvent
 from domainpy.domain.model.exceptions import DomainError
 from domainpy.infrastructure.publishers.base import IPublisher
-from domainpy.typing.application import SystemMessage
+from domainpy.typing.application import ApplicationMessage, SingleOrSequenceOfApplicationMessage
 
 
 def test_handle():
@@ -21,15 +21,15 @@ def test_handle():
             story.append(('projection', event))
 
     class TestHandler(ApplicationService):
-        def handle(self, message: SystemMessage) -> None:
+        def handle(self, message: ApplicationMessage) -> None:
             story.append(('handle', message))
 
     class TestResolver(ApplicationService):
-        def handle(self, message: SystemMessage) -> None:
+        def handle(self, message: ApplicationMessage) -> None:
             story.append(('resolver', message))
 
     class TestPublisher(IPublisher):
-        def publish(self, messages: typing.Union[SystemMessage, typing.Sequence[SystemMessage]]):
+        def publish(self, messages: SingleOrSequenceOfApplicationMessage):
             story.append(('publish', messages))
 
     projection = TestProjection()
@@ -58,18 +58,18 @@ def test_handle_with_event():
             story.append(('projection', event))
 
     class TestHandler(ApplicationService):
-        def handle(self, message: SystemMessage) -> None:
+        def handle(self, message: ApplicationMessage) -> None:
             story.append(('handle', message))
 
             if isinstance(message, ApplicationCommand):
                 service_bus.event_bus.publish(event)
 
     class TestResolver(ApplicationService):
-        def handle(self, message: SystemMessage) -> None:
+        def handle(self, message: ApplicationMessage) -> None:
             story.append(('resolver', message))
 
     class TestPublisher(IPublisher):
-        def publish(self, messages: typing.Union[SystemMessage, typing.Sequence[SystemMessage]]):
+        def publish(self, messages: SingleOrSequenceOfApplicationMessage):
             story.append(('publish', messages))
 
     projection = TestProjection()
@@ -101,18 +101,18 @@ def test_handle_with_error():
             story.append(('projection', event))
 
     class TestHandler(ApplicationService):
-        def handle(self, message: SystemMessage) -> None:
+        def handle(self, message: ApplicationMessage) -> None:
             story.append(('handle', message))
             
             if isinstance(message, ApplicationCommand):
                 raise error
 
     class TestResolver(ApplicationService):
-        def handle(self, message: SystemMessage) -> None:
+        def handle(self, message: ApplicationMessage) -> None:
             story.append(('resolver', message))
 
     class TestPublisher(IPublisher):
-        def publish(self, messages: typing.Union[SystemMessage, typing.Sequence[SystemMessage]]):
+        def publish(self, messages: SingleOrSequenceOfApplicationMessage):
             story.append(('publish', messages))
 
     projection = TestProjection()

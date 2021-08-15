@@ -9,7 +9,9 @@ from domainpy.infrastructure.publishers.base import Publisher
 from domainpy.infrastructure.transcoder import record_asdict
 
 if typing.TYPE_CHECKING:
-    from domainpy.typing.application import SystemMessage  # type: ignore
+    from domainpy.typing.infrastructure import (
+        InfrastructureMessage,
+    )
     from domainpy.infrastructure.mappers import Mapper
 
 
@@ -23,7 +25,7 @@ class AwsEventBridgePublisher(Publisher):
 
     def _publish(
         self,
-        messages: typing.Sequence[SystemMessage],
+        messages: typing.Sequence[InfrastructureMessage],
     ):
         entries = [
             {

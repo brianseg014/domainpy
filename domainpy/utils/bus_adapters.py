@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import typing
 
-from domainpy.domain.model.exceptions import DomainError
 from domainpy.utils.bus import Bus
 from domainpy.utils.bus_subscribers import (
     ApplicationServiceSubscriber,
@@ -11,7 +10,7 @@ from domainpy.utils.bus_subscribers import (
 )
 
 if typing.TYPE_CHECKING:  # pragma: no cover
-    from domainpy.typing.application import SystemMessage  # type: ignore
+    from domainpy.typing.application import ApplicationMessage  # type: ignore
     from domainpy.application.service import ApplicationService
     from domainpy.application.projection import Projection
     from domainpy.application.integration import IntegrationEvent
@@ -20,9 +19,7 @@ if typing.TYPE_CHECKING:  # pragma: no cover
 
 
 class ApplicationBusAdapter:
-    def __init__(
-        self, bus: Bus[typing.Union[SystemMessage, DomainError]]
-    ) -> None:
+    def __init__(self, bus: Bus[ApplicationMessage]) -> None:
         self.bus = bus
 
     def attach(self, application_service: ApplicationService) -> None:

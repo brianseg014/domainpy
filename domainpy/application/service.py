@@ -6,10 +6,11 @@ import functools
 import typing
 
 if typing.TYPE_CHECKING:  # pragma: no cover
-    from domainpy.typing.application import SystemMessage  # type: ignore # noqa: E501
+    from domainpy.typing.application import ApplicationMessage  # type: ignore # noqa: E501
     from domainpy.application.command import ApplicationCommand
     from domainpy.application.integration import IntegrationEvent
     from domainpy.domain.model.event import DomainEvent
+    from domainpy.domain.model.exceptions import DomainError
 
 
 class ApplicationService(abc.ABC):
@@ -23,7 +24,7 @@ class ApplicationService(abc.ABC):
         )
 
     @abc.abstractmethod
-    def handle(self, message: SystemMessage) -> None:
+    def handle(self, message: ApplicationMessage) -> None:
         pass  # pragma: no cover
 
 
@@ -38,7 +39,9 @@ class handler:  # pylint: disable=invalid-name
     def __get__(self, obj, objtype):
         return functools.partial(self.__call__, obj)
 
-    def __call__(self, service: ApplicationService, message: SystemMessage):
+    def __call__(
+        self, service: ApplicationService, message: ApplicationMessage
+    ):
         handlers = self.handlers.get(message.__class__, None)
         if handlers:
             for h in handlers:
@@ -79,7 +82,15 @@ class handler:  # pylint: disable=invalid-name
 
         return inner_function
 
-    def trace(self, *messages: typing.Sequence[typing.Type[SystemMessage]]):
+    def error(self, error_type: typing.Type[DomainError]):
+        def inner_func(func):
+            error_handlers = self.handlers.setdefault(error_type, set())
+            error_handlers.add(func)
+            return func
+
+        return inner_func
+
+    def trace(self, *messages: typing.Sequence[ApplicationMessage]):
         def inner_function(func):
             def wrapper(*args, **kwargs):
                 service = args[0]
