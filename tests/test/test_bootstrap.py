@@ -99,7 +99,7 @@ def command():
 def _():
     Contextualized.__context__ = 'ctx'
 
-def test_event_store_given_has_event(environment, event_store, event, aggregate_id):
+def test_domain_events_given_has_event(environment, event_store, event, aggregate_id):
     adap = TestEnvironment(environment, EventSourcedProcessor(event_store))
 
     adap.given(event)
@@ -108,7 +108,7 @@ def test_event_store_given_has_event(environment, event_store, event, aggregate_
     adap.then.domain_events.assert_has_event_n_times(event.__class__, times=1)
     adap.then.domain_events.assert_has_event_with(event.__class__, some_property='x')
 
-def test_event_store_has_event_fails(environment, event_store):
+def test_domain_events_has_event_fails(environment, event_store, event):
     adap = TestEnvironment(environment, EventSourcedProcessor(event_store))
 
     with pytest.raises(AssertionError):
@@ -123,21 +123,55 @@ def test_event_store_has_event_fails(environment, event_store):
     with pytest.raises(AssertionError):
         adap.then.domain_events.assert_has_event_with(DomainEvent, some_property='x')
 
-def test_event_store_has_not_event(environment, event_store):
+    with pytest.raises(AssertionError):
+        adap.then.domain_events.assert_has_n_events(count=1)
+
+    adap.given(event)
+    with pytest.raises(AssertionError):
+        adap.then.domain_events.assert_has_not_event(DomainEvent)
+
+    with pytest.raises(AssertionError):
+        adap.then.domain_events.assert_has_not_event_with(DomainEvent, some_property='x')
+
+def test_domain_events_has_not_event(environment, event_store):
     adap = TestEnvironment(environment, EventSourcedProcessor(event_store))
     adap.then.domain_events.assert_has_not_event(DomainEvent)
 
-def test_integrations_has_integration(environment, event_store, integration):
+def test_integration_events_has_integration(environment, event_store, integration):
     adap = TestEnvironment(environment, EventSourcedProcessor(event_store))
     
     environment.integration_bus.publish(integration)
     adap.then.integration_events.assert_has_integration(IntegrationEvent)
+    adap.then.integration_events.assert_has_integration_n(IntegrationEvent, times=1)
     adap.then.integration_events.assert_has_integration_with(IntegrationEvent, some_property='x')
 
-def test_integrations_has_not_integration(environment, event_store):
+def test_integration_events_has_integration_fails(environment, event_store, integration):
+    adap = TestEnvironment(environment, EventSourcedProcessor(event_store))
+
+    with pytest.raises(AssertionError):
+        adap.then.integration_events.assert_has_integration(IntegrationEvent)
+
+    with pytest.raises(AssertionError):
+        adap.then.integration_events.assert_has_integration_n(IntegrationEvent, times=1)
+
+    with pytest.raises(AssertionError):
+        adap.then.integration_events.assert_has_integration_with(IntegrationEvent, some_property='x')
+
+    with pytest.raises(AssertionError):
+        adap.then.integration_events.assert_has_n_integrations(count=1)
+
+    environment.integration_bus.publish(integration)
+    with pytest.raises(AssertionError):
+        adap.then.integration_events.assert_has_not_integration(IntegrationEvent)
+
+    with pytest.raises(AssertionError):
+        adap.then.integration_events.assert_has_not_integration_with(IntegrationEvent, some_property='x')
+
+def test_integration_events_has_not_integration(environment, event_store):
     adap = TestEnvironment(environment, EventSourcedProcessor(event_store))
 
     adap.then.integration_events.assert_has_not_integration(IntegrationEvent)
+    adap.then.integration_events.assert_has_not_integration_with(IntegrationEvent, some_property='x')
 
 def test_when(environment, event_store, command):
     adap = TestEnvironment(environment, EventSourcedProcessor(event_store))

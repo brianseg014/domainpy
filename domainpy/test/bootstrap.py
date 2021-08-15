@@ -28,13 +28,13 @@ class Then:
 
 class EventProcessor(abc.ABC):
     @abc.abstractmethod
-    def process(self, event: DomainEvent) -> None:
+    def process(self, event: DomainEvent) -> None:  # pragma: no cover
         pass
 
     @abc.abstractmethod
     def next_event_number(
         self, aggregate_type: typing.Type[AggregateRoot], aggregate_id: str
-    ) -> int:
+    ) -> int:  # pragma: no cover
         pass
 
 
@@ -251,6 +251,9 @@ class DomainEventsTestExpression:
             event_type, aggregate_type, aggregate_id, **kwargs
         )
 
+    def has_n_events(self, count: int):
+        return len(self.domain_events) == count
+
     def assert_has_not_event(
         self,
         event_type: typing.Type[DomainEvent],
@@ -331,6 +334,12 @@ class DomainEventsTestExpression:
         except AssertionError:
             self.raise_error("event found")
 
+    def assert_has_n_events(self, count: int):
+        try:
+            assert self.has_n_events(count)
+        except AssertionError:
+            self.raise_error(f"not found {count} events")
+
     def raise_error(self, message):
         traceback = None
         depth = 2
@@ -407,7 +416,7 @@ class IntegrationEventsTestExpression:
     ) -> bool:
         return not self.has_integration_with(integration_type, **kwargs)
 
-    def has_n_events(self, count: int) -> bool:
+    def has_n_integrations(self, count: int) -> bool:
         return len(self.integration_events) == count
 
     def assert_has_not_integration(
@@ -450,9 +459,9 @@ class IntegrationEventsTestExpression:
         except AssertionError:
             self.raise_error("integration found")
 
-    def assert_has_n_events(self, count: int) -> None:
+    def assert_has_n_integrations(self, count: int) -> None:
         try:
-            assert self.has_n_events(count)
+            assert self.has_n_integrations(count)
         except AssertionError:
             self.raise_error(f"not found {count} integrations")
 
