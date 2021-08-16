@@ -261,19 +261,17 @@ class _DictCodec(ICodec):
         origin_args = typing.get_args(field_type)
 
         return {
-            k: self.trancoder.encode(v, origin_args[1]) for k, v in obj.items()
+            self.trancoder.encode(k, origin_args[0]): self.trancoder.encode(v, origin_args[1])
+            for k, v in obj.items()
         }
 
     def decode(self, data: dict, field_type: typing.Type) -> typing.Any:
-        origin = typing.get_origin(field_type) or field_type
         origin_args = typing.get_args(field_type)
 
-        return origin(
-            **{
-                k: self.trancoder.decode(v, origin_args[1])
-                for k, v in data.items()
-            }
-        )
+        return {
+            self.trancoder.decode(k, origin_args[0]): self.trancoder.decode(v, origin_args[1])
+            for k, v in data.items()
+        }
 
 
 class _SystemMessageCodec(ICodec):
