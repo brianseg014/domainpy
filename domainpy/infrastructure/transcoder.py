@@ -238,7 +238,7 @@ class _OptionalCodec(ICodec):
         if obj is None:
             return None
 
-        return self.transcoder.encode(obj, origin_args[1])
+        return self.transcoder.encode(obj, origin_args[0])
 
     def decode(self, data: dict, field_type: typing.Type) -> typing.Any:
         origin_args = typing.get_args(field_type)
@@ -246,7 +246,7 @@ class _OptionalCodec(ICodec):
         if data is None:
             return None
 
-        return self.transcoder.decode(data, origin_args[1])
+        return self.transcoder.decode(data, origin_args[0])
 
 
 class _DictCodec(ICodec):
