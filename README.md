@@ -290,13 +290,7 @@ from domainpy.infrastructure import (
     Transcoder
 )
 
-command_mapper = Mapper(
-    transcoder=Transcoder()
-)
-integration_mapper = Mapper(
-    transcoder=Transcoder()
-)
-event_mapper = Mapper(
+mapper = Mapper(
     transcoder=Transcoder()
 )
 ...
@@ -308,22 +302,23 @@ support.
 ```python
 ...
 
-@command_mapper.register
+@mapper.register
 class RegisterPetStore(ApplicationCommand):
     pet_store_id: str
     pet_store_name: str
 
-@integration_mapper.register
-class CreatePetStoreSucceeded(IntegrationEvent):
-    __resolve__: str = 'success'
-    __error__: typing.Optional[str] = None
+@mapper.register
+class CreatePetStoreSucceeded(SuccessIntegrationEvent):
     __version__: int = 1
 
-@event_mapper.register
+@mapper.register
 class PetStoreRegistered(DomainEvent):
     pet_store_id: PetStoreId
     pet_store_name: PetStoreName
 ```
+
+Some infrastructure implementations will require a mapper to be able
+to serialize/deserialize messages.
 
 ### Environment
 
@@ -379,13 +374,8 @@ class IntegrationTestFactory(IFactory):
 How do we use all this?
 
 ```python
-env = Environment(
-    command_mapper=command_mapper,
-    integration_mapper=integration_mapper,
-    event_mapper=event_mapper
-)
 env.handle(
-    env.stamp(RegisterPetStore)(
+    env.stamp_command(RegisterPetStore)(
         pet_store_id='pet_store_id',
         pet_store_name='noe'
     )
