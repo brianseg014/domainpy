@@ -129,6 +129,9 @@ class DynamoSession(Session):
         self.heap = []
 
     def batch_writer(self, heap):
+        if len(self.heap) == 0:
+            return
+
         items = []
         for event_record in heap:
             items.append(
