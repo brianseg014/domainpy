@@ -4,12 +4,10 @@ import moto
 import boto3
 import uuid
 import datetime
-import dataclasses
 
 from domainpy.infrastructure.records import CommandRecord
-from domainpy.infrastructure.tracer.recordmanager import ContextResolution, Resolution, StatusCode
+from domainpy.infrastructure.tracer.recordmanager import ContextResolution, Resolution
 from domainpy.infrastructure.tracer.managers.dynamodb import DynamoDBTraceRecordManager
-from domainpy.utils.dynamodb import client_serialize as serialize
 
 
 @pytest.fixture
@@ -133,6 +131,18 @@ def test_store_context_resolve_success(dynamodb, table_name: str, region_name: s
     items = dynamodb.scan(TableName=table_name)['Items']
     assert items[0]['contexts_resolutions']['M'][context_resolution.context]['M']['resolution']['S'] == Resolution.success
 
+def test_store_resolve_success_unexpected(dynamodb, table_name: str, region_name: str, trace_id: str, command_record: CommandRecord, contexts_resolutions: typing.Tuple[ContextResolution, ...]):
+    resolutions = tuple([
+        resolution.context for resolution in contexts_resolutions
+    ])
+
+    manager = DynamoDBTraceRecordManager(table_name, region_name=region_name)
+    manager.store_in_progress(trace_id, command_record, resolutions)
+    manager.store_context_resolve_success(trace_id, 'unexpected_context')
+
+    items = dynamodb.scan(TableName=table_name)['Items']
+    assert items[0]['contexts_resolutions_unexpected']['M']['unexpected_context']['M']['resolution']['S'] == Resolution.success
+
 def test_store_context_resolve_failure(dynamodb, table_name: str, region_name: str, trace_id: str, command_record: CommandRecord, contexts_resolutions: typing.Tuple[ContextResolution, ...]):
     resolutions = tuple([
         resolution.context for resolution in contexts_resolutions
@@ -145,3 +155,15 @@ def test_store_context_resolve_failure(dynamodb, table_name: str, region_name: s
 
     items = dynamodb.scan(TableName=table_name)['Items']
     assert items[0]['contexts_resolutions']['M'][context_resolution.context]['M']['resolution']['S'] == Resolution.failure
+
+def test_store_resolve_failure_unexpected(dynamodb, table_name: str, region_name: str, trace_id: str, command_record: CommandRecord, contexts_resolutions: typing.Tuple[ContextResolution, ...]):
+    resolutions = tuple([
+        resolution.context for resolution in contexts_resolutions
+    ])
+
+    manager = DynamoDBTraceRecordManager(table_name, region_name=region_name)
+    manager.store_in_progress(trace_id, command_record, resolutions)
+    manager.store_context_resolve_failure(trace_id, 'unexpected_context', 'some error')
+
+    items = dynamodb.scan(TableName=table_name)['Items']
+    assert items[0]['contexts_resolutions_unexpected']['M']['unexpected_context']['M']['resolution']['S'] == Resolution.failure
