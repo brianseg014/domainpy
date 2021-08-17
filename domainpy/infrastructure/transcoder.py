@@ -261,7 +261,9 @@ class _DictCodec(ICodec):
         origin_args = typing.get_args(field_type)
 
         return {
-            self.trancoder.encode(k, origin_args[0]): self.trancoder.encode(v, origin_args[1])
+            self.trancoder.encode(k, origin_args[0]): self.trancoder.encode(
+                v, origin_args[1]
+            )
             for k, v in obj.items()
         }
 
@@ -269,7 +271,9 @@ class _DictCodec(ICodec):
         origin_args = typing.get_args(field_type)
 
         return {
-            self.trancoder.decode(k, origin_args[0]): self.trancoder.decode(v, origin_args[1])
+            self.trancoder.decode(k, origin_args[0]): self.trancoder.decode(
+                v, origin_args[1]
+            )
             for k, v in data.items()
         }
 
