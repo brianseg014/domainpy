@@ -76,7 +76,7 @@ class DynamoDBTraceRecordManager(TraceRecordManager):
                     datetime.datetime.timestamp(datetime.datetime.now())
                 ),
                 "contexts_resolutions": serialize(resolutions),
-                "contexts_resolutions_unexpected": serialize({})
+                "contexts_resolutions_unexpected": serialize({}),
             },
         }
         self.client.put_item(**item)
@@ -124,7 +124,7 @@ class DynamoDBTraceRecordManager(TraceRecordManager):
         try:
             self.client.update_item(**item)
         except botocore.exceptions.ClientError as error:
-            if error.response['Error']['Code'] == 'ValidationException':
+            if error.response["Error"]["Code"] == "ValidationException":
                 item = {
                     "TableName": self.table_name,
                     "Key": {"trace_id": serialize(trace_id)},
@@ -132,11 +132,15 @@ class DynamoDBTraceRecordManager(TraceRecordManager):
                         f"SET contexts_resolutions_unexpected.{context} = :context_resolution "  # noqa: E501 # pylint: disable=line-too-long
                     ),
                     "ExpressionAttributeValues": {
-                        ":context_resolution": serialize({
-                            "resolution": Resolution.success,
-                            "timestamp_resolution": datetime.datetime.timestamp(datetime.datetime.now())
-                        })
-                    }
+                        ":context_resolution": serialize(
+                            {
+                                "resolution": Resolution.success,
+                                "timestamp_resolution": datetime.datetime.timestamp(  # noqa: E501
+                                    datetime.datetime.now()
+                                ),
+                            }
+                        )
+                    },
                 }
                 self.client.update_item(**item)
             else:
@@ -162,11 +166,11 @@ class DynamoDBTraceRecordManager(TraceRecordManager):
             },
             "ExpressionAttributeNames": {"#error": "error"},
         }
-        
+
         try:
             self.client.update_item(**item)
         except botocore.exceptions.ClientError as error:
-            if error.response['Error']['Code'] == 'ValidationException':
+            if error.response["Error"]["Code"] == "ValidationException":
                 item = {
                     "TableName": self.table_name,
                     "Key": {"trace_id": serialize(trace_id)},
@@ -174,11 +178,15 @@ class DynamoDBTraceRecordManager(TraceRecordManager):
                         f"SET contexts_resolutions_unexpected.{context} = :context_resolution "  # noqa: E501 # pylint: disable=line-too-long
                     ),
                     "ExpressionAttributeValues": {
-                        ":context_resolution": serialize({
-                            "resolution": Resolution.failure,
-                            "timestamp_resolution": datetime.datetime.timestamp(datetime.datetime.now())
-                        })
-                    }
+                        ":context_resolution": serialize(
+                            {
+                                "resolution": Resolution.failure,
+                                "timestamp_resolution": datetime.datetime.timestamp(  # noqa: E501
+                                    datetime.datetime.now()
+                                ),
+                            }
+                        )
+                    },
                 }
                 self.client.update_item(**item)
             else:
