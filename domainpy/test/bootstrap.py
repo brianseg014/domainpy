@@ -318,7 +318,7 @@ class DomainEventsTestExpression:
                 trace_id=trace_id,
             )
         except AssertionError:
-            self.raise_error("event found")
+            self.raise_error(f"event found: {event_type.__name__}")
 
     def assert_has_event(
         self,
@@ -336,7 +336,7 @@ class DomainEventsTestExpression:
                 trace_id=trace_id,
             )
         except AssertionError:
-            self.raise_error("event not found")
+            self.raise_error(f"event not found: {event_type.__name__}")
 
     def assert_has_event_n_times(
         self,
@@ -356,7 +356,9 @@ class DomainEventsTestExpression:
                 trace_id=trace_id,
             )
         except AssertionError:
-            self.raise_error(f"event not found {times} time(s)")
+            self.raise_error(
+                f"event not found {times} time(s): {event_type.__name__}"
+            )
 
     def assert_has_event_once(
         self,
@@ -374,7 +376,7 @@ class DomainEventsTestExpression:
                 trace_id=trace_id,
             )
         except AssertionError:
-            self.raise_error("event not found 1 time")
+            self.raise_error(f"event not found 1 time: {event_type.__name__}")
 
     def assert_has_event_with(
         self,
@@ -394,7 +396,10 @@ class DomainEventsTestExpression:
                 **kwargs,
             )
         except AssertionError:
-            self.raise_error("event not found")
+            self.raise_error(
+                f"event not found: "
+                f"{event_type.__name__} and kwargs={kwargs}"
+            )
 
     def assert_has_not_event_with(
         self,
@@ -414,7 +419,9 @@ class DomainEventsTestExpression:
                 **kwargs,
             )
         except AssertionError:
-            self.raise_error("event found")
+            self.raise_error(
+                "event found: " f"{event_type.__name__}, kwargs={kwargs}"
+            )
 
     def assert_has_n_events(self, count: int):
         try:
