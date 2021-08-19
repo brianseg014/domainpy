@@ -1,4 +1,5 @@
 import sys
+import inspect
 import itertools
 import collections
 import typeguard
@@ -81,7 +82,7 @@ def create_fn(
 
 def get_fields(cls):
     fields: typing.OrderedDict[str, Field] = collections.OrderedDict()
-    for current_cls in itertools.chain(cls.__bases__, [cls]):
+    for current_cls in inspect.getmro(cls)[::-1]:
         cls_annotations = current_cls.__dict__.get("__annotations__")
         if cls_annotations:
             for a_name, a_type in cls_annotations.items():
