@@ -1,4 +1,3 @@
-import abc
 import datetime
 import functools
 
@@ -63,9 +62,3 @@ class DomainEvent(SystemData, Traceable, Contextualized):
                 {"trace_id": self.__trace_id__, "context": self.__context__}
             )
         )
-
-
-class ScheduleDomainEvent(DomainEvent):
-    @abc.abstractproperty
-    def publish_event_at(self) -> str:
-        pass

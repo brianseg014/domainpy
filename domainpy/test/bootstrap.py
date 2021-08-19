@@ -24,6 +24,7 @@ from domainpy.typing.application import ApplicationMessage
 class Then:
     domain_events: DomainEventsTestExpression
     integration_events: IntegrationEventsTestExpression
+    schedule_events: IntegrationEventsTestExpression
 
 
 class EventProcessor(abc.ABC):
@@ -80,6 +81,9 @@ class TestEnvironment:
 
         self.integration_events = BasicSubscriber()
         self.environment.integration_bus.attach(self.integration_events)
+
+        self.schedule_events = BasicSubscriber()
+        self.environment.schedule_bus.attach(self.schedule_events)
 
     def next_event_number(
         self, aggregate_type: typing.Type[AggregateRoot], aggregate_id: str
@@ -157,6 +161,9 @@ class TestEnvironment:
             integration_events=IntegrationEventsTestExpression(
                 tuple(self.integration_events)
             ),
+            schedule_events=IntegrationEventsTestExpression(
+                tuple(self.schedule_events)
+            )
         )
 
 

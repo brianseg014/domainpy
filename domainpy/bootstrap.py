@@ -5,7 +5,7 @@ from domainpy.exceptions import ConcurrencyError
 from domainpy.application.command import ApplicationCommand
 from domainpy.application.service import ApplicationService
 from domainpy.application.projection import Projection
-from domainpy.application.integration import IntegrationEvent
+from domainpy.application.integration import IntegrationEvent, ScheduleIntegartionEvent
 from domainpy.domain.model.event import DomainEvent
 from domainpy.domain.model.exceptions import DomainError
 from domainpy.domain.repository import IRepository
@@ -159,6 +159,10 @@ class IFactory(abc.ABC):
     def create_integration_publisher(self) -> IPublisher:
         pass
 
+    @abc.abstractmethod
+    def create_scheduler_publisher(self) -> IPublisher:
+        pass
+
 
 TRepository = typing.TypeVar("TRepository", bound=IRepository)
 TDomainService = typing.TypeVar("TDomainService", bound=IDomainService)
@@ -172,6 +176,7 @@ class Environment:
 
         self.service_bus = ServiceBus()
         self.integration_bus = Bus[IntegrationEvent]()
+        self.schedule_bus = Bus[ScheduleIntegartionEvent]()
         self.registry = Registry()
 
         domain_publisher = factory.create_event_publisher()
@@ -180,6 +185,9 @@ class Environment:
 
         integration_publisher = factory.create_integration_publisher()
         self.integration_bus.attach(PublisherSubscriber(integration_publisher))
+
+        scheduler_publisher = factory.create_scheduler_publisher()
+        self.schedule_bus.attach(PublisherSubscriber(scheduler_publisher))
 
     def add_handler(self, handler: ApplicationService):
         self.service_bus.add_handler(handler)

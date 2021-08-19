@@ -60,3 +60,7 @@ class SuccessIntegrationEvent(IntegrationEvent):
 
 class FailureIntegrationEvent(IntegrationEvent):
     __resolve__: str = IntegrationEvent.Resolution.failure
+
+
+class ScheduleIntegartionEvent(SuccessIntegrationEvent):
+    __publish_at_field__: str

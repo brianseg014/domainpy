@@ -5,7 +5,7 @@ import typing
 import requests
 
 from domainpy.exceptions import PublisherError
-from domainpy.domain.model.event import ScheduleDomainEvent
+from domainpy.application.integration import ScheduleIntegartionEvent
 from domainpy.infrastructure.publishers.base import Publisher
 from domainpy.infrastructure.transcoder import record_asdict
 from domainpy.infrastructure.mappers import Mapper
@@ -32,18 +32,15 @@ class AwsSchedulerPublisher(Publisher):
 
         entries = [
             {
-                'publish_on': m.publish_event_at,
+                'publish_at': getattr(m, m.__publish_at_field__),
                 'payload': json.dumps(record_asdict(self.mapper.serialize(m)))
             }
             for m in messages
-            if isinstance(m, ScheduleDomainEvent)
+            if isinstance(m, ScheduleIntegartionEvent)
         ]
 
         for entry in entries:
-            result = requests.post(
-                self.url, 
-
-            )
+            result = requests.post(self.url, json=entry)
 
             if result.status_code != 200:
                 errors.append(

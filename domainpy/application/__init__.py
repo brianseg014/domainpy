@@ -3,6 +3,7 @@ from .integration import (
     IntegrationEvent,
     SuccessIntegrationEvent,
     FailureIntegrationEvent,
+    ScheduleIntegartionEvent
 )
 from .projection import Projection, projector
 from .service import ApplicationService, handler
@@ -12,6 +13,7 @@ __all__ = [
     "IntegrationEvent",
     "SuccessIntegrationEvent",
     "FailureIntegrationEvent",
+    "ScheduleIntegartionEvent",
     "Projection",
     "projector",
     "ApplicationService",
