@@ -150,7 +150,7 @@ class TestEnvironment:
         self.environment.service_bus.event_bus.publish(event)
 
     def when(self, message: ApplicationMessage) -> None:
-        self.environment.handle(message)
+        self.environment.handle(message, retries=1)
 
     @property
     def then(self) -> Then:
