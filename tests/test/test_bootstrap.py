@@ -40,6 +40,9 @@ class DefaultFactory(IFactory):
     def create_integration_publisher(self) -> IPublisher:
         return MemoryPublisher()
 
+    def create_scheduler_publisher(self) -> IPublisher:
+        return MemoryPublisher()
+
 class Aggregate(AggregateRoot):
     def mutate(self, event: DomainEvent) -> None:
         pass

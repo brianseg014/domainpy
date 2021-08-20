@@ -182,6 +182,9 @@ def test_all_system():
         def create_integration_publisher(self) -> IPublisher:
             return MemoryPublisher()
 
+        def create_scheduler_publisher(self) -> IPublisher:
+            return MemoryPublisher()
+
     event_store = EventStore(
         event_mapper=event_mapper,
         record_manager=MemoryEventRecordManager()
