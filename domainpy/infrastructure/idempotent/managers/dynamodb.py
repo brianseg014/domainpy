@@ -19,6 +19,7 @@ class DynamoDBIdempotencyRecordManager(IdempotencyRecordManager):
             "TableName": self.table_name,
             "Item": {
                 "trace_id": serialize(record["trace_id"]),
+                "timestamp": serialize(record["timestamp"]),
                 "topic": serialize(record["topic"]),
                 "payload": serialize(record),
                 "status": serialize("progress"),
