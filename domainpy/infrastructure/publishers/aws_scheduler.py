@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import typing
-import requests
 import urllib.parse
+import requests  # type: ignore
 
 from domainpy.exceptions import PublisherError
 from domainpy.application.integration import ScheduleIntegartionEvent
@@ -14,7 +14,6 @@ if typing.TYPE_CHECKING:
     from domainpy.typing.infrastructure import (
         SequenceOfInfrastructureMessage,
     )
-    from domainpy.infrastructure.mappers import Mapper
 
 
 class SchedulerException(Exception):
@@ -22,7 +21,6 @@ class SchedulerException(Exception):
 
 
 class AwsSchedulerPublisher(Publisher):
-
     def __init__(self, url: str, mapper: Mapper) -> None:
         self.url = url
         self.mapper = mapper
@@ -32,23 +30,27 @@ class AwsSchedulerPublisher(Publisher):
 
         entries = [
             {
-                'publish_at': getattr(m, m.__publish_at_field__),
-                'payload': record_asdict(self.mapper.serialize(m))
+                "publish_at": getattr(m, m.__publish_at_field__),
+                "payload": record_asdict(self.mapper.serialize(m)),
             }
             for m in messages
             if isinstance(m, ScheduleIntegartionEvent)
         ]
 
         for entry in entries:
-            result = requests.post(urllib.parse.urljoin(self.url, 'schedule'), json=entry)
+            result = requests.post(
+                urllib.parse.urljoin(self.url, "schedule"), json=entry
+            )
 
             if result.status_code != 200:
                 errors.append(
                     PublisherError.EntryError(
-                        entry, 
-                        SchedulerException(f'{result.status_code} - {result.text}')
+                        entry,
+                        SchedulerException(
+                            f"{result.status_code} - {result.text}"
+                        ),
                     )
                 )
-            
+
         if len(errors) > 0:
             raise PublisherError(errors)

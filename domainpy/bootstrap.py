@@ -5,7 +5,10 @@ from domainpy.exceptions import ConcurrencyError
 from domainpy.application.command import ApplicationCommand
 from domainpy.application.service import ApplicationService
 from domainpy.application.projection import Projection
-from domainpy.application.integration import IntegrationEvent, ScheduleIntegartionEvent
+from domainpy.application.integration import (
+    IntegrationEvent,
+    ScheduleIntegartionEvent,
+)
 from domainpy.domain.model.event import DomainEvent
 from domainpy.domain.model.exceptions import DomainError
 from domainpy.domain.repository import IRepository
@@ -59,7 +62,9 @@ class HandlerBus(IBus[ApplicationMessage]):
             except ConcurrencyError as error:
                 _retries = _retries - 1
                 if _retries == 0:
-                    raise ConcurrencyError(f"exahusted {retries} retries: {message}") from error
+                    raise ConcurrencyError(
+                        f"exahusted {retries} retries: {message}"
+                    ) from error
 
     def add_handler(self, handler: ApplicationService) -> None:
         self.handler_bus.attach(ApplicationServiceSubscriber(handler))

@@ -10,7 +10,10 @@ import dataclasses
 
 from domainpy.bootstrap import Environment
 from domainpy.application.command import ApplicationCommand
-from domainpy.application.integration import IntegrationEvent, ScheduleIntegartionEvent
+from domainpy.application.integration import (
+    IntegrationEvent,
+    ScheduleIntegartionEvent,
+)
 from domainpy.domain.model.aggregate import AggregateRoot
 from domainpy.domain.model.event import DomainEvent
 from domainpy.infrastructure.eventsourced.eventstore import EventStore
@@ -162,8 +165,12 @@ class TestEnvironment:
                 tuple(self.integration_events)
             ),
             schedule_events=IntegrationEventsTestExpression(
-                tuple(e for e in self.schedule_events if isinstance(e, ScheduleIntegartionEvent))
-            )
+                tuple(
+                    e
+                    for e in self.schedule_events
+                    if isinstance(e, ScheduleIntegartionEvent)
+                )
+            ),
         )
 
 

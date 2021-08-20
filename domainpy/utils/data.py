@@ -1,6 +1,5 @@
 import sys
 import inspect
-import itertools
 import collections
 import typeguard
 import domainpy.compat_typing as typing

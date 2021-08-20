@@ -3,7 +3,7 @@ from .integration import (
     IntegrationEvent,
     SuccessIntegrationEvent,
     FailureIntegrationEvent,
-    ScheduleIntegartionEvent
+    ScheduleIntegartionEvent,
 )
 from .projection import Projection, projector
 from .service import ApplicationService, handler

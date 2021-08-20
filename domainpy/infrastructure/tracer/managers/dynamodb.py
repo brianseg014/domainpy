@@ -169,8 +169,8 @@ class DynamoDBTraceRecordManager(TraceRecordManager):
 
         try:
             self.client.update_item(**item)
-        except botocore.exceptions.ClientError as error:
-            if error.response["Error"]["Code"] == "ValidationException":
+        except botocore.exceptions.ClientError as boto_error:
+            if boto_error.response["Error"]["Code"] == "ValidationException":
                 item = {
                     "TableName": self.table_name,
                     "Key": {"trace_id": serialize(trace_id)},
@@ -181,6 +181,7 @@ class DynamoDBTraceRecordManager(TraceRecordManager):
                         ":context_resolution": serialize(
                             {
                                 "resolution": Resolution.failure,
+                                "error": error,
                                 "timestamp_resolution": datetime.datetime.timestamp(  # noqa: E501
                                     datetime.datetime.now()
                                 ),
@@ -190,4 +191,4 @@ class DynamoDBTraceRecordManager(TraceRecordManager):
                 }
                 self.client.update_item(**item)
             else:
-                raise error
+                raise boto_error
