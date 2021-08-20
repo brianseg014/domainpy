@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-import json
 import typing
 import requests
+import urllib.parse
 
 from domainpy.exceptions import PublisherError
 from domainpy.application.integration import ScheduleIntegartionEvent
@@ -33,14 +33,14 @@ class AwsSchedulerPublisher(Publisher):
         entries = [
             {
                 'publish_at': getattr(m, m.__publish_at_field__),
-                'payload': json.dumps(record_asdict(self.mapper.serialize(m)))
+                'payload': record_asdict(self.mapper.serialize(m))
             }
             for m in messages
             if isinstance(m, ScheduleIntegartionEvent)
         ]
 
         for entry in entries:
-            result = requests.post(self.url, json=entry)
+            result = requests.post(urllib.parse.urljoin(self.url, 'schedule'), json=entry)
 
             if result.status_code != 200:
                 errors.append(

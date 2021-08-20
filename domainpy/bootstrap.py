@@ -187,7 +187,8 @@ class Environment:
         self.integration_bus.attach(PublisherSubscriber(integration_publisher))
 
         scheduler_publisher = factory.create_scheduler_publisher()
-        self.schedule_bus.attach(PublisherSubscriber(scheduler_publisher))
+        if scheduler_publisher is not None:
+            self.schedule_bus.attach(PublisherSubscriber(scheduler_publisher))
 
     def add_handler(self, handler: ApplicationService):
         self.service_bus.add_handler(handler)
