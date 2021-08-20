@@ -59,7 +59,7 @@ class HandlerBus(IBus[ApplicationMessage]):
             except ConcurrencyError as error:
                 _retries = _retries - 1
                 if _retries == 0:
-                    raise ConcurrencyError("exahusted retries") from error
+                    raise ConcurrencyError(f"exahusted {retries} retries: {message}") from error
 
     def add_handler(self, handler: ApplicationService) -> None:
         self.handler_bus.attach(ApplicationServiceSubscriber(handler))
