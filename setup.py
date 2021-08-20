@@ -16,6 +16,7 @@ setup(
     install_requires=[
         'boto3==1.17.109',
         'typeguard==2.12.1',
+        'requests==2.26.0',
         'typing_extensions==3.10.0.0 ; python_version<="3.7"'
     ]
 )
