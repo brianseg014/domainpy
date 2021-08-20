@@ -75,7 +75,7 @@ class MemorySession(Session):
     def _check_heap_merge(self):
         for record in self.heap:
             if self._check_if_event_exists_in_rm(record):
-                raise UniqueEventRecordBroken()
+                raise UniqueEventRecordBroken(record)
 
     def _check_if_event_exists_in_rm(self, event: EventRecord) -> bool:
         exists = any(
