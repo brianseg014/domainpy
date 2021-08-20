@@ -68,8 +68,6 @@ class DynamoDBTraceRecordManager(TraceRecordManager):
                 "trace_id": serialize(trace_id),
                 "topic": serialize(command_record.topic),
                 "command": serialize(command_record_dict),
-                "status_code": serialize(StatusCode.CODE_200),
-                "number": serialize(0),
                 "resolution": serialize(Resolution.pending),
                 "version": serialize(1),
                 "timestamp": serialize(
