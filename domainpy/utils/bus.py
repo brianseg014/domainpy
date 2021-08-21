@@ -9,17 +9,17 @@ Message = typing.TypeVar("Message")
 class ISubscriber(typing.Generic[Message], abc.ABC):
     @abc.abstractmethod
     def __route__(self, message: Message) -> None:
-        pass
+        pass  # pragma: no cover
 
 
 class IBus(typing.Generic[Message], abc.ABC):
     @abc.abstractmethod
     def attach(self, subscriber: ISubscriber[Message]) -> None:
-        pass
+        pass  # pragma: no cover
 
     @abc.abstractmethod
     def publish(self, message: Message) -> None:
-        pass
+        pass  # pragma: no cover
 
 
 class Bus(IBus[Message]):

@@ -63,7 +63,15 @@ def test_get_records(stream_id, event_record):
     rm.heap.append(event_record)
 
     events = rm.get_records(stream_id)
+    assert len(list(events)) == 1
 
+    events = rm.get_records(stream_id, 
+        topic=event_record.topic,
+        from_timestamp=event_record.timestamp,
+        to_timestamp=event_record.timestamp,
+        from_number=event_record.number,
+        to_number=event_record.number
+    )
     assert len(list(events)) == 1
 
 def test_get_records_filtering_number(stream_id, event_record):

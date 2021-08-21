@@ -50,7 +50,7 @@ class AggregateRoot(DomainEntity):
         self.mutate(event)
 
     def take_snapshot(self) -> DomainEvent:
-        raise NotImplementedError()
+        raise NotImplementedError()  # pragma: no cover
 
     @classmethod
     def create_stream_id(cls, identity: typing.Union[Identity, str]) -> str:

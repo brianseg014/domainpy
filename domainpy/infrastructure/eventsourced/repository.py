@@ -9,7 +9,7 @@ from domainpy.domain.repository import IRepository, TAggregateRoot, TIdentity
 from domainpy.infrastructure.eventsourced.eventstream import EventStream
 from domainpy.utils.bus import Bus, ISubscriber
 
-if typing.TYPE_CHECKING:
+if typing.TYPE_CHECKING:  # pragma: no cover
     from domainpy.infrastructure.eventsourced.eventstore import EventStore
 
 

@@ -11,7 +11,7 @@ from domainpy.infrastructure.records import EventRecord
 class EventRecordManager(abc.ABC):
     @abc.abstractmethod
     def session(self) -> Session:
-        pass
+        pass  # pragma: no cover
 
     @abc.abstractmethod
     def get_records(
@@ -24,7 +24,7 @@ class EventRecordManager(abc.ABC):
         from_number: int = None,
         to_number: int = None,
     ) -> typing.Generator[EventRecord, None, None]:
-        pass
+        pass  # pragma: no cover
 
 
 class Session(contextlib.AbstractContextManager):
@@ -36,12 +36,12 @@ class Session(contextlib.AbstractContextManager):
 
     @abc.abstractmethod
     def append(self, event_record: EventRecord) -> None:
-        pass
+        pass  # pragma: no cover
 
     @abc.abstractmethod
     def commit(self) -> None:
-        pass
+        pass  # pragma: no cover
 
     @abc.abstractmethod
     def rollback(self) -> None:
-        pass
+        pass  # pragma: no cover

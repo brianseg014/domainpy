@@ -6,7 +6,7 @@ import functools
 
 from domainpy.exceptions import DefinitionError
 
-if typing.TYPE_CHECKING:
+if typing.TYPE_CHECKING:  # pragma: no cover
     from domainpy.domain.model.event import DomainEvent
 
 

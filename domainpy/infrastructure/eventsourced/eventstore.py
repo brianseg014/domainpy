@@ -7,7 +7,7 @@ from domainpy.domain.model.event import DomainEvent
 from domainpy.infrastructure.eventsourced.eventstream import EventStream
 from domainpy.infrastructure.mappers import Mapper
 
-if typing.TYPE_CHECKING:
+if typing.TYPE_CHECKING:  # pragma: no cover
     from domainpy.infrastructure.eventsourced.recordmanager import (
         EventRecordManager,
     )

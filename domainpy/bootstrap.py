@@ -144,29 +144,29 @@ class ServiceBus(IBus[ApplicationMessage]):
 class IFactory(abc.ABC):
     @abc.abstractmethod
     def create_projection(self, key: typing.Type[Projection]) -> Projection:
-        pass
+        pass  # pragma: no cover
 
     @abc.abstractmethod
     def create_repository(self, key: typing.Type[IRepository]) -> IRepository:
-        pass
+        pass  # pragma: no cover
 
     @abc.abstractmethod
     def create_domain_service(
         self, key: typing.Type[IDomainService]
     ) -> IDomainService:
-        pass
+        pass  # pragma: no cover
 
     @abc.abstractmethod
     def create_event_publisher(self) -> typing.Optional[IPublisher]:
-        pass
+        pass  # pragma: no cover
 
     @abc.abstractmethod
     def create_integration_publisher(self) -> IPublisher:
-        pass
+        pass  # pragma: no cover
 
     @abc.abstractmethod
     def create_scheduler_publisher(self) -> IPublisher:
-        pass
+        pass  # pragma: no cover
 
 
 TRepository = typing.TypeVar("TRepository", bound=IRepository)

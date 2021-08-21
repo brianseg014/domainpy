@@ -8,7 +8,7 @@ from domainpy.application.integration import ScheduleIntegartionEvent
 from domainpy.infrastructure.publishers.base import Publisher
 from domainpy.infrastructure.transcoder import record_asdict
 
-if typing.TYPE_CHECKING:
+if typing.TYPE_CHECKING:  # pragma: no cover
     from domainpy.typing.infrastructure import (
         InfrastructureMessage,
     )

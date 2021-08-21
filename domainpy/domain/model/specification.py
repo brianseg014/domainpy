@@ -6,8 +6,8 @@ import typing
 
 class Specification(abc.ABC):
     @abc.abstractmethod
-    def is_satisfied_by(self, candidate: typing.Any) -> bool:
-        pass  # pragma: no cover
+    def is_satisfied_by(self, candidate: typing.Any) -> bool:  # pragma: no cover
+        pass
 
     def and_(self, other: Specification) -> ConjunctionSpecification:
         return ConjunctionSpecification(self, other)
@@ -22,7 +22,7 @@ class Specification(abc.ABC):
         return other.is_generalization_of(self)
 
     @abc.abstractmethod
-    def is_generalization_of(self, other: Specification) -> bool:
+    def is_generalization_of(self, other: Specification) -> bool:  # pragma: no cover
         pass
 
     def remainder_unsatisfied_by(
@@ -119,5 +119,5 @@ class NegationSpecification(Specification):
     def is_generalization_of(self, other: Specification) -> bool:
         return False
 
-    def __repr__(self):
+    def __repr__(self):  # pragma: no cover
         return object.__repr__(self) + " of " + repr(self.spec)

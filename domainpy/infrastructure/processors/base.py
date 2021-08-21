@@ -39,8 +39,8 @@ class Processor(abc.ABC):
 
     @abc.abstractmethod
     def get_records(self) -> typing.List[dict]:
-        pass
+        pass  # pragma: no cover
 
     @abc.abstractmethod
     def cleanup(self):
-        pass
+        pass  # pragma: no cover

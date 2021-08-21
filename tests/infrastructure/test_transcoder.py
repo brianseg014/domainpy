@@ -7,7 +7,7 @@ from domainpy.application.integration import IntegrationEvent
 from domainpy.domain.model.event import DomainEvent
 from domainpy.domain.model.value_object import ValueObject
 from domainpy.infrastructure.tracer.tracestore import TraceResolution
-from domainpy.infrastructure.transcoder import Transcoder, MessageType
+from domainpy.infrastructure.transcoder import Transcoder, MessageType, MissingCodecError, MissingFieldValueError, ICodec, record_fromdict
 from domainpy.infrastructure.records import CommandRecord, IntegrationRecord, EventRecord
 
 def test_serialize_command():
@@ -248,6 +248,44 @@ def test_decode_primitive():
     m = t.encode(True, bool)
     assert m == True
 
+def test_encode_optional():
+    t = Transcoder()
+
+    r = t.encode('text', typing.Optional[str])
+    assert r == 'text'
+
+    r = t.encode(None, typing.Optional[str])
+    assert r == None
+
+def test_decode_optional():
+    t = Transcoder()
+
+    r = t.decode('text', typing.Optional[str])
+    assert r == 'text'
+
+    r = t.decode(None, typing.Optional[str])
+    assert r == None
+
+def test_encode_none():
+    t = Transcoder()
+    assert t.encode(None, type(None)) is None
+    
+def test_decode_none():
+    t = Transcoder()
+    assert t.decode(None, type(None)) is None
+
+def test_encode_dict():
+    t = Transcoder()
+
+    r = t.encode({ '0': 'True' }, typing.Dict[int, bool])
+    assert r == { 0: True }
+
+def test_decode_dict():
+    t = Transcoder()
+
+    r = t.decode({ '0': 'True' }, typing.Dict[int, bool])
+    assert r == { 0: True }
+
 @pytest.mark.skipif(sys.version_info < (3,9), reason='requires python 3.9 or higher')
 def test_encode_single_type_sequence_builtin():
     t = Transcoder()
@@ -259,3 +297,94 @@ def test_decode_single_type_sequence():
     t = Transcoder()
     m = t.decode(tuple([ 'x' ]), tuple[str, ...])
     assert m == ('x',)
+
+def test_unknown_codec_raises():
+    class UnknownType:
+        pass
+
+    t = Transcoder()
+    with pytest.raises(MissingCodecError):
+        t.encode(None, UnknownType)
+
+def test_add_new_codec():
+    NewType = type('NewType', (), {})
+
+    class NewTypeCodec(ICodec):
+        def can_handle(self, field_type: typing.Type) -> bool:
+            return field_type is NewType
+
+        def encode(self, obj: typing.Any, field_type: typing.Type) -> typing.Any:
+            return True
+
+        def decode(self, data: dict, field_type: typing.Type) -> typing.Any:
+            return True
+
+    t = Transcoder()
+    t.add_codec(NewTypeCodec())
+
+    assert t.encode(NewType(), NewType)
+    assert t.decode({}, NewType)
+
+def test_command_record_fromdict():
+    dct = {
+        'trace_id': 'tid',
+        'topic': 'ApplicationCommand',
+        'timestamp': 0.0,
+        'version': 1,
+        'message': MessageType.APPLICATION_COMMAND.value,
+        'payload': { }
+    }
+    r = record_fromdict(dct)
+    assert isinstance(r, CommandRecord)
+
+def test_integraton_record_fromdict():
+    dct = {
+        'trace_id': 'tid',
+        'topic': 'IntegrationEvent',
+        'timestamp': 0.0,
+        'version': 1,
+        'resolve': 'success',
+        'error': None,
+        'context': 'some_context',
+        'message': MessageType.INTEGRATION_EVENT.value,
+        'payload': { }
+    }
+    r = record_fromdict(dct)
+    assert isinstance(r, IntegrationRecord)
+
+def test_event_record_fromdict():
+    dct = {
+        'stream_id': 'sid',
+        'number': 0,
+        'topic': 'DomainEvent',
+        'trace_id': 'tid',
+        'timestamp': 0.0,
+        'version': 1,
+        'context': 'some_context',
+        'message': MessageType.DOMAIN_EVENT.value,
+        'payload': { }
+    }
+    r = record_fromdict(dct)
+    assert isinstance(r, EventRecord)
+
+def test_record_fromdict_raises():
+    dct = {
+        'message': 'unknown message'
+    }
+
+    with pytest.raises(ValueError):
+        record_fromdict(dct)
+
+def test_message_type_of():
+    UnknownType = type('UnknownType', (), {})
+
+    Command = type('Command', (ApplicationCommand,), {})
+    Integration = type('Integration', (IntegrationEvent,), {})
+    Event = type('Event', (DomainEvent,), {})
+
+    assert MessageType.of(Command) == MessageType.APPLICATION_COMMAND
+    assert MessageType.of(Integration) == MessageType.INTEGRATION_EVENT
+    assert MessageType.of(Event) == MessageType.DOMAIN_EVENT
+
+    with pytest.raises(TypeError):
+        MessageType.of(UnknownType)

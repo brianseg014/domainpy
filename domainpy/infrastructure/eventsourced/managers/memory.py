@@ -45,9 +45,6 @@ class MemoryEventRecordManager(EventRecordManager):
 
         return (er for er in self.heap if all(f(er) for f in filters))
 
-    def clear(self):
-        self.heap = []
-
 
 class MemorySession(Session):
     def __init__(self, record_manager):  # pylint: disable=all
