@@ -24,7 +24,7 @@ from .publishers.memory import MemoryPublisher
 from .publishers.aws_eventbridge import AwsEventBridgePublisher
 from .publishers.aws_sns import AwsSimpleNotificationServicePublisher
 from .publishers.aws_sqs import AwsSimpleQueueServicePublisher
-from .publishers.aws_scheduler import AwsSchedulerPublisher
+from .publishers.aws_sfn import AwsStepFunctionSchedulerPublisher
 from .tracer.tracestore import TraceStore, TraceResolution
 from .tracer.recordmanager import TraceRecordManager
 from .tracer.managers.dynamodb import DynamoDBTraceRecordManager
@@ -56,7 +56,7 @@ __all__ = [
     "AwsEventBridgePublisher",
     "AwsSimpleNotificationServicePublisher",
     "AwsSimpleQueueServicePublisher",
-    "AwsSchedulerPublisher",
+    "AwsStepFunctionSchedulerPublisher",
     "sqs_batch_processor",
     "TraceStore",
     "TraceResolution",
