@@ -6,7 +6,9 @@ import typing
 
 class Specification(abc.ABC):
     @abc.abstractmethod
-    def is_satisfied_by(self, candidate: typing.Any) -> bool:  # pragma: no cover
+    def is_satisfied_by(
+        self, candidate: typing.Any
+    ) -> bool:  # pragma: no cover
         pass
 
     def and_(self, other: Specification) -> ConjunctionSpecification:
@@ -22,7 +24,9 @@ class Specification(abc.ABC):
         return other.is_generalization_of(self)
 
     @abc.abstractmethod
-    def is_generalization_of(self, other: Specification) -> bool:  # pragma: no cover
+    def is_generalization_of(
+        self, other: Specification
+    ) -> bool:  # pragma: no cover
         pass
 
     def remainder_unsatisfied_by(

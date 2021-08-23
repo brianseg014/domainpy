@@ -9,7 +9,6 @@ from domainpy.infrastructure.tracer.recordmanager import (
     TraceRecordManager,
     ContextResolution,
     Resolution,
-    StatusCode,
 )
 from domainpy.utils.dynamodb import client_deserialize as deserialize
 from domainpy.utils.dynamodb import client_serialize as serialize

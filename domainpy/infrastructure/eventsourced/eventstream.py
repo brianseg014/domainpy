@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import datetime
-import itertools
 import typing
 
 from domainpy.domain.model.event import DomainEvent

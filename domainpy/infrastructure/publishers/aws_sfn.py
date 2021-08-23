@@ -29,10 +29,12 @@ class AwsStepFunctionSchedulerPublisher(Publisher):
         entries = [
             {
                 "stateMachineArn": self.state_machine_arn,
-                "input": json.dumps({
-                    "publish_at": getattr(m, m.__publish_at_field__),
-                    "payload": record_asdict(self.mapper.serialize(m))
-                })
+                "input": json.dumps(
+                    {
+                        "publish_at": getattr(m, m.__publish_at_field__),
+                        "payload": record_asdict(self.mapper.serialize(m)),
+                    }
+                ),
             }
             for m in messages
             if isinstance(m, ScheduleIntegartionEvent)
