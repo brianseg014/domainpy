@@ -32,6 +32,7 @@ class HandlerBus(IBus[ApplicationMessage]):
         self.bus = Bus[ApplicationMessage]()
         self.handler_bus = Bus[ApplicationMessage]()
         self.resolver_bus = Bus[ApplicationMessage]()
+        self.projection_bus = Bus[DomainEvent]()
 
     def attach(self, subscriber: ISubscriber[ApplicationMessage]) -> None:
         self.bus.attach(subscriber)
@@ -48,6 +49,9 @@ class HandlerBus(IBus[ApplicationMessage]):
             raise ValueError("retries should be positive integer")
 
         self.bus.publish(message)
+
+        if isinstance(message, DomainEvent):
+            self.projection_bus.publish(message)
 
         self.resolver_bus.publish(message)
 
@@ -71,6 +75,9 @@ class HandlerBus(IBus[ApplicationMessage]):
 
     def add_resolver(self, resolver: ApplicationService) -> None:
         self.resolver_bus.attach(ApplicationServiceSubscriber(resolver))
+
+    def add_projection(self, projection: Projection) -> None:
+        self.projection_bus.attach(ProjectionSubscriber(projection))
 
 
 class EventBus(IBus[DomainEvent]):
@@ -124,6 +131,7 @@ class ServiceBus(IBus[ApplicationMessage]):
         self.handler_bus.handle(message, retries)
 
     def add_projection(self, projection: Projection) -> None:
+        self.handler_bus.add_projection(projection)
         self.event_bus.add_projection(projection)
 
     def add_handler(self, handler: ApplicationService) -> None:
