@@ -81,12 +81,11 @@ class HandlerBus(IBus[ApplicationMessage]):
 
 
 class EventBus(IBus[DomainEvent]):
-    def __init__(self) -> None:
+    def __init__(self, handler_bus: HandlerBus) -> None:
+        self.handler_bus = handler_bus
+    
         self.bus = Bus[DomainEvent]()
         self.publisher_bus = Bus[DomainEvent]()
-        self.projection_bus = Bus[DomainEvent]()
-        self.resolver_bus = Bus[DomainEvent]()
-        self.handler_bus = Bus[DomainEvent]()
 
     def attach(self, subscriber: ISubscriber[DomainEvent]) -> None:
         self.bus.attach(subscriber)
@@ -95,18 +94,11 @@ class EventBus(IBus[DomainEvent]):
         self.bus.publish(message)
 
         self.publisher_bus.publish(message)
-        self.projection_bus.publish(message)
-        self.resolver_bus.publish(message)
-        self.handler_bus.publish(message)
 
-    def add_projection(self, projection: Projection) -> None:
-        self.projection_bus.attach(ProjectionSubscriber(projection))
-
-    def add_resolver(self, resolver: ApplicationService) -> None:
-        self.resolver_bus.attach(ApplicationServiceSubscriber(resolver))
-
-    def add_handler(self, handler: ApplicationService) -> None:
-        self.handler_bus.attach(ApplicationServiceSubscriber(handler))
+        try:
+            self.handler_bus.publish(message)
+        except DomainError as error:
+            self.handler_bus.publish(error)
 
     def add_publisher(self, publisher: IPublisher) -> None:
         self.publisher_bus.attach(PublisherSubscriber(publisher))
@@ -115,7 +107,7 @@ class EventBus(IBus[DomainEvent]):
 class ServiceBus(IBus[ApplicationMessage]):
     def __init__(self) -> None:
         self.handler_bus = HandlerBus()
-        self.event_bus = EventBus()
+        self.event_bus = EventBus(self.handler_bus)
 
     def attach(self, subscriber: ISubscriber[ApplicationMessage]) -> None:
         self.handler_bus.attach(subscriber)
@@ -132,15 +124,12 @@ class ServiceBus(IBus[ApplicationMessage]):
 
     def add_projection(self, projection: Projection) -> None:
         self.handler_bus.add_projection(projection)
-        self.event_bus.add_projection(projection)
 
     def add_handler(self, handler: ApplicationService) -> None:
         self.handler_bus.add_handler(handler)
-        self.event_bus.add_handler(handler)
 
     def add_resolver(self, resolver: ApplicationService) -> None:
         self.handler_bus.add_resolver(resolver)
-        self.event_bus.add_resolver(resolver)
 
     def add_event_publisher(self, publisher: IPublisher) -> None:
         self.event_bus.add_publisher(publisher)
