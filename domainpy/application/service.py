@@ -90,7 +90,13 @@ class handler:  # pylint: disable=invalid-name
 
         return inner_func
 
-    def trace(self, *messages: typing.Sequence[ApplicationMessage]):
+    def trace(
+        self,
+        *messages: typing.Union[
+            typing.Type[ApplicationMessage],
+            typing.Tuple[typing.Type[ApplicationMessage], ...],
+        ]
+    ):
         def inner_function(func):
             def wrapper(*args, **kwargs):
                 service = args[0]
@@ -105,27 +111,43 @@ class handler:  # pylint: disable=invalid-name
                     new_trace.extend(trace)
                     new_trace.append(args[1])
 
-                    partials = service.__partials__.setdefault(
-                        leadings[0], set()
-                    )
-                    partials.add(
-                        functools.partial(
-                            wrapper,
-                            __trace__=new_trace,
-                            __leadings__=leadings[1:],
+                    _leadings = leadings[0]
+                    if not isinstance(_leadings, tuple):
+                        _leadings = tuple([_leadings])
+
+                    for _leading in _leadings:
+                        partials = service.__partials__.setdefault(
+                            _leading, set()
                         )
-                    )
+                        partials.add(
+                            functools.partial(
+                                wrapper,
+                                __trace__=new_trace,
+                                __leadings__=leadings[1:],
+                            )
+                        )
                     return None
 
                 return func(service, *trace, *args[1:], **kwargs)
 
-            trace_handlers = self.handlers.setdefault(messages[0], set())
-            trace_handlers.add(
-                functools.partial(
-                    wrapper, __trace__=[], __leadings__=messages[1:]
+            _messages = messages[0]
+            if not isinstance(_messages, tuple):
+                _messages = tuple([_messages])
+
+            for _message in _messages:
+                trace_handlers = self.handlers.setdefault(_message, set())
+                trace_handlers.add(
+                    functools.partial(
+                        wrapper, __trace__=[], __leadings__=messages[1:]
+                    )
                 )
-            )
 
             return wrapper
 
         return inner_function
+
+    @classmethod
+    def any(
+        cls, *messages: typing.Tuple[typing.Type[ApplicationMessage], ...]
+    ):
+        return tuple(*messages)

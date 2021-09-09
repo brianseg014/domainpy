@@ -83,7 +83,7 @@ class HandlerBus(IBus[ApplicationMessage]):
 class EventBus(IBus[DomainEvent]):
     def __init__(self, handler_bus: HandlerBus) -> None:
         self.handler_bus = handler_bus
-    
+
         self.bus = Bus[DomainEvent]()
         self.publisher_bus = Bus[DomainEvent]()
 

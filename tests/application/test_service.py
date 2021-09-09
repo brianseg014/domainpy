@@ -1,3 +1,4 @@
+import typing
 import pytest
 import functools
 from unittest import mock
@@ -122,4 +123,32 @@ def test_handler_trace(command, integration, event):
         mock.call(command, integration),
         mock.call(command, event)
     ])
-    
+
+def test_handler_trace_with_any(command, integration, event):
+    class Service(ApplicationService):
+        @handler
+        def handle(self, message: ApplicationMessage) -> None:
+            pass
+
+        @handle.trace(ApplicationCommand, handler.any([IntegrationEvent, DomainEvent]))
+        def _(self, c: ApplicationCommand, e: typing.Union[IntegrationEvent, DomainEvent]):
+            self.proof_of_work(c, e)
+
+        def proof_of_work(self, *args, **kwargs):
+            pass
+
+    service = Service()
+    service.proof_of_work = mock.Mock()
+    service.handle(command)
+    service.handle(integration)
+    service.proof_of_work.assert_has_calls([
+        mock.call(command, integration)
+    ])
+
+    service = Service()
+    service.proof_of_work = mock.Mock()
+    service.handle(command)
+    service.handle(event)
+    service.proof_of_work.assert_has_calls([
+        mock.call(command, event)
+    ])
