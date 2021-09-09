@@ -3,6 +3,7 @@ from .integration import (
     IntegrationEvent,
     SuccessIntegrationEvent,
     FailureIntegrationEvent,
+    CompensateIntegrationEvent,
     ScheduleIntegartionEvent,
 )
 from .projection import Projection, projector
@@ -13,6 +14,7 @@ __all__ = [
     "IntegrationEvent",
     "SuccessIntegrationEvent",
     "FailureIntegrationEvent",
+    "CompensateIntegrationEvent",
     "ScheduleIntegartionEvent",
     "Projection",
     "projector",

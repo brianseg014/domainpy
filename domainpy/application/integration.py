@@ -16,6 +16,7 @@ class IntegrationEvent(SystemData, Traceable, Contextualized):
     class Resolution:
         success = "success"
         failure = "failure"
+        compensate = "compensate"
 
     @classmethod
     def stamp(
@@ -60,6 +61,11 @@ class SuccessIntegrationEvent(IntegrationEvent):
 
 class FailureIntegrationEvent(IntegrationEvent):
     __resolve__: str = IntegrationEvent.Resolution.failure
+
+
+class CompensateIntegrationEvent(IntegrationEvent):
+    __resolve__: str = IntegrationEvent.Resolution.compensate
+    __error__: typing.Optional[str] = None
 
 
 class ScheduleIntegartionEvent(SuccessIntegrationEvent):
