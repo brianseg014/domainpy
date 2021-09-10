@@ -58,34 +58,54 @@ class handler:  # pylint: disable=invalid-name
 
     def command(self, command_type: typing.Type[ApplicationCommand]):
         def inner_function(func):
+            def wrapper(service, message, *args, **kwargs):
+                handle = getattr(message, '__handle__', 'default')
+                if handle == 'default':
+                    func(service, message, *args, **kwargs)
+            
             command_handlers = self.handlers.setdefault(command_type, set())
-            command_handlers.add(func)
+            command_handlers.add(wrapper)
             return func
 
         return inner_function
 
     def integration(self, integration_type: typing.Type[IntegrationEvent]):
         def inner_function(func):
+            def wrapper(service, message, *args, **kwargs):
+                handle = getattr(message, '__handle__', 'default')
+                if handle == 'default':
+                    func(service, message, *args, **kwargs)
+
             integration_handlers = self.handlers.setdefault(
                 integration_type, set()
             )
-            integration_handlers.add(func)
+            integration_handlers.add(wrapper)
             return func
 
         return inner_function
 
     def event(self, event_type: typing.Type[DomainEvent]):
         def inner_function(func):
+            def wrapper(service, message, *args, **kwargs):
+                handle = getattr(message, '__handle__', 'default')
+                if handle == 'default':
+                    func(service, message, *args, **kwargs)
+
             event_handlers = self.handlers.setdefault(event_type, set())
-            event_handlers.add(func)
+            event_handlers.add(wrapper)
             return func
 
         return inner_function
 
     def error(self, error_type: typing.Type[DomainError]):
         def inner_func(func):
+            def wrapper(service, message, *args, **kwargs):
+                handle = getattr(message, '__handle__', 'default')
+                if handle == 'default':
+                    func(service, message, *args, **kwargs)
+
             error_handlers = self.handlers.setdefault(error_type, set())
-            error_handlers.add(func)
+            error_handlers.add(wrapper)
             return func
 
         return inner_func
@@ -126,6 +146,12 @@ class handler:  # pylint: disable=invalid-name
                                 __leadings__=leadings[1:],
                             )
                         )
+                    return None
+
+                # Avoid to call function if the message is being process
+                # due to rebuilding state
+                handle = getattr(args[-1], '__handle__', 'default')
+                if handle == 'rebuilding':
                     return None
 
                 return func(service, *trace, *args[1:], **kwargs)

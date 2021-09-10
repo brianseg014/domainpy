@@ -152,3 +152,34 @@ def test_handler_trace_with_any(command, integration, event):
     service.proof_of_work.assert_has_calls([
         mock.call(command, event)
     ])
+
+def test_handler_async_rebuilding(command, integration):
+    class Service(ApplicationService):
+        @handler
+        def handle(self, message: ApplicationMessage) -> None:
+            pass
+
+        @handle.command(ApplicationCommand)
+        def _(self, c: ApplicationCommand):
+            self.should_not_be_called(c)
+
+        @handle.trace(ApplicationCommand, IntegrationEvent)
+        def _(self, c: ApplicationCommand, i: IntegrationEvent):
+            self.proof_of_work(c, i)
+
+        def should_not_be_called(self, *args, **kwargs):
+            pass
+
+        def proof_of_work(self, *args, **kwargs):
+            pass
+
+    service = Service()
+    service.should_not_be_called = mock.Mock()
+    service.proof_of_work = mock.Mock()
+
+    command.__dict__['__handle__'] = 'rebuilding'
+    service.handle(command)
+    service.handle(integration)
+
+    assert not service.should_not_be_called.mock_calls == [mock.call(command)]
+    assert service.proof_of_work.mock_calls == [mock.call(command, integration)]
