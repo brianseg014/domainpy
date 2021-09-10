@@ -1,5 +1,3 @@
-from domainpy.utils.data import SystemData
 
-
-class DomainError(SystemData, Exception):
+class DomainError(Exception):
     pass
