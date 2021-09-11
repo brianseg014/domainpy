@@ -74,3 +74,11 @@ class PartialBatchError(Exception):
                 }
             )
         )
+
+
+class TraceNotFound(Exception):
+    pass
+
+
+class Timeout(Exception):
+    pass

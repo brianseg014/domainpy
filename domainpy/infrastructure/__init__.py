@@ -25,9 +25,6 @@ from .publishers.aws_eventbridge import AwsEventBridgePublisher
 from .publishers.aws_sns import AwsSimpleNotificationServicePublisher
 from .publishers.aws_sqs import AwsSimpleQueueServicePublisher
 from .publishers.aws_sfn import AwsStepFunctionSchedulerPublisher
-from .tracer.tracestore import TraceStore, TraceResolution
-from .tracer.recordmanager import TraceRecordManager
-from .tracer.managers.dynamodb import DynamoDBTraceRecordManager
 from .records import CommandRecord, EventRecord, IntegrationRecord
 from .transcoder import (
     Transcoder,
@@ -36,6 +33,7 @@ from .transcoder import (
     record_asdict,
     record_fromdict,
 )
+from .tracer.managers.aws_dynamodb import DynamoDBTraceStore
 
 __all__ = [
     "EventStore",
@@ -58,10 +56,7 @@ __all__ = [
     "AwsSimpleQueueServicePublisher",
     "AwsStepFunctionSchedulerPublisher",
     "sqs_batch_processor",
-    "TraceStore",
-    "TraceResolution",
-    "TraceRecordManager",
-    "DynamoDBTraceRecordManager",
+    "DynamoDBTraceStore",
     "Mapper",
     "Transcoder",
     "ICodec",

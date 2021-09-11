@@ -16,7 +16,6 @@ from domainpy.infrastructure.records import (
     EventRecord,
     IntegrationRecord,
 )
-from domainpy.infrastructure.tracer.tracestore import TraceResolution
 from domainpy.typing.infrastructure import InfrastructureMessage
 from domainpy.typing.infrastructure import InfrastructureRecord
 from domainpy.utils.data import get_fields, Field, MISSING
@@ -113,7 +112,6 @@ class Transcoder(abc.ABC):
             _IntegrationEventCodec(self),
             _DomainEventCodec(self),
             _ValueObjectCodec(self),
-            _TraceResolutionCodec(),
         ]
 
     def add_codec(self, codec: ICodec) -> None:
@@ -482,16 +480,3 @@ class _ValueObjectCodec(ICodec):
             dct[field.name] = self.transcoder.decode(field_data, field.type)
 
         return field_type(**dct)
-
-
-class _TraceResolutionCodec(ICodec):
-    def can_handle(self, field_type: typing.Type) -> bool:
-        if isgenerictype(field_type):
-            return False
-        return field_type is TraceResolution
-
-    def encode(self, obj: typing.Any, field_type: typing.Type) -> typing.Any:
-        return obj
-
-    def decode(self, data: dict, field_type: typing.Type) -> typing.Any:
-        raise MissingCodecError(f"unknown codec for {field_type}")

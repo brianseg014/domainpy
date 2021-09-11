@@ -1,102 +1,57 @@
-import dataclasses
+import abc
+import time
 import typing
+import dataclasses
 
-from domainpy.infrastructure.records import CommandRecord
-from domainpy.infrastructure.tracer.recordmanager import (
-    TraceRecordManager,
-    ContextResolution,
-    Resolution,
-)
-from domainpy.utils.bus import Bus
+from domainpy.exceptions import Timeout
+from domainpy.application.command import ApplicationCommand
+from domainpy.application.integration import IntegrationEvent
+from domainpy.infrastructure.records import IntegrationRecord
+from domainpy.utils import Bus
 
 
-@dataclasses.dataclass(frozen=True)
+@dataclasses.dataclass
 class TraceResolution:
-    trace_id: str
+    class Resolutions(IntegrationEvent.Resolution):
+        pending = "pending"
+
     resolution: str
-    errors: typing.Optional[typing.Tuple[str, ...]] = None
+    errors: typing.Tuple[str, ...]
 
 
 class TraceStore:
-    def __init__(
-        self,
-        record_manager: TraceRecordManager,
-        resolver_bus: Bus[TraceResolution],
-    ) -> None:
-        self.record_manager = record_manager
-        self.resolver_bus = resolver_bus
 
-    def store_in_progress(
-        self,
-        trace_id: str,
-        record: CommandRecord,
-        contexts_resolutions: typing.Tuple[str, ...],
-    ) -> None:
-        self.record_manager.store_in_progress(
-            trace_id,
-            record,
-            contexts_resolutions,
-        )
-        self.trace_resolution(trace_id)
+    def watch_trace_resolution(self, trace_id: str, *, integration_bus: Bus = None, timeout_ms: int = 3000, backoff_ms: int = 100) -> TraceResolution:
+        start_time = time.time()
 
-    def store_context_success(self, trace_id: str, context: str) -> None:
-        self.record_manager.store_context_resolve_success(trace_id, context)
-        self.trace_resolution(trace_id)
+        while True:
+            if (time.time() - start_time) * 1000 > timeout_ms:
+                raise Timeout()
 
-    def store_context_failure(
-        self, trace_id: str, context: str, error: str
-    ) -> None:
-        self.record_manager.store_context_resolve_failure(
-            trace_id, context, error
-        )
-        self.trace_resolution(trace_id)
+            trace_resolution = self.get_resolution(trace_id)
+            if trace_resolution.resolution != TraceResolution.Resolutions.pending:
+                if integration_bus is not None:
+                    integrations = list(self.get_integrations(trace_id))
+                    for i in integrations:
+                        integration_bus.publish(i)
 
-    def trace_resolution(self, trace_id: str) -> None:
-        trace_contexts = tuple(
-            self.record_manager.get_trace_contexts(trace_id)
-        )
+                return trace_resolution
 
-        if self.is_all_trace_context_resolved(trace_contexts):
-            if self.is_all_trace_context_resolved_success(trace_contexts):
+            time.sleep(backoff_ms / 1000)
 
-                self.record_manager.store_resolve_success(trace_id)
-                self.resolver_bus.publish(
-                    TraceResolution(trace_id, Resolution.success)
-                )
 
-            else:
+    @abc.abstractmethod
+    def get_resolution(self, trace_id: str) -> TraceResolution:
+        pass
 
-                self.record_manager.store_resolve_failure(trace_id)
-                self.resolver_bus.publish(
-                    TraceResolution(
-                        trace_id,
-                        Resolution.failure,
-                        errors=tuple(self.get_trace_errors(trace_contexts)),
-                    )
-                )
+    @abc.abstractmethod
+    def get_integrations(self, trace_id: str) -> typing.Generator[IntegrationEvent, None, None]:
+        pass
 
-    @classmethod
-    def is_all_trace_context_resolved(
-        cls, trace_contexts: typing.Tuple[ContextResolution, ...]
-    ) -> bool:
-        return all(
-            tc.resolution != Resolution.pending for tc in trace_contexts
-        )
+    @abc.abstractmethod
+    def start_trace(self, command: ApplicationCommand) -> None:
+        pass
 
-    @classmethod
-    def is_all_trace_context_resolved_success(
-        cls, trace_contexts: typing.Tuple[ContextResolution, ...]
-    ) -> bool:
-        return all(
-            tc.resolution == Resolution.success for tc in trace_contexts
-        )
-
-    @classmethod
-    def get_trace_errors(
-        cls, trace_contexts: typing.Tuple[ContextResolution, ...]
-    ) -> typing.Generator[str, None, None]:
-        return (
-            tc.error
-            for tc in trace_contexts
-            if tc.resolution == Resolution.failure and tc.error is not None
-        )
+    @abc.abstractmethod
+    def resolve_context(self, integration: typing.Union[IntegrationEvent, IntegrationRecord]) -> None:
+        pass
