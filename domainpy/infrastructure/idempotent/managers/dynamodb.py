@@ -1,5 +1,6 @@
 import typing
 import boto3  # type: ignore
+import datetime
 
 from domainpy.exceptions import IdempotencyItemError
 from domainpy.infrastructure.idempotent.recordmanager import (
@@ -15,11 +16,12 @@ class DynamoDBIdempotencyRecordManager(IdempotencyRecordManager):
         self.client = boto3.client("dynamodb", **kwargs)
 
     def store_in_progress(self, record: dict):
+        epoch = datetime.datetime.utcnow().timestamp()
         item = {
             "TableName": self.table_name,
             "Item": {
                 "trace_id": serialize(record["trace_id"]),
-                "timestamp": serialize(record["timestamp"]),
+                "timestamp": serialize(epoch),
                 "topic": serialize(record["topic"]),
                 "payload": serialize(record),
                 "status": serialize("progress"),
