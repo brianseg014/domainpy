@@ -20,8 +20,14 @@ class TraceResolution:
 
 
 class TraceStore:
-
-    def watch_trace_resolution(self, trace_id: str, *, integration_bus: Bus = None, timeout_ms: int = 3000, backoff_ms: int = 100) -> TraceResolution:
+    def watch_trace_resolution(
+        self,
+        trace_id: str,
+        *,
+        integration_bus: Bus = None,
+        timeout_ms: int = 3000,
+        backoff_ms: int = 100
+    ) -> TraceResolution:
         start_time = time.time()
 
         while True:
@@ -29,7 +35,10 @@ class TraceStore:
                 raise Timeout()
 
             trace_resolution = self.get_resolution(trace_id)
-            if trace_resolution.resolution != TraceResolution.Resolutions.pending:
+            if (
+                trace_resolution.resolution
+                != TraceResolution.Resolutions.pending
+            ):
                 if integration_bus is not None:
                     integrations = list(self.get_integrations(trace_id))
                     for i in integrations:
@@ -39,13 +48,14 @@ class TraceStore:
 
             time.sleep(backoff_ms / 1000)
 
-
     @abc.abstractmethod
     def get_resolution(self, trace_id: str) -> TraceResolution:
         pass
 
     @abc.abstractmethod
-    def get_integrations(self, trace_id: str) -> typing.Generator[IntegrationEvent, None, None]:
+    def get_integrations(
+        self, trace_id: str
+    ) -> typing.Generator[IntegrationEvent, None, None]:
         pass
 
     @abc.abstractmethod
@@ -53,5 +63,7 @@ class TraceStore:
         pass
 
     @abc.abstractmethod
-    def resolve_context(self, integration: typing.Union[IntegrationEvent, IntegrationRecord]) -> None:
+    def resolve_context(
+        self, integration: typing.Union[IntegrationEvent, IntegrationRecord]
+    ) -> None:
         pass

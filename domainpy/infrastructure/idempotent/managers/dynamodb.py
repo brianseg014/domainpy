@@ -1,6 +1,6 @@
 import typing
-import boto3  # type: ignore
 import datetime
+import boto3  # type: ignore
 
 from domainpy.exceptions import IdempotencyItemError
 from domainpy.infrastructure.idempotent.recordmanager import (

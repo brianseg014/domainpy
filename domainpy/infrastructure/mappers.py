@@ -17,25 +17,31 @@ class Mapper:
         self._map: typing.Dict[str, typing.Any] = {}
 
     def register(self, cls):
-        context = getattr(cls, '__context__', 'default')
+        context = getattr(cls, "__context__", "default")
         topic = cls.__name__
 
-        default = f'default:{topic}'
-        contexted = f'{context}:{topic}'
+        default = f"default:{topic}"
+        contexted = f"{context}:{topic}"
         if contexted in self._map:
             if default == contexted:
-                raise DefinitionError(f'Ambiguous name. Consider add __context__ field for disambiguation.')
+                raise DefinitionError(
+                    "Ambiguous name. "
+                    "Consider add __context__ field for disambiguation."
+                )
 
         self._map[default] = cls
         self._map[contexted] = cls
         return cls
 
-    def get(self, topic: str, context: str = 'default') -> type:
-        default = f'default:{topic}'
-        contexted = f'{context}:{topic}'
+    def get(
+        self, topic: str, context: str = "default"
+    ) -> typing.Optional[type]:
+        default = f"default:{topic}"
+        contexted = f"{context}:{topic}"
         if default in self._map:
             return self._map[default]
-        elif contexted in self._map:
+
+        if contexted in self._map:
             return self._map[contexted]
 
         return None
@@ -50,13 +56,11 @@ class Mapper:
     def deserialize(
         self, record: InfrastructureRecord
     ) -> InfrastructureMessage:
-        context = getattr(record, 'context', 'default')
+        context = getattr(record, "context", "default")
         topic = record.topic
 
         message_type = self.get(topic, context)
         if message_type is None:
-            raise MessageTypeNotFoundError(
-                f"unable to find type {topic}"
-            )
+            raise MessageTypeNotFoundError(f"unable to find type {topic}")
 
         return self.transcoder.deserialize(record, message_type)

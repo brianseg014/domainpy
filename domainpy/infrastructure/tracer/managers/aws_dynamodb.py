@@ -1,25 +1,33 @@
-from os import error
 import typing
 import datetime
 import boto3  # type: ignore
 
-from domainpy.exceptions import IdempotencyItemError, DefinitionError, TraceNotFound
+from domainpy.exceptions import (
+    IdempotencyItemError,
+    DefinitionError,
+    TraceNotFound,
+)
 from domainpy.application.command import ApplicationCommand
 from domainpy.application.integration import IntegrationEvent
-from domainpy.infrastructure.tracer.tracestore import TraceStore, TraceResolution
+from domainpy.infrastructure.tracer.tracestore import (
+    TraceStore,
+    TraceResolution,
+)
 from domainpy.infrastructure.records import CommandRecord, IntegrationRecord
 from domainpy.infrastructure.mappers import Mapper
 from domainpy.infrastructure.transcoder import record_asdict, record_fromdict
-from domainpy.utils.dynamodb import client_serialize as serialize, client_deserialize as deserialize
+from domainpy.utils.dynamodb import (
+    client_serialize as serialize,
+    client_deserialize as deserialize,
+)
 
 
 class DynamoDBTraceStore(TraceStore):
-
     def __init__(self, mapper: Mapper, table_name: str, **kwargs):
         self.mapper = mapper
         self.table_name = table_name
 
-        self.client = boto3.client('dynamodb', **kwargs)
+        self.client = boto3.client("dynamodb", **kwargs)
 
     def get_resolution(self, trace_id: str) -> TraceResolution:
         item = {
@@ -29,23 +37,29 @@ class DynamoDBTraceStore(TraceStore):
             "ConsistentRead": True,
         }
         result = self.client.get_item(**item)
-        
-        if 'Item' not in result:
+
+        if "Item" not in result:
             raise TraceNotFound()
-        
-        resolution = deserialize(result['Item']['resolution'])
-        contexts_resolutions = deserialize(result['Item']['contexts_resolutions'])
+
+        resolution = deserialize(result["Item"]["resolution"])
+        contexts_resolutions = deserialize(
+            result["Item"]["contexts_resolutions"]
+        )
 
         return TraceResolution(
             resolution=resolution,
-            errors=tuple([
-                cr['error'] 
-                for cr in contexts_resolutions.values()
-                if cr['error']  is not None
-            ])
+            errors=tuple(
+                [
+                    cr["error"]
+                    for cr in contexts_resolutions.values()
+                    if cr["error"] is not None
+                ]
+            ),
         )
 
-    def get_integrations(self, trace_id: str) -> typing.Generator[IntegrationEvent, None, None]:
+    def get_integrations(
+        self, trace_id: str
+    ) -> typing.Generator[IntegrationEvent, None, None]:
         item = {
             "TableName": self.table_name,
             "Key": {"trace_id": serialize(trace_id)},
@@ -54,22 +68,27 @@ class DynamoDBTraceStore(TraceStore):
         }
         result = self.client.get_item(**item)
 
-        if 'Item' not in result:
+        if "Item" not in result:
             raise TraceNotFound()
-        
-        integrations = deserialize(result['Item']['integrations'])
 
-        return (
-            self.mapper.deserialize(record_fromdict(i))
-            for i in integrations
+        integrations = deserialize(result["Item"]["integrations"])
+
+        return typing.cast(
+            typing.Generator[IntegrationEvent, None, None],
+            (
+                self.mapper.deserialize(record_fromdict(i))
+                for i in integrations
+            ),
         )
-            
 
     def start_trace(self, command: ApplicationCommand) -> None:
         try:
-            resolvers = getattr(command, '__resolvers__')
-        except AttributeError:
-            raise DefinitionError(f'command should have __resolvers__: {command.__class__.__name__}')
+            resolvers = getattr(command, "__resolvers__")
+        except AttributeError as error:
+            raise DefinitionError(
+                "command should have __resolvers__: "
+                f"{command.__class__.__name__}"
+            ) from error
 
         command_record = typing.cast(
             CommandRecord, self.mapper.serialize(command)
@@ -93,31 +112,34 @@ class DynamoDBTraceStore(TraceStore):
                 "version": serialize(1),
                 "timestamp": serialize(epoch),
                 "timestamp_resolution": serialize(epoch_resolution),
-                "contexts_resolutions": serialize({
-                    context: {
-                        'context': context,
-                        'resolution': TraceResolution.Resolutions.pending,
-                        'error': None,
-                        'timestamp': None
+                "contexts_resolutions": serialize(
+                    {
+                        context: {
+                            "context": context,
+                            "resolution": TraceResolution.Resolutions.pending,
+                            "error": None,
+                            "timestamp": None,
+                        }
+                        for context in resolvers
                     }
-                    for context in resolvers
-                }),
+                ),
                 "contexts_resolutions_unexpected": serialize({}),
-                "integrations": serialize([])
+                "integrations": serialize([]),
             },
-            "ConditionExpression": "attribute_not_exists(trace_id)"
+            "ConditionExpression": "attribute_not_exists(trace_id)",
         }
 
         try:
             self.client.put_item(**item)
-        except self.client.exceptions.ConditionalCheckFailedException:
-            raise IdempotencyItemError()
+        except self.client.exceptions.ConditionalCheckFailedException as error:
+            raise IdempotencyItemError() from error
 
-    def resolve_context(self, integration: typing.Union[IntegrationEvent, IntegrationRecord]) -> None:
+    def resolve_context(
+        self, integration: typing.Union[IntegrationEvent, IntegrationRecord]
+    ) -> None:
         if isinstance(integration, IntegrationEvent):
             integration_record = typing.cast(
-                IntegrationRecord,
-                self.mapper.serialize(integration)
+                IntegrationRecord, self.mapper.serialize(integration)
             )
         elif isinstance(integration, IntegrationRecord):
             integration_record = integration
@@ -128,34 +150,38 @@ class DynamoDBTraceStore(TraceStore):
             try:
                 # Unexpected context
                 self._try_update_with_unexpected_context(integration_record)
-            except self.client.exceptions.ConditionalCheckFailedException:
-                raise TraceNotFound()
+            except (
+                self.client.exceptions.ConditionalCheckFailedException
+            ) as error:
+                raise TraceNotFound() from error
 
         self._safe_try_to_resolve_trace(integration_record.trace_id)
 
-    def _try_update_with_expected_context(self, integration_record: IntegrationRecord):
+    def _try_update_with_expected_context(
+        self, integration_record: IntegrationRecord
+    ):
         epoch = datetime.datetime.utcnow().timestamp()
         item = {
-            'TableName': self.table_name,
-            'Key': {
-                'trace_id': serialize(integration_record.trace_id)
+            "TableName": self.table_name,
+            "Key": {"trace_id": serialize(integration_record.trace_id)},
+            "UpdateExpression": "SET "
+            "   contexts_resolutions.#context = :context_resolution, "
+            "   integrations = list_append(integrations, :new_integrations)",
+            "ExpressionAttributeNames": {
+                "#context": integration_record.context
             },
-            'UpdateExpression': 'SET '
-            '   contexts_resolutions.#context = :context_resolution, '
-            '   integrations = list_append(integrations, :new_integrations)',
-            'ExpressionAttributeNames': {
-                '#context': integration_record.context
-            },
-            'ExpressionAttributeValues': {
-                ':context_resolution': serialize({
-                    'context': integration_record.context,
-                    'resolution': integration_record.resolve,
-                    'error': integration_record.error,
-                    'timestamp': epoch
-                }),
-                ':new_integrations': serialize([
-                    record_asdict(integration_record)
-                ])
+            "ExpressionAttributeValues": {
+                ":context_resolution": serialize(
+                    {
+                        "context": integration_record.context,
+                        "resolution": integration_record.resolve,
+                        "error": integration_record.error,
+                        "timestamp": epoch,
+                    }
+                ),
+                ":new_integrations": serialize(
+                    [record_asdict(integration_record)]
+                ),
             },
             # "ConditionExpression": """
             # attribute_exists(trace_id)
@@ -164,29 +190,31 @@ class DynamoDBTraceStore(TraceStore):
         }
         self.client.update_item(**item)
 
-    def _try_update_with_unexpected_context(self, integration_record: IntegrationRecord):
+    def _try_update_with_unexpected_context(
+        self, integration_record: IntegrationRecord
+    ):
         epoch = datetime.datetime.utcnow().timestamp()
         item = {
-            'TableName': self.table_name,
-            'Key': {
-                'trace_id': serialize(integration_record.trace_id)
+            "TableName": self.table_name,
+            "Key": {"trace_id": serialize(integration_record.trace_id)},
+            "UpdateExpression": "SET "
+            "   contexts_resolutions_unexpected.#context = :context_resolution, "  # noqa: E501
+            "   integrations = list_append(integrations, :new_integrations)",
+            "ExpressionAttributeNames": {
+                "#context": integration_record.context
             },
-            'UpdateExpression': 'SET '
-            '   contexts_resolutions_unexpected.#context = :context_resolution, '
-            '   integrations = list_append(integrations, :new_integrations)',
-            'ExpressionAttributeNames': {
-                '#context': integration_record.context
-            },
-            'ExpressionAttributeValues': {
-                ':context_resolution': serialize({
-                    'context': integration_record.context,
-                    'resolution': integration_record.resolve,
-                    'error': integration_record.error,
-                    'timestamp': epoch
-                }),
-                ':new_integrations': serialize([
-                    record_asdict(integration_record)
-                ])
+            "ExpressionAttributeValues": {
+                ":context_resolution": serialize(
+                    {
+                        "context": integration_record.context,
+                        "resolution": integration_record.resolve,
+                        "error": integration_record.error,
+                        "timestamp": epoch,
+                    }
+                ),
+                ":new_integrations": serialize(
+                    [record_asdict(integration_record)]
+                ),
             },
             # "ConditionExpression": """
             # attribute_exists(trace_id)
@@ -197,26 +225,25 @@ class DynamoDBTraceStore(TraceStore):
     def _safe_try_to_resolve_trace(self, trace_id: str) -> bool:
         item = {
             "TableName": self.table_name,
-            "Key": { 
-                "trace_id": serialize(trace_id)
-            },
+            "Key": {"trace_id": serialize(trace_id)},
             "ProjectionExpression": "contexts_resolutions",
             "ConsistentRead": True,
         }
         result = self.client.get_item(**item)
 
-        contexts_resolutions = deserialize(result['Item']['contexts_resolutions'])
+        contexts_resolutions = deserialize(
+            result["Item"]["contexts_resolutions"]
+        )
 
         # All not pending but not necessarily all same resolution
         # if no resolutions expected, True
         at_least_partial_resolved = all(
-            cr['resolution'] != TraceResolution.Resolutions.pending
+            cr["resolution"] != TraceResolution.Resolutions.pending
             for cr in contexts_resolutions.values()
         )
         if at_least_partial_resolved:
             resolutions = set(
-                cr['resolution']
-                for cr in contexts_resolutions.values()
+                cr["resolution"] for cr in contexts_resolutions.values()
             )
 
             # If no resolutions expected, success
@@ -230,16 +257,14 @@ class DynamoDBTraceStore(TraceStore):
                 resolution = list(resolutions)[0]
                 item = {
                     "TableName": self.table_name,
-                    "Key": { 
-                        "trace_id": serialize(trace_id)
+                    "Key": {"trace_id": serialize(trace_id)},
+                    "UpdateExpression": "SET "
+                    "   resolution = :resolution, "
+                    "   timestamp_resolution = :timestamp_resolution",
+                    "ExpressionAttributeValues": {
+                        ":resolution": serialize(resolution),
+                        ":timestamp_resolution": serialize(epoch_resolution),
                     },
-                    'UpdateExpression': 'SET '
-                    '   resolution = :resolution, '
-                    '   timestamp_resolution = :timestamp_resolution',
-                    'ExpressionAttributeValues': {
-                        ':resolution': serialize(resolution),
-                        ':timestamp_resolution': serialize(epoch_resolution)
-                    }
                 }
                 self.client.update_item(**item)
                 return True
