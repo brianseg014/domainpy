@@ -9,6 +9,7 @@ if typing.TYPE_CHECKING:  # pragma: no cover
     from domainpy.typing.application import ApplicationMessage  # type: ignore # noqa: E501
     from domainpy.application.command import ApplicationCommand
     from domainpy.application.integration import IntegrationEvent
+    from domainpy.application.query import ApplicationQuery
     from domainpy.domain.model.event import DomainEvent
     from domainpy.domain.model.exceptions import DomainError
 
@@ -80,6 +81,21 @@ class handler:  # pylint: disable=invalid-name
                 integration_type, set()
             )
             integration_handlers.add(wrapper)
+            return func
+
+        return inner_function
+
+    def query(self, query_type: typing.Type[ApplicationQuery]):
+        def inner_function(func):
+            def wrapper(service, message, *args, **kwargs):
+                handle = getattr(message, "__handle__", "default")
+                if handle == "default":
+                    func(service, message, *args, **kwargs)
+
+            query_handlers = self.handlers.setdefault(
+                query_type, set()
+            )
+            query_handlers.add(wrapper)
             return func
 
         return inner_function

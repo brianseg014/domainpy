@@ -6,6 +6,7 @@ from .integration import (
     CompensateIntegrationEvent,
     ScheduleIntegartionEvent,
 )
+from .query import ApplicationQuery
 from .projection import Projection, projector
 from .service import ApplicationService, handler
 
@@ -16,6 +17,7 @@ __all__ = [
     "FailureIntegrationEvent",
     "CompensateIntegrationEvent",
     "ScheduleIntegartionEvent",
+    "ApplicationQuery",
     "Projection",
     "projector",
     "ApplicationService",
