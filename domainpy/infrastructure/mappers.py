@@ -38,11 +38,11 @@ class Mapper:
     ) -> typing.Optional[type]:
         default = f"default:{topic}"
         contexted = f"{context}:{topic}"
-        if default in self._map:
-            return self._map[default]
-
         if contexted in self._map:
             return self._map[contexted]
+
+        if default in self._map:
+            return self._map[default]
 
         return None
 
