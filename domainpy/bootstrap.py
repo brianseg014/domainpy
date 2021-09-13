@@ -284,7 +284,7 @@ class GatewayEnvironment(ApplicationService):
         ]()
 
         self.command_publisher_bus = Bus[ApplicationCommand]()
-        command_publisher = self.factory.create_response_publisher()
+        command_publisher = self.factory.create_command_publisher()
         self.command_publisher_bus.attach(
             PublisherSubscriber(command_publisher)
         )
@@ -300,3 +300,10 @@ class GatewayEnvironment(ApplicationService):
 
     def add_resolver(self, resolver: ApplicationService) -> None:
         self.resolver_bus.attach(ApplicationServiceSubscriber(resolver))
+
+    def handle(self, message: ApplicationMessage) -> None:
+        if isinstance(message, (ApplicationCommand, IntegrationEvent)):
+            self.resolver_bus.publish(message)
+
+        if isinstance(message, ApplicationCommand):
+            self.handler_bus.publish(message)
