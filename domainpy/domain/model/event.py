@@ -42,7 +42,7 @@ class DomainEvent(SystemData, Traceable, Contextualized):
             cls,
             __stream_id__=stream_id,
             __number__=number,
-            __timestamp__=datetime.datetime.timestamp(datetime.datetime.now()),
+            __timestamp__=datetime.datetime.utcnow().timestamp(),
             __trace_id__=_trace_id,
             __context__=_context,
         )

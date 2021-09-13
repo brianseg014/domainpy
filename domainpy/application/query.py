@@ -17,7 +17,7 @@ class ApplicationQuery(SystemData, Traceable):
 
         return functools.partial(
             cls,
-            __timestamp__=datetime.datetime.timestamp(datetime.datetime.now()),
+            __timestamp__=datetime.datetime.utcnow().timestamp(),
             __trace_id__=_trace_id,
         )
 

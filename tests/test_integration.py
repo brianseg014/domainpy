@@ -1,3 +1,4 @@
+import abc
 import typing
 
 from domainpy.application import (
@@ -5,7 +6,8 @@ from domainpy.application import (
     handler, 
     ApplicationCommand, 
     IntegrationEvent,
-    Projection
+    Projection,
+    projector
 )
 from domainpy.domain.model import (
     AggregateRoot, 
@@ -31,8 +33,8 @@ from domainpy.utils import (
     Registry,
     Bus,
 )
-from domainpy.bootstrap import Environment, IFactory
-from domainpy.test.bootstrap import EventSourcedProcessor, TestEnvironment
+from domainpy.bootstrap import ContextEnvironment, IContextFactory
+from domainpy.test.bootstrap import EventSourcedProcessor, TestContextEnvironment
 from domainpy.typing.application import ApplicationMessage
 
 
@@ -152,6 +154,21 @@ def test_all_system():
                 )
             )
 
+    ## Projection
+    class PetStoreProjection(Projection):
+        @projector
+        def project(self, event: DomainEvent):
+            pass
+
+        @project.event(PetStoreRegistered)
+        def _(self, e: PetStoreRegistered):
+            self.project_pet_store_registered(e)
+
+        @abc.abstractmethod
+        def project_pet_store_registered(self, e: PetStoreRegistered):
+            pass
+
+
     ############################## Infrastructure Layer ##################################
 
     ## Repositories
@@ -159,15 +176,22 @@ def test_all_system():
     class EventSourcedPetStoreRepository(PetStoreRepository, Adapter):
         pass
 
+    ## Projections
+    class PetStoreMemoryProjection(PetStoreProjection):
+        def project_pet_store_registered(self, e: PetStoreRegistered):
+            # Should project in some way
+            pass
+
     ################################## Bootstrap ######################################
 
-    class IntegrationTestFactory(IFactory):
+    class IntegrationTestFactory(IContextFactory):
 
         def __init__(self, event_store: EventStore):
             self.event_store = event_store
 
         def create_projection(self, key: typing.Type[Projection]) -> Projection:
-            pass
+            if key is PetStoreProjection:
+                return PetStoreMemoryProjection()
 
         def create_repository(self, key: typing.Type[IRepository]) -> IRepository:
             if key is PetStoreRepository:
@@ -182,7 +206,7 @@ def test_all_system():
         def create_integration_publisher(self) -> IPublisher:
             return MemoryPublisher()
 
-        def create_scheduler_publisher(self) -> IPublisher:
+        def create_schedule_publisher(self) -> IPublisher:
             return MemoryPublisher()
 
     event_store = EventStore(
@@ -191,17 +215,19 @@ def test_all_system():
     )
 
     factory = IntegrationTestFactory(event_store)
-    env = Environment('ctx', factory)
+    env = ContextEnvironment('ctx', factory)
+
+    env.add_projection(PetStoreProjection)
     
     env.add_repository(PetStoreRepository)
 
     env.add_handler(PetStoreSerivce(env.registry))
 
-    env.add_resolver(PetStoreResolver(env.integration_bus))
+    env.add_resolver(PetStoreResolver(env.integration_publisher_bus))
 
     ################################## Some tests ######################################
 
-    adap = TestEnvironment(env, EventSourcedProcessor(event_store))
+    adap = TestContextEnvironment(env, EventSourcedProcessor(event_store))
     adap.given(
         adap.stamp_event(
             PetStoreRegistered, PetStore, PetStoreId.create().identity
@@ -216,5 +242,5 @@ def test_all_system():
             pet_store_name='ark'
         )
     )
-    adap.then.domain_events.assert_has_event_n_times(PetStoreRegistered, times=2)
+    adap.then.domain_events.assert_has_event_n_times(PetStoreRegistered, times=1)
     adap.then.integration_events.assert_has_integration(CreatePetStoreSucceeded)

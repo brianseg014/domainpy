@@ -8,7 +8,7 @@ import typing
 import itertools
 import dataclasses
 
-from domainpy.bootstrap import Environment
+from domainpy.bootstrap import ContextEnvironment, ContextMapEnvironment
 from domainpy.application.command import ApplicationCommand
 from domainpy.application.integration import (
     IntegrationEvent,
@@ -24,10 +24,15 @@ from domainpy.typing.application import ApplicationMessage
 
 
 @dataclasses.dataclass(frozen=True)
-class Then:
+class ContextThen:
     domain_events: DomainEventsTestExpression
     integration_events: IntegrationEventsTestExpression
     schedule_events: IntegrationEventsTestExpression
+
+
+@dataclasses.dataclass(frozen=True)
+class ContextMapThen:
+    integration_events: IntegrationEventsTestExpression
 
 
 class EventProcessor(abc.ABC):
@@ -59,8 +64,7 @@ class EventSourcedProcessor(EventProcessor):
 
 
 class LeanProcessor(EventProcessor):
-    def __init__(self, environment: Environment) -> None:
-        self.environment = environment
+    def __init__(self) -> None:
         self.sequence = itertools.count(start=1, step=1)
 
     def process(self, event: DomainEvent) -> None:
@@ -72,21 +76,23 @@ class LeanProcessor(EventProcessor):
         return next(self.sequence)
 
 
-class TestEnvironment:
+class TestContextEnvironment:
     def __init__(
-        self, environment: Environment, event_processor: EventProcessor
+        self, environment: ContextEnvironment, event_processor: EventProcessor
     ) -> None:
         self.environment = environment
         self.event_processor = event_processor
 
         self.domain_events = BasicSubscriber()
-        self.environment.service_bus.event_bus.attach(self.domain_events)
+        self.environment.event_publisher_bus.attach(self.domain_events)
 
         self.integration_events = BasicSubscriber()
-        self.environment.integration_bus.attach(self.integration_events)
+        self.environment.integration_publisher_bus.attach(
+            self.integration_events
+        )
 
         self.schedule_events = BasicSubscriber()
-        self.environment.schedule_bus.attach(self.schedule_events)
+        self.environment.scheduler_publisher_bus.attach(self.schedule_events)
 
     def next_event_number(
         self, aggregate_type: typing.Type[AggregateRoot], aggregate_id: str
@@ -149,15 +155,23 @@ class TestEnvironment:
         )
 
     def given(self, event: DomainEvent) -> None:
+        # Mutate aggregate state
         self.event_processor.process(event)
-        self.environment.service_bus.event_bus.publish(event)
+
+        # Mutate projection
+        self.environment.projection_bus.publish(event)
 
     def when(self, message: ApplicationMessage) -> None:
-        self.environment.handle(message, retries=1)
+        # User won't have to write two lines to
+        # react to a domain event
+        if isinstance(message, DomainEvent):
+            self.given(message)
+
+        self.environment.handle(message)
 
     @property
-    def then(self) -> Then:
-        return Then(
+    def then(self) -> ContextThen:
+        return ContextThen(
             domain_events=DomainEventsTestExpression(
                 tuple(self.domain_events)
             ),
@@ -171,6 +185,46 @@ class TestEnvironment:
                     if isinstance(e, ScheduleIntegartionEvent)
                 )
             ),
+        )
+
+
+class TestContextMapEnvironment:
+    def __init__(self, environment: ContextMapEnvironment):
+        self.environment = environment
+
+        self.integration_events = BasicSubscriber()
+        self.environment.integration_publisher_bus.attach(
+            self.integration_events
+        )
+
+        self.sequences: typing.Dict[str, typing.Iterator] = {}
+
+    def next_event_number(self, aggregate_id: str) -> int:
+        sequence = self.sequences.setdefault(
+            aggregate_id, itertools.count(start=1, step=1)
+        )
+        return next(sequence)
+
+    def stamp_event(
+        self, event_type: typing.Type[DomainEvent], aggregate_id: str
+    ):
+        return event_type.stamp(
+            stream_id=AggregateRoot.create_stream_id(aggregate_id),
+            number=self.next_event_number(aggregate_id),
+        )
+
+    def given(self, event: DomainEvent) -> None:
+        self.environment.projection_bus.publish(event)
+
+    def when(self, event: DomainEvent) -> None:
+        self.environment.handle(event)
+
+    @property
+    def then(self) -> ContextMapThen:
+        return ContextMapThen(
+            integration_events=IntegrationEventsTestExpression(
+                tuple(self.integration_events)
+            )
         )
 
 

@@ -92,9 +92,7 @@ class handler:  # pylint: disable=invalid-name
                 if handle == "default":
                     func(service, message, *args, **kwargs)
 
-            query_handlers = self.handlers.setdefault(
-                query_type, set()
-            )
+            query_handlers = self.handlers.setdefault(query_type, set())
             query_handlers.add(wrapper)
             return func
 

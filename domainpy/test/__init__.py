@@ -1,3 +1,13 @@
-from .bootstrap import TestEnvironment, EventSourcedProcessor, LeanProcessor
+from .bootstrap import (
+    EventSourcedProcessor,
+    LeanProcessor,
+    TestContextEnvironment,
+    TestContextMapEnvironment,
+)
 
-__all__ = ["TestEnvironment", "EventSourcedProcessor", "LeanProcessor"]
+__all__ = [
+    "EventSourcedProcessor",
+    "LeanProcessor",
+    "TestContextEnvironment",
+    "TestContextMapEnvironment",
+]
