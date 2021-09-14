@@ -16,6 +16,8 @@ class TraceResolution:
         pending = "pending"
 
     resolution: str
+    expected: int
+    completed: int
     errors: typing.Tuple[str, ...]
 
 

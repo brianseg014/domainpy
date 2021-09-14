@@ -48,6 +48,11 @@ class DynamoDBTraceStore(TraceStore):
 
         return TraceResolution(
             resolution=resolution,
+            expected=len(contexts_resolutions),
+            completed=sum(
+                1 for rc in contexts_resolutions.values() 
+                if rc['resolution'] != TraceResolution.Resolutions.pending
+            ),
             errors=tuple(
                 [
                     cr["error"]

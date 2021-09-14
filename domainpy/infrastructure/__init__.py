@@ -33,6 +33,7 @@ from .transcoder import (
     record_asdict,
     record_fromdict,
 )
+from .tracer.tracestore import TraceStore
 from .tracer.managers.aws_dynamodb import DynamoDBTraceStore
 
 __all__ = [
@@ -56,6 +57,7 @@ __all__ = [
     "AwsSimpleQueueServicePublisher",
     "AwsStepFunctionSchedulerPublisher",
     "sqs_batch_processor",
+    "TraceStore",
     "DynamoDBTraceStore",
     "Mapper",
     "Transcoder",
