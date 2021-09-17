@@ -96,6 +96,10 @@ class ContextEnvironment(ApplicationService):
             PublisherSubscriber(schedule_publisher)
         )
 
+        # Self publish outgoing domain events
+        if close_loop:
+            self.event_publisher_bus.attach(ApplicationServiceSubscriber(self))
+
     def add_projection(self, key: typing.Type[Projection]) -> None:
         projection = self.factory.create_projection(key)
 
@@ -125,13 +129,7 @@ class ContextEnvironment(ApplicationService):
 
         self.registry.put(key, repository)
 
-        # First, publish outside
         repository.attach(BusSubscriber(self.event_publisher_bus))
-
-        # Then, if close loop, handle
-        if self.close_loop:
-            # Handle in this environment new domain events
-            repository.attach(ApplicationServiceSubscriber(self))
 
     def handle(self, message: ApplicationMessage) -> None:
         traceable_messages = (
