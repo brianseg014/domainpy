@@ -9,10 +9,12 @@ import domainpy.compat_typing as typing
 
 from domainpy.application.integration import IntegrationEvent
 from domainpy.application.command import ApplicationCommand
+from domainpy.application.query import ApplicationQuery
 from domainpy.domain.model.event import DomainEvent
 from domainpy.domain.model.value_object import ValueObject
 from domainpy.infrastructure.records import (
     CommandRecord,
+    QueryRecord,
     EventRecord,
     IntegrationRecord,
 )
@@ -45,7 +47,9 @@ def record_fromdict(
 
 
 def record_asdict(
-    record: typing.Union[CommandRecord, IntegrationRecord, EventRecord]
+    record: typing.Union[
+        CommandRecord, QueryRecord, IntegrationRecord, EventRecord
+    ]
 ) -> dict:
     return dataclasses.asdict(record)
 
@@ -60,6 +64,7 @@ class MissingFieldValueError(Exception):
 
 class MessageType(enum.Enum):
     APPLICATION_COMMAND = "application_command"
+    APPLICATION_QUERY = "application_query"
     INTEGRATION_EVENT = "integration_event"
     DOMAIN_EVENT = "domain_event"
 
@@ -67,13 +72,23 @@ class MessageType(enum.Enum):
     def of(  # pylint: disable=invalid-name
         cls,
         message_type: typing.Type[
-            typing.Union[ApplicationCommand, IntegrationEvent, DomainEvent]
+            typing.Union[
+                ApplicationCommand,
+                ApplicationQuery,
+                IntegrationEvent,
+                DomainEvent,
+            ]
         ],
     ) -> MessageType:
         if message_type is ApplicationCommand or issubclass(
             message_type, ApplicationCommand
         ):
             return MessageType.APPLICATION_COMMAND
+
+        if message_type is ApplicationQuery or issubclass(
+            message_type, ApplicationQuery
+        ):
+            return MessageType.APPLICATION_QUERY
 
         if message_type is IntegrationEvent or issubclass(
             message_type, IntegrationEvent
@@ -109,6 +124,7 @@ class Transcoder(abc.ABC):
             _OptionalCodec(self),
             _ApplicationCommandCodec(self),
             _ApplicationCommandStructCodec(self),
+            _ApplicationQueryCodec(self),
             _IntegrationEventCodec(self),
             _DomainEventCodec(self),
             _ValueObjectCodec(self),
@@ -480,3 +496,30 @@ class _ValueObjectCodec(ICodec):
             dct[field.name] = self.transcoder.decode(field_data, field.type)
 
         return field_type(**dct)
+
+
+class _ApplicationQueryCodec(_SystemMessageCodec):
+    def can_handle(self, field_type: typing.Type) -> bool:
+        if isgenerictype(field_type):
+            return False
+        return issubclass(field_type, ApplicationQuery)
+
+    def encode(self, obj: typing.Any, field_type: typing.Type) -> typing.Any:
+        dct = self._encode(obj, field_type)
+
+        msg: ApplicationQuery = obj
+        if msg.__trace_id__ is None:
+            raise TypeError("__trace_id__ should not be None")
+
+        record = QueryRecord(
+            trace_id=msg.__trace_id__,
+            topic=field_type.__name__,
+            version=msg.__version__,
+            timestamp=msg.__timestamp__,
+            message=MessageType.APPLICATION_QUERY.value,
+            payload=dct["payload"],
+        )
+        return record
+
+    def decode(self, data: dict, field_type: typing.Type) -> typing.Any:
+        return self._decode(data, field_type)

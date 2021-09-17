@@ -8,12 +8,13 @@ from domainpy.exceptions import (
     TraceNotFound,
 )
 from domainpy.application.command import ApplicationCommand
+from domainpy.application.query import ApplicationQuery
 from domainpy.application.integration import IntegrationEvent
 from domainpy.infrastructure.tracer.tracestore import (
     TraceStore,
     TraceResolution,
 )
-from domainpy.infrastructure.records import CommandRecord, IntegrationRecord
+from domainpy.infrastructure.records import IntegrationRecord
 from domainpy.infrastructure.mappers import Mapper
 from domainpy.infrastructure.transcoder import record_asdict, record_fromdict
 from domainpy.utils.dynamodb import (
@@ -50,8 +51,9 @@ class DynamoDBTraceStore(TraceStore):
             resolution=resolution,
             expected=len(contexts_resolutions),
             completed=sum(
-                1 for rc in contexts_resolutions.values() 
-                if rc['resolution'] != TraceResolution.Resolutions.pending
+                1
+                for rc in contexts_resolutions.values()
+                if rc["resolution"] != TraceResolution.Resolutions.pending
             ),
             errors=tuple(
                 [
@@ -86,18 +88,18 @@ class DynamoDBTraceStore(TraceStore):
             ),
         )
 
-    def start_trace(self, command: ApplicationCommand) -> None:
+    def start_trace(
+        self, request: typing.Union[ApplicationCommand, ApplicationQuery]
+    ) -> None:
         try:
-            resolvers = getattr(command, "__resolvers__")
+            resolvers = getattr(request, "__resolvers__")
         except AttributeError as error:
             raise DefinitionError(
-                "command should have __resolvers__: "
-                f"{command.__class__.__name__}"
+                "request should have __resolvers__: "
+                f"{request.__class__.__name__}"
             ) from error
 
-        command_record = typing.cast(
-            CommandRecord, self.mapper.serialize(command)
-        )
+        record = self.mapper.serialize(request)
 
         epoch = datetime.datetime.utcnow().timestamp()
 
@@ -110,9 +112,10 @@ class DynamoDBTraceStore(TraceStore):
         item = {
             "TableName": self.table_name,
             "Item": {
-                "trace_id": serialize(command_record.trace_id),
-                "topic": serialize(command_record.topic),
-                "command": serialize(record_asdict(command_record)),
+                "trace_id": serialize(record.trace_id),
+                "topic": serialize(record.topic),
+                "message": serialize(record.message),
+                "request": serialize(record_asdict(record)),
                 "resolution": serialize(resolution),
                 "version": serialize(1),
                 "timestamp": serialize(epoch),

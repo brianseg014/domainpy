@@ -216,6 +216,10 @@ class IProjectorFactory(abc.ABC):
         pass  # pragma: no cover
 
     @abc.abstractmethod
+    def create_query_result_publisher(self) -> IPublisher:
+        pass  # pragma: no cover
+
+    @abc.abstractmethod
     def create_integration_publisher(self) -> IPublisher:
         pass  # pragma: no cover
 
@@ -232,6 +236,12 @@ class ProjectorEnvironment(ApplicationService):
         self.projection_bus = Bus[DomainEvent]()
         self.handler_bus = Bus[ApplicationQuery]()
         self.resolver_bus = Bus[ApplicationQuery]()
+
+        self.query_result_publisher_bus = Bus[typing.Any]()
+        query_result_publisher = self.factory.create_query_result_publisher()
+        self.query_result_publisher_bus.attach(
+            PublisherSubscriber(query_result_publisher)
+        )
 
         self.integration_publisher_bus = Bus[IntegrationEvent]()
         integration_publisher = self.factory.create_integration_publisher()

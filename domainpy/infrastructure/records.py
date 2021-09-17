@@ -13,6 +13,16 @@ class CommandRecord:
 
 
 @dataclasses.dataclass(frozen=True)
+class QueryRecord:
+    trace_id: str
+    topic: str
+    version: int
+    timestamp: float
+    message: str
+    payload: dict
+
+
+@dataclasses.dataclass(frozen=True)
 class IntegrationRecord:  # pylint: disable=too-many-instance-attributes
     trace_id: str
     context: str

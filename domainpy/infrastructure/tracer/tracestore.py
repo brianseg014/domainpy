@@ -5,6 +5,7 @@ import dataclasses
 
 from domainpy.exceptions import Timeout
 from domainpy.application.command import ApplicationCommand
+from domainpy.application.query import ApplicationQuery
 from domainpy.application.integration import IntegrationEvent
 from domainpy.infrastructure.records import IntegrationRecord
 from domainpy.utils import Bus
@@ -61,7 +62,9 @@ class TraceStore:
         pass
 
     @abc.abstractmethod
-    def start_trace(self, command: ApplicationCommand) -> None:
+    def start_trace(
+        self, request: typing.Union[ApplicationCommand, ApplicationQuery]
+    ) -> None:
         pass
 
     @abc.abstractmethod

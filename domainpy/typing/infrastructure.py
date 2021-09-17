@@ -1,16 +1,18 @@
 import domainpy.compat_typing as typing
 
 from domainpy.application.command import ApplicationCommand
+from domainpy.application.query import ApplicationQuery
 from domainpy.application.integration import IntegrationEvent
 from domainpy.domain.model.event import DomainEvent
 from domainpy.infrastructure.records import (
     CommandRecord,
+    QueryRecord,
     IntegrationRecord,
     EventRecord,
 )
 
 InfrastructureMessage = typing.Union[
-    ApplicationCommand, IntegrationEvent, DomainEvent
+    ApplicationCommand, ApplicationQuery, IntegrationEvent, DomainEvent
 ]
 SequenceOfInfrastructureMessage = typing.Sequence[InfrastructureMessage]
 SingleOrSequenceOfInfrastructureMessage = typing.Union[
@@ -18,12 +20,23 @@ SingleOrSequenceOfInfrastructureMessage = typing.Union[
 ]
 
 InfrastructureRecord = typing.Union[
-    CommandRecord, IntegrationRecord, EventRecord
+    CommandRecord, QueryRecord, IntegrationRecord, EventRecord
 ]
 
 JsonStr = str
 CommandRecordDict = typing.TypedDict(
     "CommandRecordDict",
+    {
+        "trace_id": str,
+        "topic": str,
+        "version": int,
+        "timestamp": float,
+        "message": str,
+        "payload": dict,
+    },
+)
+QueryRecordDict = typing.TypedDict(
+    "QueryRecordDict",
     {
         "trace_id": str,
         "topic": str,
@@ -62,5 +75,5 @@ EventRecordDict = typing.TypedDict(
     },
 )
 InfrastructureRecordDict = typing.Union[
-    CommandRecordDict, IntegrationRecordDict, EventRecordDict
+    CommandRecordDict, QueryRecordDict, IntegrationRecordDict, EventRecordDict
 ]
