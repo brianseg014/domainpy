@@ -11,6 +11,8 @@ from domainpy.application.command import ApplicationCommand
 from domainpy.application.query import ApplicationQuery
 from domainpy.application.integration import IntegrationEvent
 from domainpy.infrastructure.tracer.tracestore import (
+    TraceSegmentRecorder,
+    TraceSegmentStore,
     TraceStore,
     TraceResolution,
 )
@@ -278,3 +280,100 @@ class DynamoDBTraceStore(TraceStore):
                 return True
 
         return False
+
+
+class DynamoDBTraceSegmentStore(TraceSegmentStore):
+    def __init__(self, mapper: Mapper, table_name: str, **kwargs):
+        self.mapper = mapper
+        self.table_name = table_name
+
+        self.client = boto3.client("dynamodb", **kwargs)
+
+    def get_resolution(self, trace_id: str, topic: str) -> typing.Optional[str]:
+        item = {
+            "TableName": self.table_name,
+            "Key": {
+                "trace_id": serialize(trace_id),
+                "topic": serialize(topic)
+            },
+            "ProjectionExpression": "resolution",
+            "ConsistentRead": True,
+        }
+        result = self.client.get_item(**item)
+        if 'Item' not in result:
+            return None
+
+        return deserialize(result['Item']['resolution'])
+
+    def start_trace_segment(self, request: typing.Union[ApplicationCommand, ApplicationQuery]) -> TraceSegmentRecorder:
+        record = self.mapper.serialize(request)
+
+        epoch = datetime.datetime.utcnow().timestamp()
+        item = {
+            "TableName": self.table_name,
+            "Item": {
+                "trace_id": serialize(record.trace_id),
+                "topic": serialize(record.topic),
+                "timestamp": serialize(epoch),
+                "timestamp_resolution": serialize(None),
+                "request": serialize(record_asdict(record)),
+                "resolution": serialize(TraceResolution.Resolutions.pending),
+                "error": serialize(None),
+            },
+            "ConditionExpression": "(attribute_not_exists(trace_id) "
+            "and attribute_not_exists(topic)) "
+            "or resolution = :failure",
+            "ExpressionAttributeValues": {":failure": serialize(TraceResolution.Resolutions.failure)},
+        }
+
+        try:
+            self.client.put_item(**item)
+        except self.client.exceptions.ConditionalCheckFailedException as error:
+            raise IdempotencyItemError() from error
+
+        return TraceSegmentRecorder(request, self)
+
+    def resolve_trace_segment_success(self, request: typing.Union[ApplicationCommand, ApplicationQuery]) -> None:
+        record = self.mapper.serialize(request)
+
+        epoch = datetime.datetime.utcnow().timestamp()
+        item = {
+            "TableName": self.table_name,
+            "Key": {
+                "trace_id": serialize(record.trace_id),
+                "topic": serialize(record.topic),
+            },
+            "UpdateExpression": "SET "
+            "   resolution = :resolution, "
+            "   timestamp_resolution = :timestamp_resolution",
+            "ExpressionAttributeValues": {
+                ":resolution": serialize(TraceResolution.Resolutions.success),
+                ":timestamp_resolution": serialize(epoch)
+            },
+        }
+        self.client.update_item(**item)
+
+    def resolve_trace_segment_failure(self, request: typing.Union[ApplicationCommand, ApplicationQuery], exc: typing.Type[Exception]) -> None:
+        record = self.mapper.serialize(request)
+
+        epoch = datetime.datetime.utcnow().timestamp()
+        item = {
+            "TableName": self.table_name,
+            "Key": {
+                "trace_id": serialize(record.trace_id),
+                "topic": serialize(record.topic),
+            },
+            "UpdateExpression": "SET "
+            "   resolution = :resolution, "
+            "   #error = :error, "
+            "   timestamp_resolution = :timestamp_resolution ",
+            "ExpressionAttributeNames": {
+                "#error": "error",
+            },
+            "ExpressionAttributeValues": {
+                ":resolution": serialize(TraceResolution.Resolutions.failure),
+                ":error": serialize(str(exc)),
+                ":timestamp_resolution": serialize(epoch)
+            },
+        }
+        self.client.update_item(**item)
