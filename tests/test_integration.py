@@ -27,7 +27,10 @@ from domainpy.infrastructure import (
     Transcoder,
     MemoryEventRecordManager,
     IPublisher,
-    MemoryPublisher
+    MemoryPublisher,
+    TraceSegmentStore,
+    MemoryTraceSegmentStore,
+    transcoder
 )
 from domainpy.utils import (
     Registry,
@@ -41,13 +44,7 @@ from domainpy.typing.application import ApplicationMessage
 def test_all_system():
     ################################## Infrastructure Utils ##################################
 
-    command_mapper = Mapper(
-        transcoder=Transcoder()
-    )
-    integration_mapper = Mapper(
-        transcoder=Transcoder()
-    )
-    event_mapper = Mapper(
+    mapper = Mapper(
         transcoder=Transcoder()
     )
 
@@ -70,7 +67,7 @@ def test_all_system():
     ### Aggregates
 
     #### Events
-    @event_mapper.register
+    @mapper.register
     class PetStoreRegistered(DomainEvent):
         __version__: int = 1
         
@@ -106,7 +103,7 @@ def test_all_system():
     ################################## Application Layer ##################################
 
     ## Commands
-    @command_mapper.register
+    @mapper.register
     class RegisterPetStore(ApplicationCommand):
         pet_store_id: str
         pet_store_name: str
@@ -130,7 +127,7 @@ def test_all_system():
             self.pet_store_repository.save(pet_store)
 
     ## Integrations
-    @integration_mapper.register
+    @mapper.register
     class CreatePetStoreSucceeded(IntegrationEvent):
         __resolve__: str = 'success'
         __error__: typing.Optional[str] = None
@@ -186,8 +183,12 @@ def test_all_system():
 
     class IntegrationTestFactory(IContextFactory):
 
-        def __init__(self, event_store: EventStore):
+        def __init__(self, event_store: EventStore, mapper: Mapper):
             self.event_store = event_store
+            self.mapper = mapper
+
+        def create_trace_segment_store(self) -> TraceSegmentStore:
+            return MemoryTraceSegmentStore(self.mapper)
 
         def create_projection(self, key: typing.Type[Projection]) -> Projection:
             if key is PetStoreProjection:
@@ -210,11 +211,11 @@ def test_all_system():
             return MemoryPublisher()
 
     event_store = EventStore(
-        event_mapper=event_mapper,
+        event_mapper=mapper,
         record_manager=MemoryEventRecordManager()
     )
 
-    factory = IntegrationTestFactory(event_store)
+    factory = IntegrationTestFactory(event_store, mapper)
     env = ContextEnvironment('ctx', factory)
 
     env.add_projection(PetStoreProjection)

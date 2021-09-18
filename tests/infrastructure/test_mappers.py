@@ -40,7 +40,6 @@ def test_mapper_deserialize():
     assert isinstance(message, ApplicationCommand)
     assert message.__timestamp__ == 0.0
     assert message.__version__ == 1
-    assert message.__message__ == MessageType.APPLICATION_COMMAND.value
 
 def test_mapper_deserializer_raises_if_not_registered():
     record = CommandRecord(

@@ -1,7 +1,7 @@
 import abc
 import typing
 
-from domainpy.exceptions import ConcurrencyError
+from domainpy.exceptions import ConcurrencyError, DefinitionError
 from domainpy.application.command import ApplicationCommand
 from domainpy.application.query import ApplicationQuery
 from domainpy.application.service import ApplicationService
@@ -15,6 +15,10 @@ from domainpy.domain.model.exceptions import DomainError
 from domainpy.domain.repository import IRepository
 from domainpy.domain.service import IDomainService
 from domainpy.infrastructure.publishers.base import IPublisher
+from domainpy.infrastructure.tracer.tracestore import (
+    TraceSegmentStore,
+    TraceStore,
+)
 from domainpy.utils.bus import Bus
 from domainpy.utils.bus_subscribers import (
     BusSubscriber,
@@ -26,9 +30,14 @@ from domainpy.utils.registry import Registry
 from domainpy.utils.contextualized import Contextualized
 from domainpy.utils.traceable import Traceable
 from domainpy.typing.application import ApplicationMessage
+from domainpy.typing.infrastructure import InfrastructureMessage
 
 
 class IContextFactory(abc.ABC):
+    @abc.abstractmethod
+    def create_trace_segment_store(self) -> TraceSegmentStore:
+        pass  # pragma: no cover
+
     @abc.abstractmethod
     def create_projection(self, key: typing.Type[Projection]) -> Projection:
         pass  # pragma: no cover
@@ -75,6 +84,8 @@ class ContextEnvironment(ApplicationService):
         Contextualized.set_default_context(context)
 
         self.registry = Registry()
+
+        self.trace_segment_store = self.factory.create_trace_segment_store()
 
         self.projection_bus = Bus[DomainEvent]()
         self.resolver_bus = Bus[ApplicationMessage]()
@@ -131,18 +142,15 @@ class ContextEnvironment(ApplicationService):
 
         repository.attach(BusSubscriber(self.event_publisher_bus))
 
-    def handle(self, message: ApplicationMessage) -> None:
-        traceable_messages = (
-            ApplicationCommand,
-            IntegrationEvent,
-            DomainEvent,
-        )
-        if isinstance(message, traceable_messages):
-            if message.__trace_id__ is None:
-                raise ValueError("message.__trace_id__ should not be NoneType")
+    def trace(self, message: InfrastructureMessage) -> None:
+        if message.__trace_id__ is None:
+            raise DefinitionError("__trace_id__ should not be NoneType")
 
+        with self.trace_segment_store.start_trace_segment(message):
             Traceable.set_default_trace_id(message.__trace_id__)
+            self.handle(message)
 
+    def handle(self, message: ApplicationMessage) -> None:
         if isinstance(message, DomainEvent):
             self.projection_bus.publish(message)
 
@@ -164,6 +172,10 @@ class ContextEnvironment(ApplicationService):
 
 class IContextMapFactory(abc.ABC):
     @abc.abstractmethod
+    def create_trace_segment_store(self) -> TraceSegmentStore:
+        pass  # pragma: no cover
+
+    @abc.abstractmethod
     def create_projection(self, key: typing.Type[Projection]) -> Projection:
         pass  # pragma: no cover
 
@@ -181,8 +193,10 @@ class ContextMapEnvironment(ApplicationService):
 
         self.registry = Registry()
 
+        self.trace_segment_store = self.factory.create_trace_segment_store()
+
         self.projection_bus = Bus[DomainEvent]()
-        self.resolver_bus = Bus[typing.Union[IntegrationEvent, DomainEvent]]()
+        self.resolver_bus = Bus[typing.Union[DomainEvent]]()
 
         self.integration_publisher_bus = Bus[IntegrationEvent]()
         integration_publisher = self.factory.create_integration_publisher()
@@ -200,15 +214,25 @@ class ContextMapEnvironment(ApplicationService):
     def add_resolver(self, resolver: ApplicationService) -> None:
         self.resolver_bus.attach(ApplicationServiceSubscriber(resolver))
 
+    def trace(self, message: InfrastructureMessage) -> None:
+        if message.__trace_id__ is None:
+            raise DefinitionError("__trace_id__ should not be NoneType")
+
+        with self.trace_segment_store.start_trace_segment(message):
+            Traceable.set_default_trace_id(message.__trace_id__)
+            self.handle(message)
+
     def handle(self, message: ApplicationMessage) -> None:
         if isinstance(message, DomainEvent):
             self.projection_bus.publish(message)
-
-        if isinstance(message, (IntegrationEvent, DomainEvent)):
             self.resolver_bus.publish(message)
 
 
 class IProjectorFactory(abc.ABC):
+    @abc.abstractmethod
+    def create_trace_segment_store(self) -> TraceSegmentStore:
+        pass  # pragma: no cover
+
     @abc.abstractmethod
     def create_projection(self, key: typing.Type[Projection]) -> Projection:
         pass  # pragma: no cover
@@ -231,9 +255,11 @@ class ProjectorEnvironment(ApplicationService):
 
         self.registry = Registry()
 
+        self.trace_segment_store = factory.create_trace_segment_store()
+
         self.projection_bus = Bus[DomainEvent]()
-        self.handler_bus = Bus[ApplicationQuery]()
-        self.resolver_bus = Bus[ApplicationQuery]()
+        self.handler_bus = Bus[typing.Union[ApplicationQuery, DomainEvent]]()
+        self.resolver_bus = Bus[typing.Union[ApplicationQuery, DomainEvent]]()
 
         self.query_result_publisher_bus = Bus[typing.Any]()
         query_result_publisher = self.factory.create_query_result_publisher()
@@ -260,16 +286,28 @@ class ProjectorEnvironment(ApplicationService):
     def add_resolver(self, resolver: ApplicationService) -> None:
         self.resolver_bus.attach(ApplicationServiceSubscriber(resolver))
 
+    def trace(self, message: InfrastructureMessage) -> None:
+        if message.__trace_id__ is None:
+            raise DefinitionError("__trace_id__ should not be NoneType")
+
+        with self.trace_segment_store.start_trace_segment(message):
+            Traceable.set_default_trace_id(message.__trace_id__)
+            self.handle(message)
+
     def handle(self, message: ApplicationMessage) -> None:
         if isinstance(message, DomainEvent):
             self.projection_bus.publish(message)
 
-        if isinstance(message, ApplicationQuery):
+        if isinstance(message, (ApplicationQuery, DomainEvent)):
             self.resolver_bus.publish(message)
             self.handler_bus.publish(message)
 
 
 class IGatewayFactory:
+    @abc.abstractmethod
+    def create_trace_store(self) -> TraceStore:
+        pass  # pragma: no cover
+
     @abc.abstractmethod
     def create_command_publisher(self) -> IPublisher:
         pass  # pragma: no cover
@@ -280,15 +318,26 @@ class IGatewayFactory:
 
 
 class GatewayEnvironment(ApplicationService):
-    def __init__(self, context: str, factory: IGatewayFactory) -> None:
+    def __init__(
+        self, context: str, factory: IGatewayFactory, sync: bool = False
+    ) -> None:
         self.context = context
         self.factory = factory
+        self.sync = sync
 
         Contextualized.set_default_context(context)
 
-        self.handler_bus = Bus[ApplicationCommand]()
+        self.trace_store = factory.create_trace_store()
+
+        self.handler_bus = Bus[
+            typing.Union[
+                ApplicationCommand, ApplicationQuery, IntegrationEvent
+            ]
+        ]()
         self.resolver_bus = Bus[
-            typing.Union[ApplicationCommand, IntegrationEvent]
+            typing.Union[
+                ApplicationCommand, ApplicationQuery, IntegrationEvent
+            ]
         ]()
 
         self.command_publisher_bus = Bus[ApplicationCommand]()
@@ -309,9 +358,32 @@ class GatewayEnvironment(ApplicationService):
     def add_resolver(self, resolver: ApplicationService) -> None:
         self.resolver_bus.attach(ApplicationServiceSubscriber(resolver))
 
-    def handle(self, message: ApplicationMessage) -> None:
-        if isinstance(message, (ApplicationCommand, IntegrationEvent)):
-            self.resolver_bus.publish(message)
+    def trace(
+        self,
+        message: typing.Union[
+            ApplicationCommand, ApplicationQuery, IntegrationEvent
+        ],
+    ) -> None:
+        if message.__trace_id__ is None:
+            raise DefinitionError("__trace_id__ should not be NoneType")
 
-        if isinstance(message, ApplicationCommand):
+        Traceable.set_default_trace_id(message.__trace_id__)
+        self.trace_store.start_trace(message)
+
+        self.handle(message)
+
+        if self.sync:
+            # Publish in current thread async integration events
+            # coming from other contexts
+            integration_bus = Bus[ApplicationMessage]()
+            integration_bus.attach(ApplicationServiceSubscriber(self))
+            self.trace_store.watch_trace_resolution(
+                message.__trace_id__, integration_bus=integration_bus
+            )
+
+    def handle(self, message: ApplicationMessage) -> None:
+        if isinstance(
+            message, (ApplicationCommand, ApplicationQuery, IntegrationEvent)
+        ):
+            self.resolver_bus.publish(message)
             self.handler_bus.publish(message)

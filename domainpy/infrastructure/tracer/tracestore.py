@@ -5,6 +5,7 @@ import time
 import typing
 import dataclasses
 
+from domainpy.typing.infrastructure import InfrastructureMessage
 from domainpy.exceptions import Timeout
 from domainpy.application.command import ApplicationCommand
 from domainpy.application.query import ApplicationQuery
@@ -65,7 +66,10 @@ class TraceStore:
 
     @abc.abstractmethod
     def start_trace(
-        self, request: typing.Union[ApplicationCommand, ApplicationQuery]
+        self,
+        request: typing.Union[
+            ApplicationCommand, ApplicationQuery, IntegrationEvent
+        ],
     ) -> None:
         pass  # pragma: no cover
 
@@ -78,31 +82,38 @@ class TraceStore:
 
 class TraceSegmentStore(abc.ABC):
     @abc.abstractmethod
-    def get_resolution(self, trace_id: str, topic: str) -> str:
+    def get_resolution(
+        self, trace_id: str, topic: str
+    ) -> typing.Optional[str]:
         pass  # pragma: no cover
 
     @abc.abstractmethod
     def start_trace_segment(
-        self, request: typing.Union[ApplicationCommand, ApplicationQuery]
+        self, request: InfrastructureMessage
     ) -> TraceSegmentRecorder:
         pass  # pragma: no cover
 
     @abc.abstractmethod
     def resolve_trace_segment_success(
-        self, request: typing.Union[ApplicationCommand, ApplicationQuery]
+        self, request: InfrastructureMessage
     ) -> None:
         pass  # pragma: no cover
 
     @abc.abstractmethod
     def resolve_trace_segment_failure(
-        self, request: typing.Union[ApplicationCommand, ApplicationQuery], exc: typing.Type[Exception]
+        self,
+        request: InfrastructureMessage,
+        exc: typing.Type[Exception],
     ) -> None:
         pass  # pragma: no cover
 
 
 class TraceSegmentRecorder:
-
-    def __init__(self, request: typing.Union[ApplicationCommand, ApplicationQuery], trace_segment_store: TraceSegmentStore) -> None:
+    def __init__(
+        self,
+        request: InfrastructureMessage,
+        trace_segment_store: TraceSegmentStore,
+    ) -> None:
         self.request = request
         self.trace_segment_store = trace_segment_store
 
@@ -111,6 +122,10 @@ class TraceSegmentRecorder:
 
     def __exit__(self, exc_type, exc_value, exc_tb):
         if exc_type is None:
-            self.trace_segment_store.resolve_trace_segment_success(self.request)
+            self.trace_segment_store.resolve_trace_segment_success(
+                self.request
+            )
         else:
-            self.trace_segment_store.resolve_trace_segment_failure(self.request, exc_value)
+            self.trace_segment_store.resolve_trace_segment_failure(
+                self.request, exc_value
+            )

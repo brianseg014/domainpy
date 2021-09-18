@@ -33,8 +33,12 @@ from .transcoder import (
     record_asdict,
     record_fromdict,
 )
-from .tracer.tracestore import TraceStore
-from .tracer.managers.aws_dynamodb import DynamoDBTraceStore
+from .tracer.tracestore import TraceStore, TraceSegmentStore
+from .tracer.managers.aws_dynamodb import (
+    DynamoDBTraceStore,
+    DynamoDBTraceSegmentStore,
+)
+from .tracer.managers.memory import MemoryTraceStore, MemoryTraceSegmentStore
 
 __all__ = [
     "EventStore",
@@ -58,7 +62,11 @@ __all__ = [
     "AwsStepFunctionSchedulerPublisher",
     "sqs_batch_processor",
     "TraceStore",
+    "TraceSegmentStore",
     "DynamoDBTraceStore",
+    "DynamoDBTraceSegmentStore",
+    "MemoryTraceStore",
+    "MemoryTraceSegmentStore",
     "Mapper",
     "Transcoder",
     "ICodec",

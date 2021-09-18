@@ -1,3 +1,4 @@
+from domainpy.infrastructure.tracer.managers.memory import MemoryTraceSegmentStore
 import uuid
 import typing
 import pytest
@@ -18,10 +19,17 @@ from domainpy.infrastructure.eventsourced.eventstore import EventStore
 from domainpy.infrastructure.eventsourced.managers.memory import MemoryEventRecordManager
 from domainpy.infrastructure.publishers.base import IPublisher
 from domainpy.infrastructure.publishers.memory import MemoryPublisher
+from domainpy.infrastructure.tracer.tracestore import TraceSegmentRecorder
 from domainpy.test.bootstrap import TestContextEnvironment, EventSourcedProcessor
 
 
 class DefaultFactory(IContextFactory):
+    def __init__(self, mapper: Mapper) -> None:
+        self.mapper = mapper
+
+    def create_trace_segment_store(self) -> TraceSegmentRecorder:
+        return MemoryTraceSegmentStore(self.mapper)
+
     def create_projection(self, key: typing.Type[Projection]) -> Projection:
         pass
 
@@ -47,7 +55,7 @@ class Aggregate(AggregateRoot):
         pass
 
 @pytest.fixture
-def event_mapper():
+def mapper():
     return Mapper(transcoder=Transcoder())
 
 @pytest.fixture
@@ -55,12 +63,12 @@ def record_manager():
     return MemoryEventRecordManager()
 
 @pytest.fixture
-def event_store(event_mapper, record_manager):
-    return EventStore(event_mapper, record_manager)
+def event_store(mapper, record_manager):
+    return EventStore(mapper, record_manager)
 
 @pytest.fixture
-def environment():
-    return ContextEnvironment('ctx', DefaultFactory())
+def environment(mapper):
+    return ContextEnvironment('ctx', DefaultFactory(mapper))
 
 @pytest.fixture
 def aggregate_id():

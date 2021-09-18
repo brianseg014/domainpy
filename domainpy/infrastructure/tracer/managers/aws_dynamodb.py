@@ -2,6 +2,7 @@ import typing
 import datetime
 import boto3  # type: ignore
 
+from domainpy.typing.infrastructure import InfrastructureMessage
 from domainpy.exceptions import (
     IdempotencyItemError,
     DefinitionError,
@@ -26,9 +27,9 @@ from domainpy.utils.dynamodb import (
 
 
 class DynamoDBTraceStore(TraceStore):
-    def __init__(self, mapper: Mapper, table_name: str, **kwargs):
-        self.mapper = mapper
+    def __init__(self, table_name: str, mapper: Mapper, **kwargs):
         self.table_name = table_name
+        self.mapper = mapper
 
         self.client = boto3.client("dynamodb", **kwargs)
 
@@ -91,7 +92,10 @@ class DynamoDBTraceStore(TraceStore):
         )
 
     def start_trace(
-        self, request: typing.Union[ApplicationCommand, ApplicationQuery]
+        self,
+        request: typing.Union[
+            ApplicationCommand, ApplicationQuery, IntegrationEvent
+        ],
     ) -> None:
         try:
             resolvers = getattr(request, "__resolvers__")
@@ -283,29 +287,33 @@ class DynamoDBTraceStore(TraceStore):
 
 
 class DynamoDBTraceSegmentStore(TraceSegmentStore):
-    def __init__(self, mapper: Mapper, table_name: str, **kwargs):
-        self.mapper = mapper
+    def __init__(self, table_name: str, mapper: Mapper, **kwargs):
         self.table_name = table_name
+        self.mapper = mapper
 
         self.client = boto3.client("dynamodb", **kwargs)
 
-    def get_resolution(self, trace_id: str, topic: str) -> typing.Optional[str]:
+    def get_resolution(
+        self, trace_id: str, topic: str
+    ) -> typing.Optional[str]:
         item = {
             "TableName": self.table_name,
             "Key": {
                 "trace_id": serialize(trace_id),
-                "topic": serialize(topic)
+                "topic": serialize(topic),
             },
             "ProjectionExpression": "resolution",
             "ConsistentRead": True,
         }
         result = self.client.get_item(**item)
-        if 'Item' not in result:
+        if "Item" not in result:
             return None
 
-        return deserialize(result['Item']['resolution'])
+        return deserialize(result["Item"]["resolution"])
 
-    def start_trace_segment(self, request: typing.Union[ApplicationCommand, ApplicationQuery]) -> TraceSegmentRecorder:
+    def start_trace_segment(
+        self, request: InfrastructureMessage
+    ) -> TraceSegmentRecorder:
         record = self.mapper.serialize(request)
 
         epoch = datetime.datetime.utcnow().timestamp()
@@ -323,7 +331,9 @@ class DynamoDBTraceSegmentStore(TraceSegmentStore):
             "ConditionExpression": "(attribute_not_exists(trace_id) "
             "and attribute_not_exists(topic)) "
             "or resolution = :failure",
-            "ExpressionAttributeValues": {":failure": serialize(TraceResolution.Resolutions.failure)},
+            "ExpressionAttributeValues": {
+                ":failure": serialize(TraceResolution.Resolutions.failure)
+            },
         }
 
         try:
@@ -333,7 +343,9 @@ class DynamoDBTraceSegmentStore(TraceSegmentStore):
 
         return TraceSegmentRecorder(request, self)
 
-    def resolve_trace_segment_success(self, request: typing.Union[ApplicationCommand, ApplicationQuery]) -> None:
+    def resolve_trace_segment_success(
+        self, request: InfrastructureMessage
+    ) -> None:
         record = self.mapper.serialize(request)
 
         epoch = datetime.datetime.utcnow().timestamp()
@@ -348,12 +360,14 @@ class DynamoDBTraceSegmentStore(TraceSegmentStore):
             "   timestamp_resolution = :timestamp_resolution",
             "ExpressionAttributeValues": {
                 ":resolution": serialize(TraceResolution.Resolutions.success),
-                ":timestamp_resolution": serialize(epoch)
+                ":timestamp_resolution": serialize(epoch),
             },
         }
         self.client.update_item(**item)
 
-    def resolve_trace_segment_failure(self, request: typing.Union[ApplicationCommand, ApplicationQuery], exc: typing.Type[Exception]) -> None:
+    def resolve_trace_segment_failure(
+        self, request: InfrastructureMessage, exc: typing.Type[Exception]
+    ) -> None:
         record = self.mapper.serialize(request)
 
         epoch = datetime.datetime.utcnow().timestamp()
@@ -373,7 +387,7 @@ class DynamoDBTraceSegmentStore(TraceSegmentStore):
             "ExpressionAttributeValues": {
                 ":resolution": serialize(TraceResolution.Resolutions.failure),
                 ":error": serialize(str(exc)),
-                ":timestamp_resolution": serialize(epoch)
+                ":timestamp_resolution": serialize(epoch),
             },
         }
         self.client.update_item(**item)

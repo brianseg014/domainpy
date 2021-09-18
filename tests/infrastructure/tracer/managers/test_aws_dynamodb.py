@@ -119,14 +119,14 @@ def _(dynamodb, trace_table_name, trace_segment_table_name):
     dynamodb.get_waiter('table_exists').wait(TableName=trace_segment_table_name)
 
 def test_trace_idempotency(dynamodb, mapper, trace_table_name, region_name, trace_id, command):
-    store = DynamoDBTraceStore(mapper, trace_table_name, region_name=region_name)
+    store = DynamoDBTraceStore(trace_table_name, mapper, region_name=region_name)
     store.start_trace(command)
 
     with pytest.raises(IdempotencyItemError):
         store.start_trace(command)
 
 def test_watch_resolution_success(dynamodb, mapper, trace_table_name, region_name, trace_id, command, integration_success):
-    store = DynamoDBTraceStore(mapper, trace_table_name, region_name=region_name)
+    store = DynamoDBTraceStore(trace_table_name, mapper, region_name=region_name)
     store.start_trace(command)
 
     with pytest.raises(Timeout):
@@ -137,7 +137,7 @@ def test_watch_resolution_success(dynamodb, mapper, trace_table_name, region_nam
     assert trace_resolution.resolution == trace_resolution.Resolutions.success
 
 def test_watch_resolution_failure(dynamodb, mapper, trace_table_name, region_name, trace_id, command, integration_failure):
-    store = DynamoDBTraceStore(mapper, trace_table_name, region_name=region_name)
+    store = DynamoDBTraceStore(trace_table_name, mapper, region_name=region_name)
     store.start_trace(command)
 
     with pytest.raises(Timeout):
@@ -153,7 +153,7 @@ def test_watch_resolution_bus(dynamodb, mapper, trace_table_name, region_name, t
     integration_bus = Bus()
     integration_bus.attach(integration_subscriber)
 
-    store = DynamoDBTraceStore(mapper, trace_table_name, region_name=region_name)
+    store = DynamoDBTraceStore(trace_table_name, mapper, region_name=region_name)
     store.start_trace(command)
     store.resolve_context(integration_success)
     store.watch_trace_resolution(trace_id, integration_bus=integration_bus)
@@ -163,14 +163,14 @@ def test_watch_resolution_bus(dynamodb, mapper, trace_table_name, region_name, t
 def test_resolve_when_no_resolvers(dynamodb, mapper, trace_table_name, region_name, trace_id, command):
     command.__dict__['__resolvers__'] = []
 
-    store = DynamoDBTraceStore(mapper, trace_table_name, region_name=region_name)
+    store = DynamoDBTraceStore(trace_table_name, mapper, region_name=region_name)
     store.start_trace(command)
     trace_resolution = store.get_resolution(trace_id)
 
     assert trace_resolution.resolution == trace_resolution.Resolutions.success
 
 def test_trace_segment_idempotency(dynamodb, mapper, trace_segment_table_name, region_name, trace_id, command):
-    store = DynamoDBTraceSegmentStore(mapper, trace_segment_table_name, region_name=region_name)
+    store = DynamoDBTraceSegmentStore(trace_segment_table_name, mapper, region_name=region_name)
     with store.start_trace_segment(command):
         pass # Everything ok
 
@@ -179,7 +179,7 @@ def test_trace_segment_idempotency(dynamodb, mapper, trace_segment_table_name, r
             pass # Everything ok
 
 def test_trace_segment_success(dynamodb, mapper, trace_segment_table_name, region_name, trace_id, command):
-    store = DynamoDBTraceSegmentStore(mapper, trace_segment_table_name, region_name=region_name)
+    store = DynamoDBTraceSegmentStore(trace_segment_table_name, mapper, region_name=region_name)
     with store.start_trace_segment(command):
         pass # Everything ok
 
@@ -187,7 +187,7 @@ def test_trace_segment_success(dynamodb, mapper, trace_segment_table_name, regio
     assert resolution == TraceResolution.Resolutions.success
 
 def test_trace_segment_failure(dynamodb, mapper, trace_segment_table_name, region_name, trace_id, command):
-    store = DynamoDBTraceSegmentStore(mapper, trace_segment_table_name, region_name=region_name)
+    store = DynamoDBTraceSegmentStore(trace_segment_table_name, mapper, region_name=region_name)
     with pytest.raises(Exception):
         with store.start_trace_segment(command):
             raise Exception()
