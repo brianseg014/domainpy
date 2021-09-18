@@ -15,10 +15,13 @@ from domainpy.domain.model.exceptions import DomainError
 from domainpy.domain.repository import IRepository
 from domainpy.domain.service import IDomainService
 from domainpy.infrastructure.publishers.base import IPublisher
+from domainpy.infrastructure.eventsourced.eventstore import EventStore
+from domainpy.infrastructure.eventsourced.recordmanager import EventRecordManager
 from domainpy.infrastructure.tracer.tracestore import (
     TraceSegmentStore,
     TraceStore,
 )
+from domainpy.infrastructure.mappers import Mapper
 from domainpy.utils.bus import Bus
 from domainpy.utils.bus_subscribers import (
     BusSubscriber,
@@ -168,6 +171,32 @@ class ContextEnvironment(ApplicationService):
                     raise ConcurrencyError(
                         f"exahusted {self.retries} retries: {message}"
                     ) from error
+
+
+class IEventSourcedContextFactory(IContextFactory):
+    @abc.abstractmethod
+    def create_event_record_manager(self) -> EventRecordManager:
+        pass
+
+
+class EventSourcedContextEnvironment(ContextEnvironment):
+
+    def __init__(self, context: str, mapper: Mapper, factory: IEventSourcedContextFactory, close_loop: bool = True, retries: int = 3):
+        super().__init__(context, factory, close_loop=close_loop, retries=retries)
+        self.factory = factory
+        
+        event_record_manager = self.factory.create_event_record_manager()
+        self.event_store = EventStore(
+            event_mapper=mapper,
+            record_manager=event_record_manager
+        )
+
+    def add_repository(self, key: typing.Type[IRepository]) -> None:
+        repository = self.factory.create_repository(key, event_store=self.event_store)
+
+        self.registry.put(key, repository)
+
+        repository.attach(BusSubscriber(self.event_publisher_bus))
 
 
 class IContextMapFactory(abc.ABC):
