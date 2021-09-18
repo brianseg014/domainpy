@@ -16,8 +16,9 @@ if typing.TYPE_CHECKING:  # pragma: no cover
 
 
 class AwsSimpleNotificationServicePublisher(Publisher):
-    def __init__(self, topic_arn: str, mapper: Mapper, **kwargs):
+    def __init__(self, topic_arn: str, context: str, mapper: Mapper, **kwargs):
         self.topic_arn = topic_arn
+        self.context = context
         self.mapper = mapper
 
         self.client = boto3.client("sns", **kwargs)
@@ -29,6 +30,16 @@ class AwsSimpleNotificationServicePublisher(Publisher):
         entries = [
             {
                 "TopicArn": self.topic_arn,
+                "MessageAttributes": {
+                    "context": {
+                        "DataType": "String",
+                        "StringValue": self.context
+                    },
+                    "topic": {
+                        "DataType": "String",
+                        "StringValue": m.__class__.__name__
+                    }
+                },
                 "Message": json.dumps(record_asdict(self.mapper.serialize(m))),
             }
             for m in messages

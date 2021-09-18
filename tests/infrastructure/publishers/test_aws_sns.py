@@ -36,5 +36,5 @@ def test_sns_publish(topic_arn, region_name):
     mapper = Mapper(transcoder=Transcoder())
     mapper.register(ApplicationCommand)
 
-    pub = AwsSimpleNotificationServicePublisher(topic_arn, mapper, region_name=region_name)
+    pub = AwsSimpleNotificationServicePublisher(topic_arn, 'default', mapper, region_name=region_name)
     pub.publish(command)
