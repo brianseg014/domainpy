@@ -1,7 +1,14 @@
+# pylint: disable=super-init-not-called,unused-argument
 
-from domainpy.infrastructure.eventsourced.managers.memory import MemoryEventRecordManager
+
+from domainpy.infrastructure.eventsourced.managers.memory import (
+    MemoryEventRecordManager,
+)
 from domainpy.infrastructure.publishers.memory import MemoryPublisher
-from domainpy.infrastructure.tracer.managers.memory import MemoryTraceStore, MemoryTraceSegmentStore
+from domainpy.infrastructure.tracer.managers.memory import (
+    MemoryTraceStore,
+    MemoryTraceSegmentStore,
+)
 from domainpy.infrastructure.mappers import Mapper
 
 
@@ -16,7 +23,7 @@ class AwsEventBridgePublisher(MemoryPublisher):
 
 
 class AwsStepFunctionSchedulerPublisher(MemoryPublisher):
-    def __init__(self, state_machine_arn: str, mapper: Mapper, **kwargs):
+    def __init__(self, state_machine_arn: str, mapper: Mapper, **kwargs):  #
         pass
 
 
