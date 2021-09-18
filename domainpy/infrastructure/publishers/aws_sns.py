@@ -33,12 +33,12 @@ class AwsSimpleNotificationServicePublisher(Publisher):
                 "MessageAttributes": {
                     "context": {
                         "DataType": "String",
-                        "StringValue": self.context
+                        "StringValue": self.context,
                     },
                     "topic": {
                         "DataType": "String",
-                        "StringValue": m.__class__.__name__
-                    }
+                        "StringValue": m.__class__.__name__,
+                    },
                 },
                 "Message": json.dumps(record_asdict(self.mapper.serialize(m))),
             }
