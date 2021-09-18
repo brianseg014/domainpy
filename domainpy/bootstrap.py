@@ -354,11 +354,18 @@ class IGatewayFactory:
 
 class GatewayEnvironment(ApplicationService):
     def __init__(
-        self, context: str, factory: IGatewayFactory, sync: bool = False
+        self,
+        context: str,
+        factory: IGatewayFactory,
+        sync: bool = False,
+        sync_timeout_ms: int = 3000,
+        sync_backoff_ms: int = 100,
     ) -> None:
         self.context = context
         self.factory = factory
         self.sync = sync
+        self.sync_timeout_ms = sync_timeout_ms
+        self.sync_backoff_ms = sync_backoff_ms
 
         Contextualized.set_default_context(context)
 
@@ -413,7 +420,10 @@ class GatewayEnvironment(ApplicationService):
             integration_bus = Bus[ApplicationMessage]()
             integration_bus.attach(ApplicationServiceSubscriber(self))
             self.trace_store.watch_trace_resolution(
-                message.__trace_id__, integration_bus=integration_bus
+                message.__trace_id__,
+                integration_bus=integration_bus,
+                timeout_ms=self.sync_timeout_ms,
+                backoff_ms=self.sync_backoff_ms,
             )
 
     def handle(self, message: ApplicationMessage) -> None:
