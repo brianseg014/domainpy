@@ -16,15 +16,11 @@ if typing.TYPE_CHECKING:  # pragma: no cover
 
 
 class AwsSimpleQueueServicePublisher(Publisher):
-    def __init__(self, queue_name: str, mapper: Mapper, **kwargs):
-        self.queue_name = queue_name
+    def __init__(self, queue_url: str, mapper: Mapper, **kwargs):
+        self.queue_url = queue_url
         self.mapper = mapper
 
         self.client = boto3.client("sqs", **kwargs)
-
-        self.queue_url = self.client.get_queue_url(QueueName=self.queue_name)[
-            "QueueUrl"
-        ]
 
     def _publish(
         self,
