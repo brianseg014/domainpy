@@ -31,6 +31,12 @@ class AwsSimpleNotificationServicePublisher(Publisher):
             {
                 "TopicArn": self.topic_arn,
                 "MessageAttributes": {
+                    "subject": {
+                        "DataType": "String",
+                        "StringValue": (
+                            f"{self.context}:{m.__class__.__name__}"
+                        ),
+                    },
                     "context": {
                         "DataType": "String",
                         "StringValue": self.context,
