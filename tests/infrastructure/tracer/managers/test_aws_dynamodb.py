@@ -99,7 +99,7 @@ def _(dynamodb, trace_table_name, trace_segment_table_name):
                 'KeyType': 'HASH'
             },
             {
-                'AttributeName': 'topic',
+                'AttributeName': 'subject',
                 'KeyType': 'RANGE'
             }
         ],
@@ -109,7 +109,7 @@ def _(dynamodb, trace_table_name, trace_segment_table_name):
                 'AttributeType': 'S'
             },
             {
-                'AttributeName': 'topic',
+                'AttributeName': 'subject',
                 'AttributeType': 'S'
             }
         ],
