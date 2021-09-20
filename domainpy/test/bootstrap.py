@@ -19,6 +19,7 @@ from domainpy.domain.model.event import DomainEvent
 from domainpy.infrastructure.eventsourced.eventstore import EventStore
 from domainpy.infrastructure.eventsourced.eventstream import EventStream
 from domainpy.utils.traceable import Traceable
+from domainpy.utils.bus import Bus
 from domainpy.utils.bus_subscribers import BasicSubscriber
 from domainpy.typing.application import ApplicationMessage
 
@@ -78,21 +79,23 @@ class LeanProcessor(EventProcessor):
 
 class TestContextEnvironment:
     def __init__(
-        self, environment: ContextEnvironment, event_processor: EventProcessor
+        self,
+        environment: ContextEnvironment,
+        event_processor: EventProcessor,
+        integration_event_publisher_bus: Bus[IntegrationEvent],
+        schedule_event_publisher_bus: Bus[ScheduleIntegartionEvent],
     ) -> None:
         self.environment = environment
         self.event_processor = event_processor
 
         self.domain_events = BasicSubscriber()
-        self.environment.event_publisher_bus.attach(self.domain_events)
+        self.environment.domain_event_publisher_bus.attach(self.domain_events)
 
         self.integration_events = BasicSubscriber()
-        self.environment.integration_publisher_bus.attach(
-            self.integration_events
-        )
+        integration_event_publisher_bus.attach(self.integration_events)
 
         self.schedule_events = BasicSubscriber()
-        self.environment.scheduler_publisher_bus.attach(self.schedule_events)
+        schedule_event_publisher_bus.attach(self.schedule_events)
 
     def next_event_number(
         self, aggregate_type: typing.Type[AggregateRoot], aggregate_id: str
@@ -189,13 +192,15 @@ class TestContextEnvironment:
 
 
 class TestContextMapEnvironment:
-    def __init__(self, environment: ContextMapEnvironment):
+    def __init__(
+        self,
+        environment: ContextMapEnvironment,
+        integration_event_publisher_bus: Bus[IntegrationEvent],
+    ):
         self.environment = environment
 
         self.integration_events = BasicSubscriber()
-        self.environment.integration_publisher_bus.attach(
-            self.integration_events
-        )
+        integration_event_publisher_bus.attach(self.integration_events)
 
         self.sequences: typing.Dict[str, typing.Iterator] = {}
 

@@ -1,4 +1,5 @@
 import abc
+from tests.test.test_bootstrap import domain_event_publisher_bus, integration_event_publisher_bus
 import typing
 
 from domainpy.application import (
@@ -216,7 +217,9 @@ def test_all_system():
     )
 
     factory = IntegrationTestFactory(event_store, mapper)
-    env = ContextEnvironment('ctx', factory)
+    domain_event_publisher_bus = Bus[DomainEvent]()
+    integration_event_publisher_bus = Bus[IntegrationEvent]()
+    env = ContextEnvironment('ctx', factory, domain_event_publisher_bus)
 
     env.add_projection(PetStoreProjection)
     
@@ -224,11 +227,11 @@ def test_all_system():
 
     env.add_handler(PetStoreSerivce(env.registry))
 
-    env.add_resolver(PetStoreResolver(env.integration_publisher_bus))
+    env.add_resolver(PetStoreResolver(integration_event_publisher_bus))
 
     ################################## Some tests ######################################
 
-    adap = TestContextEnvironment(env, EventSourcedProcessor(event_store))
+    adap = TestContextEnvironment(env, EventSourcedProcessor(event_store), integration_event_publisher_bus, Bus())
     adap.given(
         adap.stamp_event(
             PetStoreRegistered, PetStore, PetStoreId.create().identity

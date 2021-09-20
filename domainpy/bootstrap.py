@@ -8,13 +8,11 @@ from domainpy.application.service import ApplicationService
 from domainpy.application.projection import Projection
 from domainpy.application.integration import (
     IntegrationEvent,
-    ScheduleIntegartionEvent,
 )
 from domainpy.domain.model.event import DomainEvent
 from domainpy.domain.model.exceptions import DomainError
 from domainpy.domain.repository import IRepository
 from domainpy.domain.service import IDomainService
-from domainpy.infrastructure.publishers.base import IPublisher
 from domainpy.infrastructure.eventsourced.eventstore import EventStore
 from domainpy.infrastructure.eventsourced.recordmanager import (
     EventRecordManager,
@@ -29,7 +27,6 @@ from domainpy.utils.bus_subscribers import (
     BusSubscriber,
     ApplicationServiceSubscriber,
     ProjectionSubscriber,
-    PublisherSubscriber,
 )
 from domainpy.utils.registry import Registry
 from domainpy.utils.contextualized import Contextualized
@@ -57,24 +54,13 @@ class IContextFactory(abc.ABC):
     def create_repository(self, key: typing.Type[IRepository]) -> IRepository:
         pass  # pragma: no cover
 
-    @abc.abstractmethod
-    def create_event_publisher(self) -> IPublisher:
-        pass  # pragma: no cover
-
-    @abc.abstractmethod
-    def create_integration_publisher(self) -> IPublisher:
-        pass  # pragma: no cover
-
-    @abc.abstractmethod
-    def create_schedule_publisher(self) -> IPublisher:
-        pass  # pragma: no cover
-
 
 class ContextEnvironment(ApplicationService):
     def __init__(
         self,
         context: str,
         factory: IContextFactory,
+        domain_event_publisher_bus: Bus[DomainEvent],
         close_loop: bool = True,
         retries: int = 3,
     ):
@@ -83,6 +69,7 @@ class ContextEnvironment(ApplicationService):
 
         self.context = context
         self.factory = factory
+        self.domain_event_publisher_bus = domain_event_publisher_bus
         self.close_loop = close_loop
         self.retries = retries
 
@@ -96,25 +83,11 @@ class ContextEnvironment(ApplicationService):
         self.resolver_bus = Bus[ApplicationMessage]()
         self.handler_bus = Bus[ApplicationMessage]()
 
-        self.event_publisher_bus = Bus[DomainEvent]()
-        event_publisher = self.factory.create_event_publisher()
-        self.event_publisher_bus.attach(PublisherSubscriber(event_publisher))
-
-        self.integration_publisher_bus = Bus[IntegrationEvent]()
-        integration_publisher = self.factory.create_integration_publisher()
-        self.integration_publisher_bus.attach(
-            PublisherSubscriber(integration_publisher)
-        )
-
-        self.scheduler_publisher_bus = Bus[ScheduleIntegartionEvent]()
-        schedule_publisher = self.factory.create_schedule_publisher()
-        self.scheduler_publisher_bus.attach(
-            PublisherSubscriber(schedule_publisher)
-        )
-
         # Self publish outgoing domain events
         if close_loop:
-            self.event_publisher_bus.attach(ApplicationServiceSubscriber(self))
+            self.domain_event_publisher_bus.attach(
+                ApplicationServiceSubscriber(self)
+            )
 
     def add_projection(self, key: typing.Type[Projection]) -> None:
         projection = self.factory.create_projection(key)
@@ -145,7 +118,7 @@ class ContextEnvironment(ApplicationService):
 
         self.registry.put(key, repository)
 
-        repository.attach(BusSubscriber(self.event_publisher_bus))
+        repository.attach(BusSubscriber(self.domain_event_publisher_bus))
 
     def trace(self, message: InfrastructureMessage) -> None:
         if message.__trace_id__ is None:
@@ -190,11 +163,16 @@ class EventSourcedContextEnvironment(ContextEnvironment):
         context: str,
         mapper: Mapper,
         factory: IEventSourcedContextFactory,
+        domain_event_publisher_bus: Bus[DomainEvent],
         close_loop: bool = True,
         retries: int = 3,
     ):
         super().__init__(
-            context, factory, close_loop=close_loop, retries=retries
+            context,
+            factory,
+            domain_event_publisher_bus,
+            close_loop=close_loop,
+            retries=retries,
         )
         self.factory = factory
 
@@ -214,10 +192,6 @@ class IContextMapFactory(abc.ABC):
     def create_projection(self, key: typing.Type[Projection]) -> Projection:
         pass  # pragma: no cover
 
-    @abc.abstractmethod
-    def create_integration_publisher(self) -> IPublisher:
-        pass  # pragma: no cover
-
 
 class ContextMapEnvironment(ApplicationService):
     def __init__(self, context: str, factory: IContextMapFactory):
@@ -232,12 +206,6 @@ class ContextMapEnvironment(ApplicationService):
 
         self.projection_bus = Bus[DomainEvent]()
         self.resolver_bus = Bus[typing.Union[DomainEvent]]()
-
-        self.integration_publisher_bus = Bus[IntegrationEvent]()
-        integration_publisher = self.factory.create_integration_publisher()
-        self.integration_publisher_bus.attach(
-            PublisherSubscriber(integration_publisher)
-        )
 
     def add_projection(self, key: typing.Type[Projection]) -> None:
         projection = self.factory.create_projection(key)
@@ -263,7 +231,7 @@ class ContextMapEnvironment(ApplicationService):
             self.resolver_bus.publish(message)
 
 
-class IProjectorFactory(abc.ABC):
+class IProjectionFactory(abc.ABC):
     @abc.abstractmethod
     def create_trace_segment_store(self) -> TraceSegmentStore:
         pass  # pragma: no cover
@@ -272,17 +240,9 @@ class IProjectorFactory(abc.ABC):
     def create_projection(self, key: typing.Type[Projection]) -> Projection:
         pass  # pragma: no cover
 
-    @abc.abstractmethod
-    def create_query_result_publisher(self) -> IPublisher:
-        pass  # pragma: no cover
 
-    @abc.abstractmethod
-    def create_integration_publisher(self) -> IPublisher:
-        pass  # pragma: no cover
-
-
-class ProjectorEnvironment(ApplicationService):
-    def __init__(self, context: str, factory: IProjectorFactory):
+class ProjectionEnvironment(ApplicationService):
+    def __init__(self, context: str, factory: IProjectionFactory):
         self.context = context
         self.factory = factory
 
@@ -295,18 +255,6 @@ class ProjectorEnvironment(ApplicationService):
         self.projection_bus = Bus[DomainEvent]()
         self.handler_bus = Bus[typing.Union[ApplicationQuery, DomainEvent]]()
         self.resolver_bus = Bus[typing.Union[ApplicationQuery, DomainEvent]]()
-
-        self.query_result_publisher_bus = Bus[typing.Any]()
-        query_result_publisher = self.factory.create_query_result_publisher()
-        self.query_result_publisher_bus.attach(
-            PublisherSubscriber(query_result_publisher)
-        )
-
-        self.integration_publisher_bus = Bus[IntegrationEvent]()
-        integration_publisher = self.factory.create_integration_publisher()
-        self.integration_publisher_bus.attach(
-            PublisherSubscriber(integration_publisher)
-        )
 
     def add_projection(self, key: typing.Type[Projection]) -> None:
         projection = self.factory.create_projection(key)
@@ -343,14 +291,6 @@ class IGatewayFactory:
     def create_trace_store(self) -> TraceStore:
         pass  # pragma: no cover
 
-    @abc.abstractmethod
-    def create_command_publisher(self) -> IPublisher:
-        pass  # pragma: no cover
-
-    @abc.abstractmethod
-    def create_response_publisher(self) -> IPublisher:
-        pass  # pragma: no cover
-
 
 class GatewayEnvironment(ApplicationService):
     def __init__(
@@ -381,18 +321,6 @@ class GatewayEnvironment(ApplicationService):
                 ApplicationCommand, ApplicationQuery, IntegrationEvent
             ]
         ]()
-
-        self.command_publisher_bus = Bus[ApplicationCommand]()
-        command_publisher = self.factory.create_command_publisher()
-        self.command_publisher_bus.attach(
-            PublisherSubscriber(command_publisher)
-        )
-
-        self.response_publisher_bus = Bus[dict]()
-        response_publisher = self.factory.create_response_publisher()
-        self.response_publisher_bus.attach(
-            PublisherSubscriber(response_publisher)
-        )
 
     def add_handler(self, handler: ApplicationService) -> None:
         self.handler_bus.attach(ApplicationServiceSubscriber(handler))
