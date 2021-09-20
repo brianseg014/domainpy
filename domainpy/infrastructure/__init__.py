@@ -21,6 +21,7 @@ from .processors.aws_sqs import (
 )
 from .publishers.base import IPublisher
 from .publishers.memory import MemoryPublisher
+from .publishers.aws_dynamodb import AwsDynamoDBTablePublisher
 from .publishers.aws_eventbridge import AwsEventBridgePublisher
 from .publishers.aws_sns import AwsSimpleNotificationServicePublisher
 from .publishers.aws_sqs import AwsSimpleQueueServicePublisher
@@ -56,6 +57,7 @@ __all__ = [
     "AwsSimpleQueueServiceBatchProcessor",
     "IPublisher",
     "MemoryPublisher",
+    "AwsDynamoDBTablePublisher",
     "AwsEventBridgePublisher",
     "AwsSimpleNotificationServicePublisher",
     "AwsSimpleQueueServicePublisher",
