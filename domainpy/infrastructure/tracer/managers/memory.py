@@ -22,6 +22,7 @@ from domainpy.infrastructure.tracer.tracestore import (
 )
 from domainpy.infrastructure.records import (
     CommandRecord,
+    EventRecord,
     IntegrationRecord,
     QueryRecord,
 )
@@ -214,8 +215,14 @@ class MemoryTraceSegmentStore(TraceSegmentStore):
 
         self.segments: typing.Dict[str, TraceSegment] = {}
 
-    def get_resolution(self, trace_id: str, topic: str) -> str:
-        trace_segment_id = self._get_trace_segment_id(trace_id, topic)
+    def get_resolution(
+        self, trace_id: str, topic: str, context: typing.Optional[str] = None
+    ) -> typing.Optional[str]:
+        subject = topic
+        if context is not None:
+            subject = f"{context}:{topic}"
+
+        trace_segment_id = self._get_trace_segment_id(trace_id, subject)
 
         if trace_segment_id not in self.segments:
             raise TraceNotFound()
@@ -228,9 +235,11 @@ class MemoryTraceSegmentStore(TraceSegmentStore):
     ) -> TraceSegmentRecorder:
         record = self.mapper.serialize(request)
 
-        trace_segment_id = self._get_trace_segment_id(
-            record.trace_id, record.topic
-        )
+        subject = record.topic
+        if isinstance(record, EventRecord):
+            subject = f"{record.context}:{record.topic}"
+
+        trace_segment_id = self._get_trace_segment_id(record.trace_id, subject)
 
         if trace_segment_id in self.segments:
             raise IdempotencyItemError()
@@ -252,10 +261,13 @@ class MemoryTraceSegmentStore(TraceSegmentStore):
         self, request: InfrastructureMessage
     ) -> None:
         record = self.mapper.serialize(request)
+        record = self.mapper.serialize(request)
 
-        trace_segment_id = self._get_trace_segment_id(
-            record.trace_id, record.topic
-        )
+        subject = record.topic
+        if isinstance(record, EventRecord):
+            subject = f"{record.context}:{record.topic}"
+
+        trace_segment_id = self._get_trace_segment_id(record.trace_id, subject)
 
         if trace_segment_id not in self.segments:
             raise TraceNotFound()
@@ -271,9 +283,11 @@ class MemoryTraceSegmentStore(TraceSegmentStore):
     ) -> None:
         record = self.mapper.serialize(request)
 
-        trace_segment_id = self._get_trace_segment_id(
-            record.trace_id, record.topic
-        )
+        subject = record.topic
+        if isinstance(record, EventRecord):
+            subject = f"{record.context}:{record.topic}"
+
+        trace_segment_id = self._get_trace_segment_id(record.trace_id, subject)
 
         if trace_segment_id not in self.segments:
             raise TraceNotFound()
@@ -286,5 +300,5 @@ class MemoryTraceSegmentStore(TraceSegmentStore):
         trace_segment.timestamp_resolution = epoch
 
     @classmethod
-    def _get_trace_segment_id(cls, trace_id: str, topic: str) -> str:
-        return f"{trace_id}:{topic}"
+    def _get_trace_segment_id(cls, trace_id: str, subject: str) -> str:
+        return f"{trace_id}:{subject}"

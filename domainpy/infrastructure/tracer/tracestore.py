@@ -83,7 +83,7 @@ class TraceStore:
 class TraceSegmentStore(abc.ABC):
     @abc.abstractmethod
     def get_resolution(
-        self, trace_id: str, topic: str
+        self, trace_id: str, topic: str, context: typing.Optional[str] = None
     ) -> typing.Optional[str]:
         pass  # pragma: no cover
 

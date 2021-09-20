@@ -17,7 +17,7 @@ from domainpy.infrastructure.tracer.tracestore import (
     TraceStore,
     TraceResolution,
 )
-from domainpy.infrastructure.records import IntegrationRecord
+from domainpy.infrastructure.records import EventRecord, IntegrationRecord
 from domainpy.infrastructure.mappers import Mapper
 from domainpy.infrastructure.transcoder import record_asdict, record_fromdict
 from domainpy.utils.dynamodb import (
@@ -294,13 +294,17 @@ class DynamoDBTraceSegmentStore(TraceSegmentStore):
         self.client = boto3.client("dynamodb", **kwargs)
 
     def get_resolution(
-        self, trace_id: str, topic: str
+        self, trace_id: str, topic: str, context: typing.Optional[str] = None
     ) -> typing.Optional[str]:
+        subject = topic
+        if context is not None:
+            subject = f"{context}:{topic}"
+
         item = {
             "TableName": self.table_name,
             "Key": {
                 "trace_id": serialize(trace_id),
-                "topic": serialize(topic),
+                "subject": serialize(subject),
             },
             "ProjectionExpression": "resolution",
             "ConsistentRead": True,
@@ -316,12 +320,16 @@ class DynamoDBTraceSegmentStore(TraceSegmentStore):
     ) -> TraceSegmentRecorder:
         record = self.mapper.serialize(request)
 
+        subject = record.topic
+        if isinstance(record, EventRecord):
+            subject = f"{record.context}:{record.topic}"
+
         epoch = datetime.datetime.utcnow().timestamp()
         item = {
             "TableName": self.table_name,
             "Item": {
                 "trace_id": serialize(record.trace_id),
-                "topic": serialize(record.topic),
+                "subject": serialize(subject),
                 "timestamp": serialize(epoch),
                 "timestamp_resolution": serialize(None),
                 "request": serialize(record_asdict(record)),
@@ -348,12 +356,16 @@ class DynamoDBTraceSegmentStore(TraceSegmentStore):
     ) -> None:
         record = self.mapper.serialize(request)
 
+        subject = record.topic
+        if isinstance(record, EventRecord):
+            subject = f"{record.context}:{record.topic}"
+
         epoch = datetime.datetime.utcnow().timestamp()
         item = {
             "TableName": self.table_name,
             "Key": {
                 "trace_id": serialize(record.trace_id),
-                "topic": serialize(record.topic),
+                "subject": serialize(subject),
             },
             "UpdateExpression": "SET "
             "   resolution = :resolution, "
@@ -370,12 +382,16 @@ class DynamoDBTraceSegmentStore(TraceSegmentStore):
     ) -> None:
         record = self.mapper.serialize(request)
 
+        subject = record.topic
+        if isinstance(record, EventRecord):
+            subject = f"{record.context}:{record.topic}"
+
         epoch = datetime.datetime.utcnow().timestamp()
         item = {
             "TableName": self.table_name,
             "Key": {
                 "trace_id": serialize(record.trace_id),
-                "topic": serialize(record.topic),
+                "subject": serialize(subject),
             },
             "UpdateExpression": "SET "
             "   resolution = :resolution, "
