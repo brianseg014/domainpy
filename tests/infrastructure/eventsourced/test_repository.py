@@ -32,7 +32,8 @@ def test_save(record_manager, event_store):
             self.__apply__(
                 self.__stamp__(DomainEvent)(
                     __trace_id__ = 'tid',
-                    __context__ = 'ctx'
+                    __context__ = 'ctx',
+                    __version__=1
                 )
             )
 
@@ -58,7 +59,8 @@ def test_save_snapshot_on_n_events(record_manager, event_store):
             self.__apply__(
                 self.__stamp__(DomainEvent)(
                     __trace_id__ = 'tid',
-                    __context__ = 'ctx'
+                    __context__ = 'ctx',
+                    __version__=1
                 )
             )
 
@@ -71,7 +73,8 @@ def test_save_snapshot_on_n_events(record_manager, event_store):
                 __number__=self.__version__ + 1,
                 __timestamp__=datetime.datetime.timestamp(datetime.datetime.now()),
                 __trace_id__='tid',
-                __context__='ctx'
+                __context__='ctx',
+                __version__=1
             )
         
     identity = Identity.create()
@@ -103,7 +106,8 @@ def test_save_snapshot_on_store_event(record_manager, event_store):
             self.__apply__(
                 self.__stamp__(DomainEvent)(
                     __trace_id__ = 'tid',
-                    __context__ = 'ctx'
+                    __context__ = 'ctx',
+                    __version__=1
                 )
             )
 
@@ -116,7 +120,8 @@ def test_save_snapshot_on_store_event(record_manager, event_store):
                 __number__=self.__version__ + 1,
                 __timestamp__=datetime.datetime.timestamp(datetime.datetime.now()),
                 __trace_id__='tid',
-                __context__='ctx'
+                __context__='ctx',
+                __version__=1
             )
         
     identity = Identity.create()

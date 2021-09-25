@@ -12,6 +12,7 @@ def test_stamp_with_args():
         __timestamp__=0.0,
         __resolve__='success',
         __error__=None,
+        __version__=1
     )
     assert m.__trace_id__ == 'tid'
     assert m.__context__ == 'context'
@@ -24,6 +25,7 @@ def test_stamp_without_args():
         __timestamp__=0.0,
         __resolve__='success',
         __error__=None,
+        __version__=1
     )
     assert m.__trace_id__ == 'tid'
     assert m.__context__ == 'context'

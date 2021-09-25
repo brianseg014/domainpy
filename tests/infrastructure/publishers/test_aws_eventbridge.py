@@ -28,7 +28,8 @@ def _(cloudwatch_events, bus_name):
 def test_eventbridge_publish(bus_name):
     command = ApplicationCommand(
         __timestamp__=0.0,
-        __trace_id__='tid'
+        __trace_id__='tid',
+        __version__=1
     )
 
     mapper = Mapper(transcoder=Transcoder())

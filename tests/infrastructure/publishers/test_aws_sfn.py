@@ -72,6 +72,7 @@ def test_stepfunction_scheduler_publish(stepfunctions, state_machine_arn, region
         __timestamp__=0.0,
         __trace_id__='tid',
         __context__='ctx',
+        __version__=1,
         publish_at=datetime.datetime.now().isoformat()
     )
 

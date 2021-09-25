@@ -15,7 +15,7 @@ def test_bus():
     subscriber = Subscriber()
     subscriber.proof_of_work = mock.Mock()
 
-    command = ApplicationCommand(__timestamp__ = 0.0)
+    command = ApplicationCommand(__timestamp__ = 0.0, __version__ = 1)
 
     bus = Bus()
     bus.attach(subscriber)

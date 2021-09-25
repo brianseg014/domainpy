@@ -40,7 +40,8 @@ def event():
         __number__ = 1,
         __timestamp__ = 0.0,
         __trace_id__ = 'tid',
-        __context__ = 'ctx'
+        __context__ = 'ctx',
+        __version__=1
     )
 
 def test_store_events(event_mapper, record_manager, bus, bus_subscriber, event):

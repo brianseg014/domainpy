@@ -8,6 +8,7 @@ from domainpy.utils.traceable import Traceable
 class ApplicationQuery(SystemData, Traceable):
     __timestamp__: float
     __version__: int
+    __message__: str = 'query'
 
     @classmethod
     def stamp(cls, *, trace_id: str = None) -> functools.partial:

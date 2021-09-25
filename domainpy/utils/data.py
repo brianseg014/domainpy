@@ -210,6 +210,10 @@ Class = typing.TypeVar("Class")
 
 
 class SystemData(metaclass=MetaSystemData):
+    @property
+    def __topic__(self):
+        return self.__class__.__name__
+
     def __str__(self) -> str:
         return f"{self.__class__.__name__}({self.__dict__})"
 

@@ -23,6 +23,7 @@ def event():
         __stream_id__ = 'sid',
         __number__ = 1,
         __timestamp__ = 0.0,
+        __version__=1
     )
 
 @pytest.fixture
@@ -30,7 +31,8 @@ def event2():
     return DomainEvent(
         __stream_id__ = 'sid',
         __number__ = 2,
-        __timestamp__ = 0.0
+        __timestamp__ = 0.0,
+        __version__=1
     )
 
 def test_aggregate_add_to_changes_when_apply(identity, event):
@@ -89,7 +91,8 @@ def test_selector_filter_trace(event, trace_id):
         __stream_id__ = 'sid',
         __number__ = 1,
         __timestamp__ = 0.0,
-        __trace_id__ = trace_id
+        __trace_id__ = trace_id,
+        __version__=1
     )
 
     selector = Selector(e for e in [event])
@@ -108,14 +111,16 @@ def test_selector_get_trace_for_compensation(trace_id):
         __stream_id__ = 'sid',
         __number__ = 1,
         __timestamp__ = 0.0,
-        __trace_id__ = trace_id
+        __trace_id__ = trace_id,
+        __version__=1
     )
 
     compensation_event = CompensationEvent(
         __stream_id__ = 'sid',
         __number__ = 1,
         __timestamp__ = 0.0,
-        __trace_id__ = trace_id
+        __trace_id__ = trace_id,
+        __version__=1
     )
 
     selector = Selector(e for e in [standard_event])

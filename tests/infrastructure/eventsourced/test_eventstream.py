@@ -15,12 +15,14 @@ def test_substream_topic():
     some_event = SomeEvent(
         __stream_id__ = 'sid',
         __number__ = 1,
-        __timestamp__ = 0.0
+        __timestamp__ = 0.0,
+        __version__=1
     )
     some_other_event = SomeOtherEvent(
         __stream_id__ = 'sid',
         __number__ = 1,
-        __timestamp__ = 0.0
+        __timestamp__ = 0.0,
+        __version__=1
     )
 
     es = EventStream()
@@ -37,12 +39,14 @@ def test_substream_from_number():
     event0 = DomainEvent(
         __stream_id__ = 'sid',
         __number__ = 0,
-        __timestamp__ = 0.0
+        __timestamp__ = 0.0,
+        __version__=1
     )
     event1 = DomainEvent(
         __stream_id__ = 'sid',
         __number__ = 1,
-        __timestamp__ = 0.0
+        __timestamp__ = 0.0,
+        __version__=1
     )
 
     es = EventStream()
@@ -58,12 +62,14 @@ def test_substream_to_number():
     event0 = DomainEvent(
         __stream_id__ = 'sid',
         __number__ = 0,
-        __timestamp__ = 0.0
+        __timestamp__ = 0.0,
+        __version__=1
     )
     event1 = DomainEvent(
         __stream_id__ = 'sid',
         __number__ = 1,
-        __timestamp__ = 0.0
+        __timestamp__ = 0.0,
+        __version__=1
     )
 
     es = EventStream()
@@ -82,12 +88,14 @@ def test_substream_from_timestamp():
     event0 = DomainEvent(
         __stream_id__ = 'sid',
         __number__ = 0,
-        __timestamp__ = timestamp_60_mins_ago
+        __timestamp__ = timestamp_60_mins_ago,
+        __version__=1
     )
     event1 = DomainEvent(
         __stream_id__ = 'sid',
         __number__ = 1,
-        __timestamp__ = timestamp_now
+        __timestamp__ = timestamp_now,
+        __version__=1
     )
 
     es = EventStream()
@@ -106,12 +114,14 @@ def test_substream_to_timestamp():
     event0 = DomainEvent(
         __stream_id__ = 'sid',
         __number__ = 0,
-        __timestamp__ = timestamp_60_mins_ago
+        __timestamp__ = timestamp_60_mins_ago,
+        __version__=1
     )
     event1 = DomainEvent(
         __stream_id__ = 'sid',
         __number__ = 1,
-        __timestamp__ = timestamp_now
+        __timestamp__ = timestamp_now,
+        __version__=1
     )
 
     es = EventStream()

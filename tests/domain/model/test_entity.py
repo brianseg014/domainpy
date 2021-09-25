@@ -16,6 +16,7 @@ def event():
         __stream_id__ = 'sid',
         __number__ = 1,
         __timestamp__ = 0.0,
+        __version__=1
     )
 
 @pytest.fixture

@@ -31,7 +31,8 @@ def queue_url(sqs, queue_name):
 def test_sqs_publish(sqs, queue_url, queue_name, region_name):
     command = ApplicationCommand(
         __timestamp__=0.0,
-        __trace_id__='tid'
+        __trace_id__='tid',
+        __version__=1
     )
 
     mapper = Mapper(transcoder=Transcoder())

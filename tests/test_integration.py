@@ -106,6 +106,7 @@ def test_all_system():
     ## Commands
     @mapper.register
     class RegisterPetStore(ApplicationCommand):
+        __version__: int = 1
         pet_store_id: str
         pet_store_name: str
 

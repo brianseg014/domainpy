@@ -30,7 +30,8 @@ def topic_arn(sns, topic_name):
 def test_sns_publish(topic_arn, region_name):
     command = ApplicationCommand(
         __timestamp__=0.0,
-        __trace_id__='tid'
+        __trace_id__='tid',
+        __version__=1
     )
 
     mapper = Mapper(transcoder=Transcoder())

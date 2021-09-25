@@ -63,10 +63,10 @@ class MissingFieldValueError(Exception):
 
 
 class MessageType(enum.Enum):
-    APPLICATION_COMMAND = "application_command"
-    APPLICATION_QUERY = "application_query"
-    INTEGRATION_EVENT = "integration_event"
-    DOMAIN_EVENT = "domain_event"
+    APPLICATION_COMMAND = ApplicationCommand.__message__
+    APPLICATION_QUERY = ApplicationQuery.__message__
+    INTEGRATION_EVENT = IntegrationEvent.__message__
+    DOMAIN_EVENT = DomainEvent.__message__
 
     @classmethod
     def of(  # pylint: disable=invalid-name
@@ -420,7 +420,7 @@ class _IntegrationEventCodec(_SystemMessageCodec):
             error=msg.__error__,
             version=msg.__version__,
             timestamp=msg.__timestamp__,
-            message=MessageType.INTEGRATION_EVENT.value,
+            message=msg.__message__,
             payload=dct["payload"],
         )
 
@@ -451,7 +451,7 @@ class _DomainEventCodec(_SystemMessageCodec):
             version=msg.__version__,
             timestamp=msg.__timestamp__,
             trace_id=msg.__trace_id__,
-            message=MessageType.DOMAIN_EVENT.value,
+            message=msg.__message__,
             context=msg.__context__,
             payload=dct["payload"],
         )
@@ -516,7 +516,7 @@ class _ApplicationQueryCodec(_SystemMessageCodec):
             topic=field_type.__name__,
             version=msg.__version__,
             timestamp=msg.__timestamp__,
-            message=MessageType.APPLICATION_QUERY.value,
+            message=msg.__message__,
             payload=dct["payload"],
         )
         return record

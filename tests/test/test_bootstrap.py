@@ -86,7 +86,9 @@ def trace_id():
 @pytest.fixture
 def event(trace_id, aggregate):
     return aggregate.__stamp__(DomainEvent)(
-        __trace_id__ = trace_id, some_property='x'
+        __trace_id__ = trace_id,
+        __version__ = 1, 
+        some_property='x'
     )
 
 @pytest.fixture
@@ -96,6 +98,7 @@ def integration(trace_id):
         __resolve__ = 'success',
         __error__ = None,
         __timestamp__ = 0.0,
+        __version__ = 1,
         some_property = 'x'
     )
 
@@ -103,7 +106,8 @@ def integration(trace_id):
 def command(trace_id):
     return ApplicationCommand(
         __timestamp__ = 0.0,
-        __trace_id__ = trace_id
+        __trace_id__ = trace_id,
+        __version__ = 1
     )
 
 def test_get_events(environment, event_store, event, trace_id, integration_event_publisher_bus, schedule_event_publisher_bus):

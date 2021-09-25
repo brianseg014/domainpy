@@ -10,7 +10,8 @@ def event():
     event = DomainEvent(
         __stream_id__ = 'sid',
         __number__ = 1,
-        __timestamp__ = 0.0
+        __timestamp__ = 0.0,
+        __version__=1
     )
     return event
 

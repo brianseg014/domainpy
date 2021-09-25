@@ -13,7 +13,8 @@ from domainpy.typing.application import ApplicationMessage
 @pytest.fixture
 def command():
     return ApplicationCommand(
-        __timestamp__ = 0.0
+        __timestamp__ = 0.0,
+        __version__=1
     )
 
 @pytest.fixture
@@ -21,7 +22,8 @@ def integration():
     return IntegrationEvent(
         __resolve__ = 'success',
         __error__ = None,
-        __timestamp__ = 0.0
+        __timestamp__ = 0.0,
+        __version__=1
     )
 
 @pytest.fixture
@@ -29,7 +31,8 @@ def event():
     return DomainEvent(
         __stream_id__ = 'sid',
         __number__ = 1,
-        __timestamp__ = 0.0
+        __timestamp__ = 0.0,
+        __version__=1
     )
 
 

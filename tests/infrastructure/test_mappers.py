@@ -9,7 +9,8 @@ from domainpy.infrastructure.records import CommandRecord
 def test_mapper_serialize_command():
     command = ApplicationCommand(
         __timestamp__=0.0,
-        __trace_id__='tid'
+        __trace_id__='tid',
+        __version__ = 1
     )
     
     mapper = Mapper(transcoder=Transcoder())

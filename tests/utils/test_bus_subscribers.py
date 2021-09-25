@@ -19,7 +19,7 @@ def test_application_service_subscriber():
     service = Service()
     service.proof_of_work = mock.Mock()
 
-    command = ApplicationCommand(__timestamp__=0.0)
+    command = ApplicationCommand(__timestamp__=0.0, __version__ = 1)
 
     x = subs.ApplicationServiceSubscriber(service)
     x.__route__(command)
@@ -37,7 +37,7 @@ def test_publisher_subscriber():
     publisher = Publisher()
     publisher.proof_of_work = mock.Mock()
 
-    command = ApplicationCommand(__timestamp__=0.0)
+    command = ApplicationCommand(__timestamp__=0.0, __version__ = 1)
 
     x = subs.PublisherSubscriber(publisher)
     x.__route__(command)
