@@ -85,6 +85,9 @@ def get_fields(cls):
         cls_annotations = current_cls.__dict__.get("__annotations__")
         if cls_annotations:
             for a_name, a_type in cls_annotations.items():
+                if a_name == '__topic__':
+                    continue
+
                 if isinstance(a_type, str):
                     raise UnsupportedAnnotationInStrError(
                         f"annotation {a_name} in {current_cls.__name__} is str"
@@ -203,6 +206,8 @@ class MetaSystemData(type):
         if "__eq__" not in new_cls.__dict__:
             setattr(new_cls, "__eq__", create_eq_fn(new_cls))
 
+        new_cls.__topic__ = new_cls.__name__
+
         return new_cls
 
 
@@ -210,9 +215,7 @@ Class = typing.TypeVar("Class")
 
 
 class SystemData(metaclass=MetaSystemData):
-    @property
-    def __topic__(self):
-        return self.__class__.__name__
+    __topic__: str
 
     def __str__(self) -> str:
         return f"{self.__class__.__name__}({self.__dict__})"

@@ -3,9 +3,10 @@ import functools
 
 from domainpy.utils.data import SystemData
 from domainpy.utils.traceable import Traceable
+from domainpy.utils.contextualized import Contextualized
 
 
-class ApplicationQuery(SystemData, Traceable):
+class ApplicationQuery(SystemData, Traceable, Contextualized):
     __timestamp__: float
     __version__: int
     __message__: str = 'query'
