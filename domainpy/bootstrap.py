@@ -6,9 +6,7 @@ from domainpy.application.command import ApplicationCommand
 from domainpy.application.query import ApplicationQuery
 from domainpy.application.service import ApplicationService
 from domainpy.application.projection import Projection
-from domainpy.application.integration import (
-    IntegrationEvent,
-)
+from domainpy.application.integration import IntegrationEvent, ScheduleIntegartionEvent
 from domainpy.domain.model.event import DomainEvent
 from domainpy.domain.model.exceptions import DomainError
 from domainpy.domain.repository import IRepository
@@ -22,7 +20,8 @@ from domainpy.infrastructure.tracer.tracestore import (
     TraceStore,
 )
 from domainpy.infrastructure.mappers import Mapper
-from domainpy.utils.bus import Bus
+from domainpy.infrastructure.publishers.base import IPublisher, Publisher
+from domainpy.utils.bus import Bus, ISubscriber, FilterPolicy
 from domainpy.utils.bus_subscribers import (
     BusSubscriber,
     ApplicationServiceSubscriber,
@@ -60,7 +59,7 @@ class ContextEnvironment(ApplicationService):
         self,
         context: str,
         factory: IContextFactory,
-        domain_event_publisher_bus: Bus[DomainEvent],
+        domain_event_bus: Bus[DomainEvent],
         close_loop: bool = True,
         retries: int = 3,
     ):
@@ -69,7 +68,7 @@ class ContextEnvironment(ApplicationService):
 
         self.context = context
         self.factory = factory
-        self.domain_event_publisher_bus = domain_event_publisher_bus
+        self.domain_event_bus = domain_event_bus
         self.close_loop = close_loop
         self.retries = retries
 
@@ -83,10 +82,16 @@ class ContextEnvironment(ApplicationService):
         self.resolver_bus = Bus[ApplicationMessage]()
         self.handler_bus = Bus[ApplicationMessage]()
 
-        # Self publish outgoing domain events
-        if close_loop:
-            self.domain_event_publisher_bus.attach(
+        if self.close_loop:
+            # Self publish outgoing domain events
+            self.domain_event_bus.attach(
                 ApplicationServiceSubscriber(self)
+            )
+        else:
+            # Just send domain events to resolver
+            # other services will be handled in open loop
+            self.domain_event_bus.attach(
+                BusSubscriber(self.resolver_bus)
             )
 
     def add_projection(self, key: typing.Type[Projection]) -> None:
@@ -118,7 +123,7 @@ class ContextEnvironment(ApplicationService):
 
         self.registry.put(key, repository)
 
-        repository.attach(BusSubscriber(self.domain_event_publisher_bus))
+        repository.attach(BusSubscriber(self.domain_event_bus))
 
     def trace(self, message: InfrastructureMessage) -> None:
         if message.__trace_id__ is None:
@@ -163,14 +168,14 @@ class EventSourcedContextEnvironment(ContextEnvironment):
         context: str,
         mapper: Mapper,
         factory: IEventSourcedContextFactory,
-        domain_event_publisher_bus: Bus[DomainEvent],
+        domain_event_bus: Bus[DomainEvent],
         close_loop: bool = True,
         retries: int = 3,
     ):
         super().__init__(
             context,
             factory,
-            domain_event_publisher_bus,
+            domain_event_bus,
             close_loop=close_loop,
             retries=retries,
         )

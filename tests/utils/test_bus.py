@@ -106,7 +106,7 @@ def test_filter_policy_by_concept():
     assert len(subscriber) == 1
     assert subscriber[0] == command_match
 
-def test_filter_policy_by_message():
+def test_filter_policy_by_type():
     message_match = ApplicationCommand.stamp()(__version__=1)
     message_not_match = ApplicationQuery.stamp()(__version__=1)
 
@@ -115,7 +115,7 @@ def test_filter_policy_by_message():
     bus = Bus()
     bus.attach(
         FilterPolicy(
-            messages=[ApplicationCommand.__message__],
+            types=[ApplicationCommand],
             targets=[subscriber]   
         )
     )

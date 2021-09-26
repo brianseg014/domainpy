@@ -1,5 +1,4 @@
 import abc
-from tests.test.test_bootstrap import domain_event_publisher_bus, integration_event_publisher_bus
 import typing
 
 from domainpy.application import (
@@ -30,8 +29,7 @@ from domainpy.infrastructure import (
     IPublisher,
     MemoryPublisher,
     TraceSegmentStore,
-    MemoryTraceSegmentStore,
-    transcoder
+    MemoryTraceSegmentStore
 )
 from domainpy.utils import (
     Registry,
@@ -203,24 +201,14 @@ def test_all_system():
         def create_domain_service(self, key: typing.Type[IDomainService]) -> IDomainService:
             pass
 
-        def create_event_publisher(self) -> IPublisher:
-            return MemoryPublisher()
-
-        def create_integration_publisher(self) -> IPublisher:
-            return MemoryPublisher()
-
-        def create_schedule_publisher(self) -> IPublisher:
-            return MemoryPublisher()
-
     event_store = EventStore(
         event_mapper=mapper,
         record_manager=MemoryEventRecordManager()
     )
 
     factory = IntegrationTestFactory(event_store, mapper)
-    domain_event_publisher_bus = Bus[DomainEvent]()
-    integration_event_publisher_bus = Bus[IntegrationEvent]()
-    env = ContextEnvironment('ctx', factory, domain_event_publisher_bus)
+    publisher_bus = Bus()
+    env = ContextEnvironment('ctx', factory, publisher_bus)
 
     env.add_projection(PetStoreProjection)
     
@@ -228,11 +216,11 @@ def test_all_system():
 
     env.add_handler(PetStoreSerivce(env.registry))
 
-    env.add_resolver(PetStoreResolver(integration_event_publisher_bus))
+    env.add_resolver(PetStoreResolver(publisher_bus))
 
     ################################## Some tests ######################################
 
-    adap = TestContextEnvironment(env, EventSourcedProcessor(event_store), integration_event_publisher_bus, Bus())
+    adap = TestContextEnvironment(env, EventSourcedProcessor(event_store), publisher_bus)
     adap.given(
         adap.stamp_event(
             PetStoreRegistered, PetStore, PetStoreId.create().identity

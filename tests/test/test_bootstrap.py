@@ -56,20 +56,12 @@ def event_store(mapper, record_manager):
     return EventStore(mapper, record_manager)
 
 @pytest.fixture
-def domain_event_publisher_bus():
-    return Bus[DomainEvent]()
+def publisher_bus():
+    return Bus()
 
 @pytest.fixture
-def integration_event_publisher_bus():
-    return Bus[IntegrationEvent]()
-
-@pytest.fixture
-def schedule_event_publisher_bus():
-    return Bus[ScheduleIntegartionEvent]()
-
-@pytest.fixture
-def environment(mapper, domain_event_publisher_bus):
-    return ContextEnvironment('ctx', DefaultFactory(mapper), domain_event_publisher_bus)
+def environment(mapper, publisher_bus):
+    return ContextEnvironment('ctx', DefaultFactory(mapper), publisher_bus)
 
 @pytest.fixture
 def aggregate_id():
@@ -110,24 +102,22 @@ def command(trace_id):
         __version__ = 1
     )
 
-def test_get_events(environment, event_store, event, trace_id, integration_event_publisher_bus, schedule_event_publisher_bus):
+def test_get_events(environment, event_store, event, trace_id, publisher_bus):
     adap = TestContextEnvironment(
         environment, 
         EventSourcedProcessor(event_store),
-        integration_event_publisher_bus,
-        schedule_event_publisher_bus
+        publisher_bus
     )
 
-    adap.environment.domain_event_publisher_bus.publish(event)
+    publisher_bus.publish(event)
     events = adap.then.domain_events.get_events(event.__class__, trace_id=trace_id)
     assert len(list(events)) == 1
 
-def test_get_events_raises(environment, event_store, event, aggregate_id, integration_event_publisher_bus, schedule_event_publisher_bus):
+def test_get_events_raises(environment, event_store, event, aggregate_id, publisher_bus):
     adap = TestContextEnvironment(
         environment, 
         EventSourcedProcessor(event_store),
-        integration_event_publisher_bus,
-        schedule_event_publisher_bus
+        publisher_bus
     )
 
     with pytest.raises(AttributeError):
@@ -135,26 +125,24 @@ def test_get_events_raises(environment, event_store, event, aggregate_id, integr
     with pytest.raises(AttributeError):
         adap.then.domain_events.get_events(event.__class__, aggregate_type=Aggregate)
 
-def test_domain_events_given_has_event(environment, event_store, event, aggregate_id, integration_event_publisher_bus, schedule_event_publisher_bus):
+def test_domain_events_given_has_event(environment, event_store, event, aggregate_id, publisher_bus):
     adap = TestContextEnvironment(
         environment, 
         EventSourcedProcessor(event_store),
-        integration_event_publisher_bus,
-        schedule_event_publisher_bus
+        publisher_bus
     )
 
-    adap.environment.domain_event_publisher_bus.publish(event)
+    publisher_bus.publish(event)
     adap.then.domain_events.assert_has_event(event.__class__, aggregate_type=Aggregate, aggregate_id=aggregate_id)
     adap.then.domain_events.assert_has_event_once(event.__class__)
     adap.then.domain_events.assert_has_event_n_times(event.__class__, times=1)
     adap.then.domain_events.assert_has_event_with(event.__class__, some_property='x')
 
-def test_domain_events_has_event_fails(environment, event_store, event, integration_event_publisher_bus, schedule_event_publisher_bus):
+def test_domain_events_has_event_fails(environment, event_store, event, publisher_bus):
     adap = TestContextEnvironment(
         environment, 
         EventSourcedProcessor(event_store),
-        integration_event_publisher_bus,
-        schedule_event_publisher_bus
+        publisher_bus
     )
 
     with pytest.raises(AssertionError):
@@ -172,54 +160,50 @@ def test_domain_events_has_event_fails(environment, event_store, event, integrat
     with pytest.raises(AssertionError):
         adap.then.domain_events.assert_has_n_events(count=1)
 
-    adap.environment.domain_event_publisher_bus.publish(event)
+    publisher_bus.publish(event)
     with pytest.raises(AssertionError):
         adap.then.domain_events.assert_has_not_event(DomainEvent)
 
     with pytest.raises(AssertionError):
         adap.then.domain_events.assert_has_not_event_with(DomainEvent, some_property='x')
 
-def test_domain_events_has_not_event(environment, event_store, integration_event_publisher_bus, schedule_event_publisher_bus):
+def test_domain_events_has_not_event(environment, event_store, publisher_bus):
     adap = TestContextEnvironment(
         environment, 
         EventSourcedProcessor(event_store),
-        integration_event_publisher_bus,
-        schedule_event_publisher_bus
+        publisher_bus
     )
     adap.then.domain_events.assert_has_not_event(DomainEvent)
 
-def test_get_integrations(environment: ContextEnvironment, event_store, integration, trace_id, integration_event_publisher_bus, schedule_event_publisher_bus):
+def test_get_integrations(environment: ContextEnvironment, event_store, integration, trace_id, publisher_bus):
     adap = TestContextEnvironment(
         environment, 
         EventSourcedProcessor(event_store),
-        integration_event_publisher_bus,
-        schedule_event_publisher_bus
+        publisher_bus
     )
     
-    integration_event_publisher_bus.publish(integration)
+    publisher_bus.publish(integration)
     integrations = adap.then.integration_events.get_integrations(IntegrationEvent, trace_id=trace_id)
     assert len(list(integrations)) == 1
 
-def test_integration_events_has_integration(environment: ContextEnvironment, event_store, integration, integration_event_publisher_bus, schedule_event_publisher_bus):
+def test_integration_events_has_integration(environment: ContextEnvironment, event_store, integration, publisher_bus):
     adap = TestContextEnvironment(
         environment, 
         EventSourcedProcessor(event_store),
-        integration_event_publisher_bus,
-        schedule_event_publisher_bus
+        publisher_bus
     )
     
-    integration_event_publisher_bus.publish(integration)
+    publisher_bus.publish(integration)
     adap.then.integration_events.assert_has_integration(IntegrationEvent)
     adap.then.integration_events.assert_has_integration_n(IntegrationEvent, times=1)
     adap.then.integration_events.assert_has_integration_with(IntegrationEvent, some_property='x')
     adap.then.integration_events.assert_has_integration_with_error(IntegrationEvent, error=None)
 
-def test_integration_events_has_integration_fails(environment: ContextEnvironment, event_store, integration, integration_event_publisher_bus, schedule_event_publisher_bus):
+def test_integration_events_has_integration_fails(environment: ContextEnvironment, event_store, integration, publisher_bus):
     adap = TestContextEnvironment(
         environment, 
         EventSourcedProcessor(event_store),
-        integration_event_publisher_bus,
-        schedule_event_publisher_bus
+        publisher_bus
     )
 
     with pytest.raises(AssertionError):
@@ -234,7 +218,7 @@ def test_integration_events_has_integration_fails(environment: ContextEnvironmen
     with pytest.raises(AssertionError):
         adap.then.integration_events.assert_has_n_integrations(count=1)
 
-    integration_event_publisher_bus.publish(integration)
+    publisher_bus.publish(integration)
     with pytest.raises(AssertionError):
         adap.then.integration_events.assert_has_not_integration(IntegrationEvent)
 
@@ -244,23 +228,21 @@ def test_integration_events_has_integration_fails(environment: ContextEnvironmen
     with pytest.raises(AssertionError):
         adap.then.integration_events.assert_has_integration_with_error(IntegrationEvent, error='some')
 
-def test_integration_events_has_not_integration(environment: ContextEnvironment, event_store, integration_event_publisher_bus, schedule_event_publisher_bus):
+def test_integration_events_has_not_integration(environment: ContextEnvironment, event_store, publisher_bus):
     adap = TestContextEnvironment(
         environment, 
         EventSourcedProcessor(event_store),
-        integration_event_publisher_bus,
-        schedule_event_publisher_bus
+        publisher_bus
     )
 
     adap.then.integration_events.assert_has_not_integration(IntegrationEvent)
     adap.then.integration_events.assert_has_not_integration_with(IntegrationEvent, some_property='x')
 
-def test_when(environment, event_store, command, integration_event_publisher_bus, schedule_event_publisher_bus):
+def test_when(environment, event_store, command, publisher_bus):
     adap = TestContextEnvironment(
         environment, 
         EventSourcedProcessor(event_store),
-        integration_event_publisher_bus,
-        schedule_event_publisher_bus
+        publisher_bus
     )
 
     environment.handle = mock.Mock()

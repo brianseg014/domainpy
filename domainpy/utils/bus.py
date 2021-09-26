@@ -1,4 +1,5 @@
 import abc
+import enum
 import typing
 
 from domainpy.exceptions import DefinitionError
@@ -47,29 +48,39 @@ class Bus(IBus[Message]):
 
 
 class FilterPolicy(ISubscriber[Message], Bus[Message]):
+    class Effect(enum.Enum):
+        MATCH = "MATCH"
+        NOT_MATCH = "NOT_MATCH"
+
     def __init__(
         self,
         *,
         contexts: typing.Optional[typing.Sequence[str]] = None, 
         topics: typing.Optional[typing.Sequence[str]] = None, 
         concepts: typing.Optional[typing.Sequence[str]] = None,
-        messages: typing.Optional[typing.Sequence[str]] = None,
-        targets: typing.Optional[typing.Sequence[IBus]] = None
+        types: typing.Optional[typing.Sequence[str]] = None,
+        targets: typing.Optional[typing.Sequence[ISubscriber]] = None,
+        effect: Effect = Effect.MATCH
     ) -> None:
         super().__init__()
         
         self.contexts = contexts
         self.topics = topics
         self.concepts = concepts
-        self.messages = messages
+        self.types = types
+        self.effect = effect
 
         if targets is not None:
             for target in targets:
                 self.attach(target)
 
     def __route__(self, message: Message) -> None:
-        if self.match(message):
-            self.publish(message)
+        if self.effect == FilterPolicy.Effect.MATCH:
+            if self.match(message):
+                self.publish(message)
+        elif self.effect == FilterPolicy.Effect.NOT_MATCH:
+            if not self.match(message):
+                self.publish(message)
 
     def match(self, message: Message) -> bool:
         if self.contexts is not None:
@@ -96,12 +107,8 @@ class FilterPolicy(ISubscriber[Message], Bus[Message]):
             if concept not in self.concepts:
                 return False
         
-        if self.messages is not None:
-            _message = getattr(message, '__message__', MISSING)
-            if _message is MISSING:
-                raise DefinitionError('message should have __message__ field')
-
-            if _message not in self.messages:
+        if self.types is not None:
+            if not isinstance(message, tuple(self.types)):
                 return False
 
         return True

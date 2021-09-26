@@ -19,16 +19,16 @@ from domainpy.domain.model.event import DomainEvent
 from domainpy.infrastructure.eventsourced.eventstore import EventStore
 from domainpy.infrastructure.eventsourced.eventstream import EventStream
 from domainpy.utils.traceable import Traceable
-from domainpy.utils.bus import Bus
+from domainpy.utils.bus import Bus, FilterPolicy
 from domainpy.utils.bus_subscribers import BasicSubscriber
 from domainpy.typing.application import ApplicationMessage
+from domainpy.typing.infrastructure import InfrastructureMessage
 
 
 @dataclasses.dataclass(frozen=True)
 class ContextThen:
     domain_events: DomainEventsTestExpression
     integration_events: IntegrationEventsTestExpression
-    schedule_events: IntegrationEventsTestExpression
 
 
 @dataclasses.dataclass(frozen=True)
@@ -82,20 +82,26 @@ class TestContextEnvironment:
         self,
         environment: ContextEnvironment,
         event_processor: EventProcessor,
-        integration_event_publisher_bus: Bus[IntegrationEvent],
-        schedule_event_publisher_bus: Bus[ScheduleIntegartionEvent],
+        publisher_bus: Bus[InfrastructureMessage],
     ) -> None:
         self.environment = environment
         self.event_processor = event_processor
 
         self.domain_events = BasicSubscriber()
-        self.environment.domain_event_publisher_bus.attach(self.domain_events)
+        publisher_bus.attach(
+            FilterPolicy(
+                types=[DomainEvent],
+                targets=[self.domain_events]
+            )
+        )
 
         self.integration_events = BasicSubscriber()
-        integration_event_publisher_bus.attach(self.integration_events)
-
-        self.schedule_events = BasicSubscriber()
-        schedule_event_publisher_bus.attach(self.schedule_events)
+        publisher_bus.attach(
+            FilterPolicy(
+                types=[IntegrationEvent],
+                targets=[self.integration_events]
+            )
+        )
 
     def next_event_number(
         self, aggregate_type: typing.Type[AggregateRoot], aggregate_id: str
@@ -180,13 +186,6 @@ class TestContextEnvironment:
             ),
             integration_events=IntegrationEventsTestExpression(
                 tuple(self.integration_events)
-            ),
-            schedule_events=IntegrationEventsTestExpression(
-                tuple(
-                    e
-                    for e in self.schedule_events
-                    if isinstance(e, ScheduleIntegartionEvent)
-                )
             ),
         )
 
