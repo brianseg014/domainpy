@@ -59,7 +59,6 @@ class ContextEnvironment(ApplicationService):
         self,
         context: str,
         factory: IContextFactory,
-        domain_event_bus: Bus[DomainEvent],
         close_loop: bool = True,
         retries: int = 3,
     ):
@@ -68,7 +67,6 @@ class ContextEnvironment(ApplicationService):
 
         self.context = context
         self.factory = factory
-        self.domain_event_bus = domain_event_bus
         self.close_loop = close_loop
         self.retries = retries
 
@@ -78,18 +76,21 @@ class ContextEnvironment(ApplicationService):
 
         self.trace_segment_store = self.factory.create_trace_segment_store()
 
+        self.domain_event_bus = Bus[DomainEvent]()
+
         self.projection_bus = Bus[DomainEvent]()
         self.resolver_bus = Bus[ApplicationMessage]()
         self.handler_bus = Bus[ApplicationMessage]()
 
         if self.close_loop:
-            # Self publish outgoing domain events
+            # Self publish outgoing domain events to
+            # all application services
             self.domain_event_bus.attach(
                 ApplicationServiceSubscriber(self)
             )
         else:
-            # Just send domain events to resolver
-            # other services will be handled in open loop
+            # Self publish outgoing domain events to
+            # resolver services
             self.domain_event_bus.attach(
                 BusSubscriber(self.resolver_bus)
             )
@@ -124,6 +125,9 @@ class ContextEnvironment(ApplicationService):
         self.registry.put(key, repository)
 
         repository.attach(BusSubscriber(self.domain_event_bus))
+
+    def attach_to_domain_event_bus(self, subscriber: ISubscriber):
+        self.domain_event_bus.attach(subscriber)
 
     def trace(self, message: InfrastructureMessage) -> None:
         if message.__trace_id__ is None:
@@ -168,14 +172,12 @@ class EventSourcedContextEnvironment(ContextEnvironment):
         context: str,
         mapper: Mapper,
         factory: IEventSourcedContextFactory,
-        domain_event_bus: Bus[DomainEvent],
         close_loop: bool = True,
         retries: int = 3,
     ):
         super().__init__(
             context,
             factory,
-            domain_event_bus,
             close_loop=close_loop,
             retries=retries,
         )
