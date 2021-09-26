@@ -55,15 +55,15 @@ class FilterPolicy(ISubscriber[Message], Bus[Message]):
     def __init__(
         self,
         *,
-        contexts: typing.Optional[typing.Sequence[str]] = None, 
-        topics: typing.Optional[typing.Sequence[str]] = None, 
+        contexts: typing.Optional[typing.Sequence[str]] = None,
+        topics: typing.Optional[typing.Sequence[str]] = None,
         concepts: typing.Optional[typing.Sequence[str]] = None,
-        types: typing.Optional[typing.Sequence[str]] = None,
+        types: typing.Optional[typing.Sequence[type]] = None,
         targets: typing.Optional[typing.Sequence[ISubscriber]] = None,
-        effect: Effect = Effect.MATCH
+        effect: Effect = Effect.MATCH,
     ) -> None:
         super().__init__()
-        
+
         self.contexts = contexts
         self.topics = topics
         self.concepts = concepts
@@ -84,29 +84,29 @@ class FilterPolicy(ISubscriber[Message], Bus[Message]):
 
     def match(self, message: Message) -> bool:
         if self.contexts is not None:
-            context = getattr(message, '__context__', MISSING)
+            context = getattr(message, "__context__", MISSING)
             if context is MISSING:
-                raise DefinitionError('message should have __context__ field')
-            
+                raise DefinitionError("message should have __context__ field")
+
             if context not in self.contexts:
                 return False
 
         if self.topics is not None:
-            topic = getattr(message, '__topic__', MISSING)
+            topic = getattr(message, "__topic__", MISSING)
             if topic is MISSING:
-                raise DefinitionError('message should have __topic__ field')
+                raise DefinitionError("message should have __topic__ field")
 
             if topic not in self.topics:
                 return False
 
         if self.concepts is not None:
-            concept = getattr(message, '__concept__', MISSING)
+            concept = getattr(message, "__concept__", MISSING)
             if concept is MISSING:
-                raise DefinitionError('message should have __concept__ field')
+                raise DefinitionError("message should have __concept__ field")
 
             if concept not in self.concepts:
                 return False
-        
+
         if self.types is not None:
             if not isinstance(message, tuple(self.types)):
                 return False

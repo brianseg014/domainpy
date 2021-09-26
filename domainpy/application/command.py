@@ -9,7 +9,7 @@ from domainpy.utils.contextualized import Contextualized
 class ApplicationCommand(SystemData, Traceable, Contextualized):
     __timestamp__: float
     __version__: int
-    __message__: str = 'command'
+    __message__: str = "command"
 
     class Struct(SystemData):
         pass

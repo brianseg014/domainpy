@@ -11,7 +11,7 @@ class DomainEvent(SystemData, Traceable, Contextualized):
     __number__: int
     __timestamp__: float
     __version__: int
-    __message__: str = 'domain_event'
+    __message__: str = "domain_event"
 
     def __eq__(self, o: object) -> bool:
         if not isinstance(o, self.__class__):

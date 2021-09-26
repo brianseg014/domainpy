@@ -6,7 +6,7 @@ from domainpy.application.command import ApplicationCommand
 from domainpy.application.query import ApplicationQuery
 from domainpy.application.service import ApplicationService
 from domainpy.application.projection import Projection
-from domainpy.application.integration import IntegrationEvent, ScheduleIntegartionEvent
+from domainpy.application.integration import IntegrationEvent
 from domainpy.domain.model.event import DomainEvent
 from domainpy.domain.model.exceptions import DomainError
 from domainpy.domain.repository import IRepository
@@ -20,8 +20,7 @@ from domainpy.infrastructure.tracer.tracestore import (
     TraceStore,
 )
 from domainpy.infrastructure.mappers import Mapper
-from domainpy.infrastructure.publishers.base import IPublisher, Publisher
-from domainpy.utils.bus import Bus, ISubscriber, FilterPolicy
+from domainpy.utils.bus import Bus, ISubscriber
 from domainpy.utils.bus_subscribers import (
     BusSubscriber,
     ApplicationServiceSubscriber,
@@ -85,15 +84,11 @@ class ContextEnvironment(ApplicationService):
         if self.close_loop:
             # Self publish outgoing domain events to
             # all application services
-            self.domain_event_bus.attach(
-                ApplicationServiceSubscriber(self)
-            )
+            self.domain_event_bus.attach(ApplicationServiceSubscriber(self))
         else:
             # Self publish outgoing domain events to
             # resolver services
-            self.domain_event_bus.attach(
-                BusSubscriber(self.resolver_bus)
-            )
+            self.domain_event_bus.attach(BusSubscriber(self.resolver_bus))
 
     def add_projection(self, key: typing.Type[Projection]) -> None:
         projection = self.factory.create_projection(key)

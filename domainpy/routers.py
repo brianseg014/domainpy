@@ -1,4 +1,3 @@
-
 from domainpy.application.command import ApplicationCommand
 from domainpy.application.query import ApplicationQuery
 from domainpy.application.integration import IntegrationEvent
@@ -9,9 +8,8 @@ from domainpy.typing.infrastructure import InfrastructureMessage
 
 
 class LayeredContextRouter(ISubscriber[InfrastructureMessage]):
-
     def __init__(self) -> None:
-        self.application_policy = FilterPolicy(
+        self.application_policy = FilterPolicy[InfrastructureMessage](
             effect=FilterPolicy.Effect.NOT_MATCH,
             types=[ScheduleIntegartionEvent],
             targets=[
@@ -19,15 +17,15 @@ class LayeredContextRouter(ISubscriber[InfrastructureMessage]):
                     types=[
                         ApplicationCommand,
                         ApplicationQuery,
-                        IntegrationEvent
+                        IntegrationEvent,
                     ]
                 )
-            ]
+            ],
         )
-        self.schedule_policy = FilterPolicy(
+        self.schedule_policy = FilterPolicy[InfrastructureMessage](
             types=[ScheduleIntegartionEvent]
         )
-        self.domain_policy = FilterPolicy(
+        self.domain_policy = FilterPolicy[InfrastructureMessage](
             types=[DomainEvent]
         )
 

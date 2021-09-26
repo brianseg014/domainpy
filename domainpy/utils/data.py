@@ -85,7 +85,7 @@ def get_fields(cls):
         cls_annotations = current_cls.__dict__.get("__annotations__")
         if cls_annotations:
             for a_name, a_type in cls_annotations.items():
-                if a_name == '__topic__':
+                if a_name == "__topic__":
                     continue
 
                 if isinstance(a_type, str):

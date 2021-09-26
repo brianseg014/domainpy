@@ -9,7 +9,7 @@ from domainpy.utils.contextualized import Contextualized
 class ApplicationQuery(SystemData, Traceable, Contextualized):
     __timestamp__: float
     __version__: int
-    __message__: str = 'query'
+    __message__: str = "query"
 
     @classmethod
     def stamp(cls, *, trace_id: str = None) -> functools.partial:

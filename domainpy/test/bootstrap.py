@@ -10,10 +10,7 @@ import dataclasses
 
 from domainpy.bootstrap import ContextEnvironment, ContextMapEnvironment
 from domainpy.application.command import ApplicationCommand
-from domainpy.application.integration import (
-    IntegrationEvent,
-    ScheduleIntegartionEvent,
-)
+from domainpy.application.integration import IntegrationEvent
 from domainpy.domain.model.aggregate import AggregateRoot
 from domainpy.domain.model.event import DomainEvent
 from domainpy.infrastructure.eventsourced.eventstore import EventStore
@@ -89,17 +86,13 @@ class TestContextEnvironment:
 
         self.domain_events = BasicSubscriber()
         publisher_bus.attach(
-            FilterPolicy(
-                types=[DomainEvent],
-                targets=[self.domain_events]
-            )
+            FilterPolicy(types=[DomainEvent], targets=[self.domain_events])
         )
 
         self.integration_events = BasicSubscriber()
         publisher_bus.attach(
             FilterPolicy(
-                types=[IntegrationEvent],
-                targets=[self.integration_events]
+                types=[IntegrationEvent], targets=[self.integration_events]
             )
         )
 

@@ -12,7 +12,7 @@ class IntegrationEvent(SystemData, Traceable, Contextualized):
     __timestamp__: float
     __error__: typing.Optional[str]
     __version__: int
-    __message__: str = 'integration_event'
+    __message__: str = "integration_event"
 
     class Resolution:
         success = "success"
