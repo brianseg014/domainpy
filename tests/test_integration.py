@@ -34,6 +34,7 @@ from domainpy.infrastructure import (
 from domainpy.utils import (
     Registry,
     Bus,
+    BusSubscriber
 )
 from domainpy.bootstrap import ContextEnvironment, IContextFactory
 from domainpy.test.bootstrap import EventSourcedProcessor, TestContextEnvironment
@@ -217,6 +218,8 @@ def test_all_system():
     env.add_handler(PetStoreSerivce(env.registry))
 
     env.add_resolver(PetStoreResolver(publisher_bus))
+
+    env.attach_to_domain_event_bus(BusSubscriber(publisher_bus))
 
     ################################## Some tests ######################################
 
